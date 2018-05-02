@@ -5,9 +5,12 @@ EXTRA_DIST +=\
 	src/rust/tor_util/rust_string.rs
 
 src/rust/target/release/@TOR_RUST_UTIL_STATIC_NAME@: FORCE
-	( cd "$(abs_top_srcdir)/src/rust/tor_util" ; \
-		CARGO_TARGET_DIR="$(abs_top_builddir)/src/rust/target" \
-		CARGO_HOME="$(abs_top_builddir)/src/rust" \
+	# check that CARGO_HOME is not relative (it will be interpreted
+	# relative to $abs_top_builddir/src/rust instead of $abs_top_builddir)
+	if [ -n "$$CARGO_HOME" ] && [ "$${CARGO_HOME:1:1}" != / ]; then \
+		echo "Tor's build system only supports absolute path (or unset) CARGO_HOME."; \
+	fi
+	( cd "$(abs_top_srcdir)/src/rust/tor_util"  || exit ; \
 		$(CARGO) build --release --quiet $(CARGO_ONLINE) )
 
 FORCE:
