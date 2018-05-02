@@ -477,6 +477,11 @@ if test "x$enable_rust" = "xyes"; then
   if test "x$enable_cargo_online_mode" = "xyes"; then
     CARGO_ONLINE=
     RUST_DL=#
+
+    # assume that the user knows what they want if CARGO_HOME is set
+    if test -z "$CARGO_HOME"; then
+      AC_MSG_WARN([Cargo online mode is enabled. Cargo will download into ~/.cargo. Set CARGO_HOME to override this. Note that relative CARGO_HOME paths are not supported by Tor's build system.])
+    fi
   else
     CARGO_ONLINE=--frozen
     RUST_DL=

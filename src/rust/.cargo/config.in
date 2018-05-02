@@ -7,3 +7,6 @@
 [build]
 @RUST_WARN@rustflags = [ "-D", "warnings" ]
 @RUST_TARGET_PROP@
+
+# not a no-op, fixes out-of-source builds
+target-dir = './target'
