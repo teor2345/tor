@@ -3,3 +3,7 @@
 
 @RUST_DL@[source.vendored-sources]
 @RUST_DL@directory = '@TOR_RUST_DEPENDENCIES@'
+
+[build]
+# not a no-op, fixes out-of-source builds
+target-dir = './target'

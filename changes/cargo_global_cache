@@ -1,0 +1,4 @@
+  o Minor features (Rust):
+    - --enable-cargo-online-mode now uses the global cargo cache instead of the
+      build directory. This is to be consistent with other Rust programs.
+      Override with CARGO_HOME.

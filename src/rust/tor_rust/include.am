@@ -5,20 +5,21 @@ EXTRA_DIST +=\
 EXTRA_CARGO_OPTIONS=
 
 src/rust/target/release/@TOR_RUST_STATIC_NAME@: FORCE
-	( cd "$(abs_top_builddir)/src/rust" ; \
-		CARGO_TARGET_DIR="$(abs_top_builddir)/src/rust/target" \
-		CARGO_HOME="$(abs_top_builddir)/src/rust" \
+	## check that CARGO_HOME is not relative (it will be interpreted
+	## relative to $abs_top_builddir/src/rust instead of $abs_top_builddir)
+	if [ -n "$$CARGO_HOME" ] && [ "$${CARGO_HOME:1:1}" != / ]; then \
+		echo "Tor's build system only supports absolute path (or unset) CARGO_HOME."; \
+	fi
+	( cd "$(abs_top_builddir)/src/rust" || exit ; \
 		$(CARGO) build --release $(EXTRA_CARGO_OPTIONS) \
-	        $(CARGO_ONLINE) \
-                --manifest-path "$(abs_top_srcdir)/src/rust/tor_rust/Cargo.toml" )
+		$(CARGO_ONLINE) \
+		--manifest-path "$(abs_top_srcdir)/src/rust/tor_rust/Cargo.toml" )
 
 distclean-rust:
-	( cd "$(abs_top_builddir)/src/rust" ; \
-		CARGO_TARGET_DIR="$(abs_top_builddir)/src/rust/target" \
-		CARGO_HOME="$(abs_top_builddir)/src/rust" \
+	( cd "$(abs_top_builddir)/src/rust" || exit ; \
 		$(CARGO) clean $(EXTRA_CARGO_OPTIONS) \
-	        $(CARGO_ONLINE) \
-                --manifest-path "$(abs_top_srcdir)/src/rust/tor_rust/Cargo.toml" )
+		$(CARGO_ONLINE) \
+		--manifest-path "$(abs_top_srcdir)/src/rust/tor_rust/Cargo.toml" )
 	rm -rf "$(abs_top_builddir)/src/rust/registry"
 
 if USE_RUST
