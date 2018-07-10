@@ -890,7 +890,7 @@ buf_set_to_copy(buf_t **output,
 /** Log an error and exit if <b>buf</b> is corrupted.
  */
 void
-buf_assert_ok(buf_t *buf)
+buf_assert_ok(const buf_t *buf)
 {
   tor_assert(buf);
   tor_assert(buf->magic == BUFFER_MAGIC);

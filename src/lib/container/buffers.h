@@ -55,7 +55,7 @@ int buf_peek_startswith(const buf_t *buf, const char *cmd);
 int buf_set_to_copy(buf_t **output,
                     const buf_t *input);
 
-void buf_assert_ok(buf_t *buf);
+void buf_assert_ok(const buf_t *buf);
 
 int buf_find_string_offset(const buf_t *buf, const char *s, size_t n);
 void buf_pullup(buf_t *buf, size_t bytes,
