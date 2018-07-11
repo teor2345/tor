@@ -96,27 +96,6 @@ struct buf_t {
   chunk_t *tail; /**< Last chunk in the list, or NULL for none. */
 };
 
-chunk_t *buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, int capped);
-/** If a read onto the end of a chunk would be smaller than this number, then
- * just start a new chunk. */
-#define MIN_READ_LEN 8
-
-/** Return the number of bytes that can be written onto <b>chunk</b> without
- * running out of space. */
-static inline size_t
-CHUNK_REMAINING_CAPACITY(const chunk_t *chunk)
-{
-  return (chunk->mem + chunk->memlen) - (chunk->data + chunk->datalen);
-}
-
-/** Return the next character in <b>chunk</b> onto which data can be appended.
- * If the chunk is full, this might be off the end of chunk->mem. */
-static inline char *
-CHUNK_WRITE_PTR(chunk_t *chunk)
-{
-  return chunk->data + chunk->datalen;
-}
-
 #endif /* defined(BUFFERS_PRIVATE) */
 
 #endif /* !defined(TOR_BUFFERS_H) */

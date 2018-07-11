@@ -110,6 +110,22 @@
   } while (0)
 #endif /* defined(DISABLE_MEMORY_SENTINELS) */
 
+/** Return the next character in <b>chunk</b> onto which data can be appended.
+ * If the chunk is full, this might be off the end of chunk->mem. */
+static inline char *
+CHUNK_WRITE_PTR(chunk_t *chunk)
+{
+  return chunk->data + chunk->datalen;
+}
+
+/** Return the number of bytes that can be written onto <b>chunk</b> without
+ * running out of space. */
+static inline size_t
+CHUNK_REMAINING_CAPACITY(const chunk_t *chunk)
+{
+  return (chunk->mem + chunk->memlen) - (chunk->data + chunk->datalen);
+}
+
 /** Move all bytes stored in <b>chunk</b> to the front of <b>chunk</b>->mem,
  * to free up space at the end. */
 static inline void
@@ -176,6 +192,9 @@ chunk_grow(chunk_t *chunk, size_t sz)
   return chunk;
 }
 
+/** If a read onto the end of a chunk would be smaller than this number, then
+ * just start a new chunk. */
+#define MIN_READ_LEN 8
 /** Every chunk should take up at least this many bytes. */
 #define MIN_CHUNK_ALLOC 256
 /** No chunk should take up more than this many bytes. */
@@ -469,7 +488,7 @@ buf_copy(const buf_t *buf)
 /** Append a new chunk with enough capacity to hold <b>capacity</b> bytes to
  * the tail of <b>buf</b>.  If <b>capped</b>, don't allocate a chunk bigger
  * than MAX_CHUNK_ALLOC. */
-chunk_t *
+static chunk_t *
 buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, int capped)
 {
   chunk_t *chunk;
