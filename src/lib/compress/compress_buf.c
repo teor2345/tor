@@ -9,7 +9,6 @@
  * \brief Working with compressed data in buffers.
  **/
 
-#define BUFFERS_PRIVATE
 #include "lib/cc/compat_compiler.h"
 #include "lib/container/buffers.h"
 #include "lib/compress/compress.h"
@@ -32,18 +31,13 @@ buf_add_compress(buf_t *buf, tor_compress_state_t *state,
                  const char *data, size_t data_len,
                  const int done)
 {
-  char *next;
+  char tmp[256], *next;
   size_t old_avail, avail;
   int over = 0;
 
   do {
-    int need_new_chunk = 0;
-    if (!buf->tail || ! CHUNK_REMAINING_CAPACITY(buf->tail)) {
-      size_t cap = data_len / 4;
-      buf_add_chunk_with_capacity(buf, cap, 1);
-    }
-    next = CHUNK_WRITE_PTR(buf->tail);
-    avail = old_avail = CHUNK_REMAINING_CAPACITY(buf->tail);
+    next = tmp;
+    avail = old_avail = sizeof tmp;
     switch (tor_compress_process(state, &next, &avail,
                                  &data, &data_len, done)) {
       case TOR_COMPRESS_DONE:
@@ -58,12 +52,6 @@ buf_add_compress(buf_t *buf, tor_compress_state_t *state,
         }
         break;
       case TOR_COMPRESS_BUFFER_FULL:
-        if (avail) {
-          /* The compression module says we need more room
-           * (TOR_COMPRESS_BUFFER_FULL).  Start a new chunk automatically,
-           * whether were going to or not. */
-          need_new_chunk = 1;
-        }
         if (data_len == 0 && !done) {
           /* We've consumed all the input data, though, so there's no
            * point in forging ahead right now. */
@@ -71,11 +59,7 @@ buf_add_compress(buf_t *buf, tor_compress_state_t *state,
         }
         break;
     }
-    buf->datalen += old_avail - avail;
-    buf->tail->datalen += old_avail - avail;
-    if (need_new_chunk) {
-      buf_add_chunk_with_capacity(buf, data_len/4, 1);
-    }
+    buf_add(buf, tmp, old_avail - avail);
 
   } while (!over);
   check();
