@@ -695,10 +695,6 @@ test_buffers_tls_read_mocked(void *arg)
   next_reply_val[0] = 1024;
   tt_int_op(128, OP_EQ, buf_read_from_tls(buf, NULL, 128));
 
-  next_reply_val[0] = 5000;
-  next_reply_val[1] = 5000;
-  tt_int_op(6000, OP_EQ, buf_read_from_tls(buf, NULL, 6000));
-
  done:
   UNMOCK(tor_tls_read);
   tor_free(mem);
