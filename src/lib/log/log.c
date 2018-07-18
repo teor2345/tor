@@ -579,7 +579,7 @@ logv,(int severity, log_domain_mask_t domain, const char *funcname,
   char *end_of_prefix=NULL;
   int callbacks_deferred = 0;
 
-  /* Call assert, not raw_assert, since raw_assert calls log on failure. */
+  /* Call assert, not tor_assert, since tor_assert calls log on failure. */
   raw_assert(format);
   /* check that severity is sane.  Overrunning the masks array leads to
    * interesting and hard to diagnose effects */
@@ -694,7 +694,7 @@ tor_log_update_sigsafe_err_fds(void)
   if (!found_real_stderr &&
       int_array_contains(fds, n_fds, STDOUT_FILENO)) {
     /* Don't use a virtual stderr when we're also logging to stdout. */
-    raw_assert(n_fds >= 2); /* Don't raw_assert inside log fns */
+    raw_assert(n_fds >= 2); /* Don't tor_assert inside log fns */
     fds[0] = fds[--n_fds];
   }
 
