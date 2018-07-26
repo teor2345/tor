@@ -65,7 +65,7 @@ env:
     ## We want to use each build option at least once
     ##
     ## We don't list default variable values, because we set the defaults
-    ## before_install
+    ## in global (or the default is unset)
     -
     ## We turn off hardening for Rust builds, because they are incompatible,
     ## and it's going to take a while for them to be fixed. See:
@@ -107,15 +107,6 @@ matrix:
       sudo: required
 
 before_install:
-  ## The Travis CI environment allows us two cores, so let's use both.
-  - export MAKEFLAGS="-j 2"
-  ## Set sensible default environmental variables
-  - if [[ -z "$COVERAGE_OPTIONS" ]]; then export COVERAGE_OPTIONS=""; fi
-  - if [[ -z "$RUST_OPTIONS" ]]; then export RUST_OPTIONS=""; fi
-  ## TOR_RUST_DEPENDENCIES defaults to unset
-  - if [[ -z "$HARDENING_OPTIONS" ]]; then export HARDENING_OPTIONS=""; fi
-  - if [[ -z "$DISTCHECK" ]]; then export DISTCHECK=""; fi
-  - if [[ -z "$MODULES_OPTIONS" ]]; then export MODULES_OPTIONS=""; fi
   ## If we're on OSX, homebrew usually needs to updated first
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   ## Download rustup
