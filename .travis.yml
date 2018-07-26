@@ -59,8 +59,6 @@ addons:
 ##  * with Clang, without Rust
 env:
   global:
-    ## The Travis CI environment allows us two cores, so let's use both.
-    - MAKEFLAGS="-j 2"
     - HARDENING_OPTIONS="--enable-fragile-hardening"
   matrix:
     ## Leave at least one entry here or Travis seems to generate a
@@ -132,6 +130,8 @@ matrix:
       env: MODULES_OPTIONS="--disable-module-dirauth"
 
 before_install:
+  ## The Travis CI environment allows us two cores, so let's use both.
+  - export MAKEFLAGS="-j 2"
   ## If we're on OSX, homebrew usually needs to updated first
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   ## Download rustup
