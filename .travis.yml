@@ -1,10 +1,8 @@
 language: c
 
-## Comment out the compiler list for now to allow an explicit build
-## matrix.
-# compiler:
-#   - gcc
-#   - clang
+compiler:
+  - gcc
+  - clang
 
 notifications:
   irc:
@@ -28,13 +26,19 @@ os:
 ## Use the Ubuntu Trusty images.
 dist: trusty
 
-## We don't need sudo. (The "apt:" stanza after this allows us to not need sudo;
-## otherwise, we would need it for getting dependencies.)
+## We don't need sudo. (The "apt:" stanza after this allows us to not need
+## sudo; otherwise, we would need it for getting dependencies.)
 ##
-## We override this in the explicit build matrix to work around a
-## Travis CI environment regression
+## But we use "sudo: required" to force non-containerized builds, working
+## around a Travis CI environment issue: clang LeakAnalyzer fails
+## because it requires ptrace and the containerized environment no
+## longer allows ptrace.
 ## https://github.com/travis-ci/travis-ci/issues/9033
-sudo: false
+##
+## Later, in the matrix, we exclude redundant combinations.
+sudo:
+  - false
+  - required
 
 ## (Linux only) Download our dependencies
 addons:
@@ -51,27 +55,39 @@ addons:
       ## zstd doesn't exist in Ubuntu Trusty
       #- libzstd
 
-## The build matrix in the following two stanzas expands into four builds (per OS):
-##
-##  * with GCC, with Rust
-##  * with GCC, without Rust
-##  * with Clang, with Rust
-##  * with Clang, without Rust
+## The build matrix in the following stanza expands into builds for each
+## OS and compiler.
 env:
   global:
     ## The Travis CI environment allows us two cores, so let's use both.
     - MAKEFLAGS="-j 2"
+    ## We turn on hardening by default
     - HARDENING_OPTIONS="--enable-fragile-hardening"
   matrix:
-    ## Leave at least one entry here or Travis seems to generate a
-    ## matrix entry with empty matrix environment variables.  Leaving
-    ## more than one entry causes unwanted matrix entries with
-    ## unspecified compilers.
-    - RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    # - RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    # - RUST_OPTIONS=""
+    ## We want to use each build option at least once
+    ##
+    ## We don't list default variable values, because we set the defaults
+    ## before_install
+    -
+    - HARDENING_OPTIONS=""
+    - DISTCHECK="yes"
+    - MODULES_OPTIONS="--disable-module-dirauth"
+    ## We turn off hardening for Rust builds, because they are incompatible,
+    ## and it's going to take a while for them to be fixed. See:
+    ##   https:/trac.torproject.org/projects/tor/ticket/25386
+    ##   https:/trac.torproject.org/projects/tor/ticket/26398
+    - RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
 
 matrix:
+  ## include creates builds with gcc, linux, sudo: false
+  include:
+    ## We include a single coverage build with the best options for coverage
+    - env: COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
+    ## We also want to check these common build option combinations on gcc
+    - env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
+    - env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
+    - env: MODULES_OPTIONS="--disable-module-dirauth" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
+
   ## Uncomment to allow the build to report success (with non-required
   ## sub-builds continuing to run) if all required sub-builds have
   ## succeeded.  This is somewhat buggy currently: it can cause
@@ -80,58 +96,27 @@ matrix:
   ## https://github.com/travis-ci/travis-ci/issues/1696
   # fast_finish: true
 
-  ## Uncomment the appropriate lines below to allow the build to
-  ## report success even if some less-critical sub-builds fail and it
-  ## seems likely to take a while for someone to fix it.  Currently
-  ## Travis CI doesn't distinguish "all builds succeeded" from "some
-  ## non-required sub-builds failed" except on the individual build's
-  ## page, which makes it somewhat annoying to detect from the
-  ## branches and build history pages.  See
-  ## https://github.com/travis-ci/travis-ci/issues/8716
-  allow_failures:
-    - env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - env: RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    - env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    # - compiler: clang
-
-  ## Create explicit matrix entries to work around a Travis CI
-  ## environment issue.  Missing keys inherit from the first list
-  ## entry under that key outside the "include" clause.
-  include:
-    - compiler: gcc
-    - compiler: gcc
-      env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: gcc
-      env: RUST_OPTIONS=""
-    - compiler: gcc
-      env: COVERAGE_OPTIONS="--enable-coverage"
-    - compiler: gcc
-      env: DISTCHECK="yes" RUST_OPTIONS=""
-    - compiler: gcc
-      env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    - compiler: gcc
-      env: MODULES_OPTIONS="--disable-module-dirauth"
-    - compiler: gcc
-      env: HARDENING_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: gcc
-      env: DISTCHECK="yes" HARDENING_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    ## The "sudo: required" forces non-containerized builds, working
-    ## around a Travis CI environment issue: clang LeakAnalyzer fails
-    ## because it requires ptrace and the containerized environment no
-    ## longer allows ptrace.
+  ## Careful! We use global envs, which makes it hard to exclude or
+  ## allow failures by env:
+  ## https://docs.travis-ci.com/user/customizing-the-build#matching-jobs-with-allow_failures
+  exclude:
+    ## Clang doesn't work in containerized builds, see above.
     - compiler: clang
+      sudo: false
+    ## We also exclude non-containerized gcc, because they're slow.
+    - compiler: gcc
       sudo: required
-    - compiler: clang
-      sudo: required
-      env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: clang
-      sudo: required
-      env: RUST_OPTIONS=""
-    - compiler: clang
-      sudo: required
-      env: MODULES_OPTIONS="--disable-module-dirauth"
 
 before_install:
+  ## The Travis CI environment allows us two cores, so let's use both.
+  - export MAKEFLAGS="-j 2"
+  ## Set sensible default environmental variables
+  - if [[ -z "$COVERAGE_OPTIONS" ]]; then export COVERAGE_OPTIONS=""; fi
+  - if [[ -z "$RUST_OPTIONS" ]]; then export RUST_OPTIONS=""; fi
+  ## TOR_RUST_DEPENDENCIES defaults to unset
+  - if [[ -z "$HARDENING_OPTIONS" ]]; then export HARDENING_OPTIONS=""; fi
+  - if [[ -z "$DISTCHECK" ]]; then export DISTCHECK=""; fi
+  - if [[ -z "$MODULES_OPTIONS" ]]; then export MODULES_OPTIONS=""; fi
   ## If we're on OSX, homebrew usually needs to updated first
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   ## Download rustup
