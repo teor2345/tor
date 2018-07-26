@@ -19,11 +19,9 @@ notifications:
 
 os:
   - linux
-  ## Uncomment the following line to also run the entire build matrix on OSX.
-  ## This will make your CI builds take roughly ten times longer to finish.
-  # - osx
+  - osx
 
-## Use the Ubuntu Trusty images.
+## (Linux only) Use the Ubuntu Trusty images
 dist: trusty
 
 ## We don't need sudo. (The "apt:" stanza after this allows us to not need
@@ -65,8 +63,6 @@ env:
     ## before_install
     -
     - HARDENING_OPTIONS=""
-    - DISTCHECK="yes"
-    - MODULES_OPTIONS="--disable-module-dirauth"
     ## We turn off hardening for Rust builds, because they are incompatible,
     ## and it's going to take a while for them to be fixed. See:
     ##   https:/trac.torproject.org/projects/tor/ticket/25386
@@ -78,7 +74,10 @@ matrix:
   include:
     ## We include a single coverage build with the best options for coverage
     - env: COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
-    ## We also want to check these common build option combinations on gcc
+    ## We only want to check these rarer build option combinations once
+    ## (they shouldn't vary by compiler or OS)
+    - env: DISTCHECK="yes"
+    - env: MODULES_OPTIONS="--disable-module-dirauth"
     - env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
     - env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
     - env: MODULES_OPTIONS="--disable-module-dirauth" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
@@ -117,6 +116,7 @@ before_install:
 
 install:
   ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated zlib       || brew upgrade zlib;       }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated openssl    || brew upgrade openssl;    }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated libevent   || brew upgrade libevent;   }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated pkg-config || brew upgrade pkg-config; }; fi
