@@ -1,10 +1,8 @@
 language: c
 
-## Comment out the compiler list for now to allow an explicit build
-## matrix.
-# compiler:
-#   - gcc
-#   - clang
+compiler:
+  - gcc
+  - clang
 
 notifications:
   irc:
@@ -28,13 +26,19 @@ os:
 ## Use the Ubuntu Trusty images.
 dist: trusty
 
-## We don't need sudo. (The "apt:" stanza after this allows us to not need sudo;
-## otherwise, we would need it for getting dependencies.)
+## We don't need sudo. (The "apt:" stanza after this allows us to not need
+## sudo; otherwise, we would need it for getting dependencies.)
 ##
-## We override this in the explicit build matrix to work around a
-## Travis CI environment regression
+## But we use "sudo: required" to force non-containerized builds, working
+## around a Travis CI environment issue: clang LeakAnalyzer fails
+## because it requires ptrace and the containerized environment no
+## longer allows ptrace.
 ## https://github.com/travis-ci/travis-ci/issues/9033
-sudo: false
+##
+## Later, in the matrix, we exclude redundant combinations.
+sudo:
+  - false
+  - required
 
 ## (Linux only) Download our dependencies
 addons:
@@ -51,27 +55,63 @@ addons:
       ## zstd doesn't exist in Ubuntu Trusty
       #- libzstd
 
-## The build matrix in the following two stanzas expands into four builds (per OS):
-##
-##  * with GCC, with Rust
-##  * with GCC, without Rust
-##  * with Clang, with Rust
-##  * with Clang, without Rust
+## The build matrix in the following two stanzas expands into builds for each
+## OS and compiler.
 env:
   global:
     ## The Travis CI environment allows us two cores, so let's use both.
     - MAKEFLAGS="-j 2"
-    - HARDENING_OPTIONS="--enable-fragile-hardening"
   matrix:
-    ## Leave at least one entry here or Travis seems to generate a
-    ## matrix entry with empty matrix environment variables.  Leaving
-    ## more than one entry causes unwanted matrix entries with
-    ## unspecified compilers.
-    - RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    # - RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    # - RUST_OPTIONS=""
+    ## Unfortunately, we have to expand env combinations ourselves
+    ##
+    ## Some options get special handling:
+    ## - We create a single coverage build with the best coverage
+    ## - Hardening and Rust are incompatible, and it's going to take a while
+    ##   for them to be fixed. See:
+    ##     https:/trac.torproject.org/projects/tor/ticket/25386
+    ##     https:/trac.torproject.org/projects/tor/ticket/26398
+    ##
+    ## To generate this list, run "sed 's/    ##  //' | python" on:
+    ##  for c in ['COVERAGE_OPTIONS=""', 'COVERAGE_OPTIONS="--enable-coverage"']:
+    ##    for r in ['RUST_OPTIONS=""', 'RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"', 'RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true']:
+    ##      for h in ['HARDENING_OPTIONS=""', 'HARDENING_OPTIONS="--enable-fragile-hardening"']:
+    ##        for d in ['DISTCHECK=""', 'DISTCHECK="yes"']:
+    ##          for m in ['MODULES_OPTIONS=""', 'MODULES_OPTIONS="--disable-module-dirauth"']:
+    ##            is_coverage = (c == 'COVERAGE_OPTIONS="--enable-coverage"')
+    ##            best_coverage = (h == 'HARDENING_OPTIONS=""' and d == 'DISTCHECK=""' and m == 'MODULES_OPTIONS=""' and r == 'RUST_OPTIONS=""')
+    ##            failing_rust = (h == 'HARDENING_OPTIONS="--enable-fragile-hardening"' and r != 'RUST_OPTIONS=""')
+    ##            if is_coverage and best_coverage:
+    ##              print('')
+    ##              print('matrix:')
+    ##              print('  include:')
+    ##              print('    - env:', c, r, h, d, m)
+    ##            elif not is_coverage and not failing_rust:
+    ##              print('    -', c, r, h, d, m)
+    ##
+
+## Start of generated section
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="--enable-fragile-hardening" DISTCHECK="" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="--enable-fragile-hardening" DISTCHECK="" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="--enable-fragile-hardening" DISTCHECK="yes" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="" HARDENING_OPTIONS="--enable-fragile-hardening" DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS="--disable-module-dirauth"
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS=""
+    - COVERAGE_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS="" DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
 
 matrix:
+  include:
+    - env: COVERAGE_OPTIONS="--enable-coverage" RUST_OPTIONS="" HARDENING_OPTIONS="" DISTCHECK="" MODULES_OPTIONS=""
+## End of generated section
+
   ## Uncomment to allow the build to report success (with non-required
   ## sub-builds continuing to run) if all required sub-builds have
   ## succeeded.  This is somewhat buggy currently: it can cause
@@ -80,56 +120,13 @@ matrix:
   ## https://github.com/travis-ci/travis-ci/issues/1696
   # fast_finish: true
 
-  ## Uncomment the appropriate lines below to allow the build to
-  ## report success even if some less-critical sub-builds fail and it
-  ## seems likely to take a while for someone to fix it.  Currently
-  ## Travis CI doesn't distinguish "all builds succeeded" from "some
-  ## non-required sub-builds failed" except on the individual build's
-  ## page, which makes it somewhat annoying to detect from the
-  ## branches and build history pages.  See
-  ## https://github.com/travis-ci/travis-ci/issues/8716
-  allow_failures:
-    - env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - env: RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    - env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    # - compiler: clang
-
-  ## Create explicit matrix entries to work around a Travis CI
-  ## environment issue.  Missing keys inherit from the first list
-  ## entry under that key outside the "include" clause.
-  include:
-    - compiler: gcc
-    - compiler: gcc
-      env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: gcc
-      env: RUST_OPTIONS=""
-    - compiler: gcc
-      env: COVERAGE_OPTIONS="--enable-coverage"
-    - compiler: gcc
-      env: DISTCHECK="yes" RUST_OPTIONS=""
-    - compiler: gcc
-      env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    - compiler: gcc
-      env: MODULES_OPTIONS="--disable-module-dirauth"
-    - compiler: gcc
-      env: HARDENING_OPTIONS="" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: gcc
-      env: DISTCHECK="yes" HARDENING_OPTIONS="" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    ## The "sudo: required" forces non-containerized builds, working
-    ## around a Travis CI environment issue: clang LeakAnalyzer fails
-    ## because it requires ptrace and the containerized environment no
-    ## longer allows ptrace.
+  ## Clang doesn't work in containerized builds, see above.
+  ## We also exclude non-containerized gcc, because they're slow.
+  exclude:
     - compiler: clang
+      sudo: false
+    - compiler: gcc
       sudo: required
-    - compiler: clang
-      sudo: required
-      env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    - compiler: clang
-      sudo: required
-      env: RUST_OPTIONS=""
-    - compiler: clang
-      sudo: required
-      env: MODULES_OPTIONS="--disable-module-dirauth"
 
 before_install:
   ## If we're on OSX, homebrew usually needs to updated first
