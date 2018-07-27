@@ -118,8 +118,10 @@ install:
   - if [[ "$RUST_OPTIONS" != "" ]]; then sh rustup.sh -y --default-toolchain stable; fi
   - if [[ "$RUST_OPTIONS" != "" ]]; then source $HOME/.cargo/env; fi
   ## Get some info about rustc and cargo
+  - if [[ "$RUST_OPTIONS" != "" ]]; then which rustup; fi
   - if [[ "$RUST_OPTIONS" != "" ]]; then which rustc; fi
   - if [[ "$RUST_OPTIONS" != "" ]]; then which cargo; fi
+  - if [[ "$RUST_OPTIONS" != "" ]]; then rustup --version; fi
   - if [[ "$RUST_OPTIONS" != "" ]]; then rustc --version; fi
   - if [[ "$RUST_OPTIONS" != "" ]]; then cargo --version; fi
   ## If we're testing rust builds in offline-mode, then set up our vendored dependencies
@@ -133,6 +135,8 @@ script:
   - if [[ "$DISTCHECK" != "" ]]; then make distcheck DISTCHECK_CONFIGURE_FLAGS="$RUST_OPTIONS $COVERAGE_OPTIONS --disable-asciidoc --enable-fatal-warnings --disable-silent-rules $HARDENING_OPTIONS"; fi
 
 after_failure:
+  ## configure will leave a log file with more details of config failures.
+  - cat config.log
   ## `make check` will leave a log file with more details of test failures.
   - if [[ "$DISTCHECK" == "" ]]; then cat test-suite.log; fi
   ## `make distcheck` puts it somewhere different.
