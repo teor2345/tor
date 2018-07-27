@@ -1,5 +1,12 @@
 language: c
 
+cache:
+  ccache: true
+  ## cargo: true
+  directories:
+    - $HOME/.cargo
+    - $TRAVIS_BUILD_DIR/target
+
 compiler:
   - gcc
   - clang
@@ -80,6 +87,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   ## Download rustup
   - if [[ "$RUST_OPTIONS" != "" ]]; then curl -Ssf -o rustup.sh https://sh.rustup.rs; fi
+  ## Create empty rust directories for non-Rust builds, so caching succeeds
+  - if [[ "$RUST_OPTIONS" == "" ]]; then mkdir -p $HOME/.cargo $TRAVIS_BUILD_DIR/target; fi
+  ## Install coveralls
   - if [[ "$COVERAGE_OPTIONS" != "" ]]; then pip install --user cpp-coveralls; fi
 
 ## (Linux only) Use the latest Linux image (Ubuntu Trusty)
@@ -105,6 +115,9 @@ addons:
 #osx_image: xcode8.3
 
 install:
+  ## If we're on OSX use brew to install ccache (ccache is automatically installed on Linux)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated ccache     || brew upgrade ccache;     }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { export PATH="/usr/local/opt/ccache/libexec:$PATH";   }; fi
   ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated zlib       || brew upgrade zlib;       }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated openssl    || brew upgrade openssl;    }; fi
