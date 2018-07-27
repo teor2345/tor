@@ -4,54 +4,9 @@ compiler:
   - gcc
   - clang
 
-notifications:
-  irc:
-    channels:
-      - "irc.oftc.net#tor-ci"
-    template:
-      - "%{repository} %{branch} %{commit} - %{author}: %{commit_subject}"
-      - "Build #%{build_number} %{result}. Details: %{build_url}"
-    on_success: change
-    on_failure: change
-  email:
-    on_success: never
-    on_failure: change
-
 os:
   - linux
   - osx
-
-## (Linux only) Use the Ubuntu Trusty images
-dist: trusty
-
-## We don't need sudo. (The "apt:" stanza after this allows us to not need
-## sudo; otherwise, we would need it for getting dependencies.)
-##
-## But we use "sudo: required" to force non-containerized builds, working
-## around a Travis CI environment issue: clang LeakAnalyzer fails
-## because it requires ptrace and the containerized environment no
-## longer allows ptrace.
-## https://github.com/travis-ci/travis-ci/issues/9033
-##
-## Later, in the matrix, we exclude redundant combinations.
-sudo:
-  - false
-  - required
-
-## (Linux only) Download our dependencies
-addons:
-  apt:
-    packages:
-      ## Required dependencies
-      - libevent-dev
-      - zlib1g-dev
-      ## Optional dependencies
-      - libcap-dev
-      - liblzma-dev
-      - libscrypt-dev
-      - libseccomp-dev
-      ## zstd doesn't exist in Ubuntu Trusty
-      #- libzstd
 
 ## The build matrix in the following stanza expands into builds for each
 ## OS and compiler.
@@ -99,12 +54,26 @@ matrix:
   ## allow failures by env:
   ## https://docs.travis-ci.com/user/customizing-the-build#matching-jobs-with-allow_failures
   exclude:
-    ## Clang doesn't work in containerized builds, see above.
+    ## Clang doesn't work in containerized builds, see below.
     - compiler: clang
       sudo: false
-    ## We also exclude non-containerized gcc, because they're slow.
+    ## We also exclude non-containerized gcc, because they're slow and redundant.
     - compiler: gcc
       sudo: required
+
+## We don't need sudo. (The "apt:" stanza after this allows us to not need
+## sudo; otherwise, we would need it for getting dependencies.)
+##
+## But we use "sudo: required" to force non-containerized builds, working
+## around a Travis CI environment issue: clang LeakAnalyzer fails
+## because it requires ptrace and the containerized environment no
+## longer allows ptrace.
+## https://github.com/travis-ci/travis-ci/issues/9033
+##
+## In the matrix above, we exclude redundant combinations.
+sudo:
+  - false
+  - required
 
 before_install:
   ## If we're on OSX, homebrew usually needs to updated first
@@ -112,6 +81,28 @@ before_install:
   ## Download rustup
   - if [[ "$RUST_OPTIONS" != "" ]]; then curl -Ssf -o rustup.sh https://sh.rustup.rs; fi
   - if [[ "$COVERAGE_OPTIONS" != "" ]]; then pip install --user cpp-coveralls; fi
+
+## (Linux only) Use the latest Linux image (Ubuntu Trusty)
+dist: trusty
+
+## (Linux only) Download our dependencies
+addons:
+  apt:
+    packages:
+      ## Required dependencies
+      - libevent-dev
+      - zlib1g-dev
+      ## Optional dependencies
+      - libcap-dev
+      - liblzma-dev
+      - libscrypt-dev
+      - libseccomp-dev
+      ## zstd doesn't exist in Ubuntu Trusty
+      #- libzstd
+
+## (OSX only) Use the default OS X image
+## See https://docs.travis-ci.com/user/reference/osx#os-x-version
+#osx_image: xcode8.3
 
 install:
   ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
@@ -150,3 +141,16 @@ after_failure:
 after_success:
   ## If this build was one that produced coverage, upload it.
   - if [[ "$COVERAGE_OPTIONS" != "" ]]; then coveralls -b . --exclude src/test --exclude src/trunnel --gcov-options '\-p'; fi
+
+notifications:
+  irc:
+    channels:
+      - "irc.oftc.net#tor-ci"
+    template:
+      - "%{repository} %{branch} %{commit} - %{author}: %{commit_subject}"
+      - "Build #%{build_number} %{result}. Details: %{build_url}"
+    on_success: change
+    on_failure: change
+  email:
+    on_success: never
+    on_failure: change
