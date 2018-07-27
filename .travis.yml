@@ -1,5 +1,7 @@
 language: c
 
+cache: ccache
+
 compiler:
   - gcc
   - clang
@@ -101,6 +103,9 @@ addons:
       #- libzstd
 
 install:
+  ## If we're on OSX use brew to install ccache (ccache is automatically installed on Linux)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated ccache     || brew upgrade ccache;     }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { export PATH="/usr/local/opt/ccache/libexec:$PATH";   }; fi
   ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated zlib       || brew upgrade zlib;       }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated openssl    || brew upgrade openssl;    }; fi
