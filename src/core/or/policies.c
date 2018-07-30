@@ -30,6 +30,7 @@
 #include "feature/stats/geoip.h"
 #include "ht.h"
 #include "lib/encoding/confline.h"
+#include "trunnel/ed25519_cert.h"
 
 #include "core/or/addr_policy_st.h"
 #include "feature/dirclient/dir_server_st.h"
@@ -990,6 +991,60 @@ fascist_firewall_choose_address_rs(const routerstatus_t *rs,
   }
 }
 
+/** Like fascist_firewall_choose_address_base(), but takes in a smartlist
+ * <b>lspecs</b> consisting of a link specifier.
+ */
+void
+fascist_firewall_choose_address_ls(const smartlist_t *lspecs,
+                                   firewall_connection_t fw_connection,
+                                   int pref_only, tor_addr_port_t* ap)
+{
+  int have_v4 = 0, have_v6 = 0;
+  uint16_t port_v4 = 0, port_v6 = 0;
+  tor_addr_t addr_v4, addr_v6;
+
+  SMARTLIST_FOREACH_BEGIN(lspecs, const link_specifier_t *, ls) {
+    switch (link_specifier_get_ls_type(ls)) {
+    case LS_IPV4:
+      /* Skip if we already seen a v4. */
+      if (have_v4) continue;
+      tor_addr_from_ipv4h(&addr_v4,
+                          link_specifier_get_un_ipv4_addr(ls));
+      port_v4 = link_specifier_get_un_ipv4_port(ls);
+      have_v4 = 1;
+      break;
+    case LS_IPV6:
+      /* Skip if we already seen a v6. */
+      if (have_v6) continue;
+      tor_addr_from_ipv6_bytes(&addr_v6,
+          (const char *) link_specifier_getconstarray_un_ipv6_addr(ls));
+      port_v6 = link_specifier_get_un_ipv6_port(ls);
+      have_v6 = 1;
+      break;
+    default:
+      /* Ignore unknown. */
+      break;
+    }
+  } SMARTLIST_FOREACH_END(ls);
+
+  tor_assert(ap);
+
+  tor_addr_make_null(&ap->addr, AF_UNSPEC);
+  ap->port = 0;
+
+  /* Here, don't check for IPv6 DirPorts when checking whether we prefer IPv6
+   * as they're not used. */
+  const or_options_t *options = get_options();
+  int pref_ipv6 = fascist_firewall_prefer_ipv6_orport(options);
+
+  /* Assume that the DirPorts are zero as link specifiers only use ORPorts. */
+  fascist_firewall_choose_address_base(&addr_v4, port_v4, 0,
+                                       &addr_v6, port_v6, 0,
+                                       fw_connection,
+                                       pref_only, pref_ipv6,
+                                       ap);
+}
+
 /** Like fascist_firewall_choose_address_base(), but takes <b>node</b>, and
  * looks up the node's IPv6 preference rather than taking an argument
  * for pref_ipv6. */
@@ -1066,6 +1121,8 @@ fascist_firewall_choose_address_dir_server(const dir_server_t *ds,
   fascist_firewall_choose_address_rs(&ds->fake_status, fw_connection,
                                      pref_only, ap);
 }
+
+
 
 /** Return 1 if <b>addr</b> is permitted to connect to our dir port,
  * based on <b>dir_policy</b>. Else return 0.
