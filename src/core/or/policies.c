@@ -1122,8 +1122,6 @@ fascist_firewall_choose_address_dir_server(const dir_server_t *ds,
                                      pref_only, ap);
 }
 
-
-
 /** Return 1 if <b>addr</b> is permitted to connect to our dir port,
  * based on <b>dir_policy</b>. Else return 0.
  */
