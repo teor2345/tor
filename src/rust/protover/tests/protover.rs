@@ -134,7 +134,7 @@ fn protocol_all_supported_with_mix_of_supported_and_unsupproted() {
 fn protover_string_supports_protocol_returns_true_for_single_supported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4 Cons=1".parse().unwrap();
     let is_supported =
-        protocols.supports_protocol(&protover::Protocol::Cons.into(), &1);
+        protocols.supports_protocol(&protover::Protocol::Cons.into(), 1);
     assert_eq!(true, is_supported);
 }
 
@@ -142,7 +142,7 @@ fn protover_string_supports_protocol_returns_true_for_single_supported() {
 fn protover_string_supports_protocol_returns_false_for_single_unsupported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4 Cons=1".parse().unwrap();
     let is_supported =
-        protocols.supports_protocol(&protover::Protocol::Cons.into(), &2);
+        protocols.supports_protocol(&protover::Protocol::Cons.into(), 2);
     assert_eq!(false, is_supported);
 }
 
@@ -150,7 +150,7 @@ fn protover_string_supports_protocol_returns_false_for_single_unsupported() {
 fn protover_string_supports_protocol_returns_false_for_unsupported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4".parse().unwrap();
     let is_supported =
-        protocols.supports_protocol(&protover::Protocol::Cons.into(), &2);
+        protocols.supports_protocol(&protover::Protocol::Cons.into(), 2);
     assert_eq!(false, is_supported);
 }
 
@@ -164,14 +164,14 @@ fn parse_protocol_with_unexpected_characters() {
 #[should_panic]
 fn protover_compute_vote_returns_empty_for_empty_string() {
     let protocols: &[UnvalidatedProtoEntry] = &["".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("", listed.to_string());
 }
 
 #[test]
 fn protover_compute_vote_returns_single_protocol_for_matching() {
     let protocols: &[UnvalidatedProtoEntry] = &["Cons=1".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("Cons=1", listed.to_string());
 }
 
@@ -179,7 +179,7 @@ fn protover_compute_vote_returns_single_protocol_for_matching() {
 fn protover_compute_vote_returns_two_protocols_for_two_matching() {
     let protocols: &[UnvalidatedProtoEntry] =
         &["Link=1 Cons=1".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("Cons=1 Link=1", listed.to_string());
 }
 
@@ -187,7 +187,7 @@ fn protover_compute_vote_returns_two_protocols_for_two_matching() {
 fn protover_compute_vote_returns_one_protocol_when_one_out_of_two_matches() {
     let protocols: &[UnvalidatedProtoEntry] =
         &["Cons=1 Link=2".parse().unwrap(), "Cons=1".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &2);
+    let listed = ProtoverVote::compute(protocols, 2);
     assert_eq!("Cons=1", listed.to_string());
 }
 
@@ -195,7 +195,7 @@ fn protover_compute_vote_returns_one_protocol_when_one_out_of_two_matches() {
 fn protover_compute_vote_returns_protocols_that_it_doesnt_currently_support() {
     let protocols: &[UnvalidatedProtoEntry] =
         &["Foo=1 Cons=2".parse().unwrap(), "Bar=1".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("Bar=1 Cons=2 Foo=1", listed.to_string());
 }
 
@@ -203,7 +203,7 @@ fn protover_compute_vote_returns_protocols_that_it_doesnt_currently_support() {
 fn protover_compute_vote_returns_matching_for_mix() {
     let protocols: &[UnvalidatedProtoEntry] =
         &["Link=1-10,500 Cons=1,3-7,8".parse().unwrap()];
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("Cons=1,3-8 Link=1-10,500", listed.to_string());
 }
 
@@ -214,7 +214,7 @@ fn protover_compute_vote_returns_matching_for_longer_mix() {
         "Link=123-456,78 Cons=2-6,8 Desc=9".parse().unwrap(),
     ];
 
-    let listed = ProtoverVote::compute(protocols, &1);
+    let listed = ProtoverVote::compute(protocols, 1);
     assert_eq!("Cons=1-8 Desc=1-10,500 Link=78,123-456", listed.to_string());
 }
 
@@ -225,7 +225,7 @@ fn protover_compute_vote_returns_matching_for_longer_mix_with_threshold_two() {
         "Link=123-456,78 Cons=2-6,8 Desc=9".parse().unwrap(),
     ];
 
-    let listed = ProtoverVote::compute(protocols, &2);
+    let listed = ProtoverVote::compute(protocols, 2);
     assert_eq!("Cons=3-6,8 Desc=9", listed.to_string());
 }
 
@@ -233,11 +233,11 @@ fn protover_compute_vote_returns_matching_for_longer_mix_with_threshold_two() {
 fn protover_compute_vote_handles_duplicated_versions() {
     let protocols: &[UnvalidatedProtoEntry] =
         &["Cons=1".parse().unwrap(), "Cons=1".parse().unwrap()];
-    assert_eq!("Cons=1", ProtoverVote::compute(protocols, &2).to_string());
+    assert_eq!("Cons=1", ProtoverVote::compute(protocols, 2).to_string());
 
     let protocols: &[UnvalidatedProtoEntry] =
         &["Cons=1-2".parse().unwrap(), "Cons=1-2".parse().unwrap()];
-    assert_eq!("Cons=1-2", ProtoverVote::compute(protocols, &2).to_string());
+    assert_eq!("Cons=1-2", ProtoverVote::compute(protocols, 2).to_string());
 }
 
 #[test]
@@ -247,7 +247,7 @@ fn protover_compute_vote_handles_invalid_proto_entries() {
         "Cons=1".parse().unwrap(),
         "Dinosaur=1".parse().unwrap(),
     ];
-    assert_eq!("Cons=1", ProtoverVote::compute(protocols, &2).to_string());
+    assert_eq!("Cons=1", ProtoverVote::compute(protocols, 2).to_string());
 }
 
 #[test]
@@ -259,7 +259,7 @@ fn parse_protocol_with_single_protocol_and_two_nonsequential_versions() {
 fn protover_is_supported_here_returns_true_for_supported_protocol() {
     assert_eq!(
         true,
-        protover::is_supported_here(&protover::Protocol::Cons, &1)
+        protover::is_supported_here(&protover::Protocol::Cons, 1)
     );
 }
 
@@ -267,7 +267,7 @@ fn protover_is_supported_here_returns_true_for_supported_protocol() {
 fn protover_is_supported_here_returns_false_for_unsupported_protocol() {
     assert_eq!(
         false,
-        protover::is_supported_here(&protover::Protocol::Cons, &5)
+        protover::is_supported_here(&protover::Protocol::Cons, 5)
     );
 }
 
@@ -336,7 +336,7 @@ fn protover_compute_vote_may_exceed_limit() {
     let proto2: UnvalidatedProtoEntry = "Sleen=100000".parse().unwrap();
 
     let _result: UnvalidatedProtoEntry =
-        ProtoverVote::compute(&[proto1, proto2], &1);
+        ProtoverVote::compute(&[proto1, proto2], 1);
 }
 
 #[test]

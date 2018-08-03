@@ -20,7 +20,7 @@ use protoset::Version;
 ///
 /// C_RUST_COUPLED:
 ///     protover.h `FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS`
-const FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS: &'static str = "0.2.9.3-alpha";
+const FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS: &str = "0.2.9.3-alpha";
 
 /// The maximum number of subprotocol version numbers we will attempt to expand
 /// before concluding that someone is trying to DoS us
@@ -368,7 +368,7 @@ impl UnvalidatedProtoEntry {
                 supported_versions = maybe_supported_versions.unwrap();
             }
             unsupported_versions = versions.clone();
-            unsupported_versions.retain(|x| !supported_versions.contains(x));
+            unsupported_versions.retain(|&x| !supported_versions.contains(x));
 
             if !unsupported_versions.is_empty() {
                 unsupported.insert(protocol.clone(), unsupported_versions);
@@ -403,22 +403,22 @@ impl UnvalidatedProtoEntry {
     ///
     /// # fn do_test () -> Result<UnvalidatedProtoEntry, ProtoverError> {
     /// let proto: UnvalidatedProtoEntry = "Link=3-4 Cons=1 Doggo=3-5".parse()?;
-    /// assert_eq!(true, proto.supports_protocol(&Protocol::Cons.into(), &1));
-    /// assert_eq!(false, proto.supports_protocol(&Protocol::Cons.into(), &5));
-    /// assert_eq!(true, proto.supports_protocol(&UnknownProtocol::from_str("Doggo")?, &4));
+    /// assert_eq!(true, proto.supports_protocol(&Protocol::Cons.into(), 1));
+    /// assert_eq!(false, proto.supports_protocol(&Protocol::Cons.into(), 5));
+    /// assert_eq!(true, proto.supports_protocol(&UnknownProtocol::from_str("Doggo")?, 4));
     /// # Ok(proto)
     /// # } fn main () { do_test(); }
     /// ```
     pub fn supports_protocol(
         &self,
         proto: &UnknownProtocol,
-        vers: &Version,
+        vers: Version,
     ) -> bool {
         let supported_versions: &ProtoSet = match self.get(proto) {
             Some(n) => n,
             None => return false,
         };
-        supported_versions.contains(&vers)
+        supported_versions.contains(vers)
     }
 
     /// As `UnvalidatedProtoEntry::supports_protocol()`, but also returns `true`
@@ -432,22 +432,22 @@ impl UnvalidatedProtoEntry {
     /// # fn do_test () -> Result<UnvalidatedProtoEntry, ProtoverError> {
     /// let proto: UnvalidatedProtoEntry = "Link=3-4 Cons=5".parse()?;
     ///
-    /// assert_eq!(true, proto.supports_protocol_or_later(&Protocol::Cons.into(), &5));
-    /// assert_eq!(true, proto.supports_protocol_or_later(&Protocol::Cons.into(), &4));
-    /// assert_eq!(false, proto.supports_protocol_or_later(&Protocol::Cons.into(), &6));
+    /// assert_eq!(true, proto.supports_protocol_or_later(&Protocol::Cons.into(), 5));
+    /// assert_eq!(true, proto.supports_protocol_or_later(&Protocol::Cons.into(), 4));
+    /// assert_eq!(false, proto.supports_protocol_or_later(&Protocol::Cons.into(), 6));
     /// # Ok(proto)
     /// # } fn main () { do_test(); }
     /// ```
     pub fn supports_protocol_or_later(
         &self,
         proto: &UnknownProtocol,
-        vers: &Version,
+        vers: Version,
     ) -> bool {
         let supported_versions: &ProtoSet = match self.get(&proto) {
             Some(n) => n,
             None => return false,
         };
-        supported_versions.iter().any(|v| v.1 >= *vers)
+        supported_versions.iter().any(|&v| v.1 >= vers)
     }
 
     /// Split a string containing (potentially) several protocols and their
@@ -532,7 +532,7 @@ impl FromStr for UnvalidatedProtoEntry {
                 protocol_string,
             )?;
 
-        for &(name, vers) in parts.iter() {
+        for &(name, vers) in &parts {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str(name)?;
 
@@ -555,7 +555,7 @@ impl UnvalidatedProtoEntry {
                 protocol_string,
             )?;
 
-        for &(name, vers) in parts.iter() {
+        for &(name, vers) in &parts {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str_any_len(name)?;
 
@@ -629,13 +629,13 @@ impl ProtoverVote {
     ///
     /// let protos: &[UnvalidatedProtoEntry] = &["Link=3-4".parse().unwrap(),
     ///                                          "Link=3".parse().unwrap()];
-    /// let vote = ProtoverVote::compute(protos, &2);
+    /// let vote = ProtoverVote::compute(protos, 2);
     /// assert_eq!("Link=3", vote.to_string());
     /// ```
     // C_RUST_COUPLED: protover.c protover_compute_vote
     pub fn compute(
         proto_entries: &[UnvalidatedProtoEntry],
-        threshold: &usize,
+        threshold: usize,
     ) -> UnvalidatedProtoEntry {
         let mut all_count: ProtoverVote = ProtoverVote::default();
         let mut final_output: UnvalidatedProtoEntry =
@@ -672,9 +672,9 @@ impl ProtoverVote {
 
         for (protocol, mut versions) in all_count {
             // Go through and remove versions that are less than the threshold
-            versions.retain(|_, count| *count as usize >= *threshold);
+            versions.retain(|_, &mut count| count as usize >= threshold);
 
-            if versions.len() > 0 {
+            if !versions.is_empty() {
                 let voted_versions: Vec<Version> =
                     versions.keys().cloned().collect();
                 let voted_protoset: ProtoSet = ProtoSet::from(voted_versions);
@@ -694,13 +694,13 @@ impl ProtoverVote {
 /// use protover::is_supported_here;
 /// use protover::Protocol;
 ///
-/// let is_supported = is_supported_here(&Protocol::Link, &10);
+/// let is_supported = is_supported_here(&Protocol::Link, 10);
 /// assert_eq!(false, is_supported);
 ///
-/// let is_supported = is_supported_here(&Protocol::Link, &1);
+/// let is_supported = is_supported_here(&Protocol::Link, 1);
 /// assert_eq!(true, is_supported);
 /// ```
-pub fn is_supported_here(proto: &Protocol, vers: &Version) -> bool {
+pub fn is_supported_here(proto: &Protocol, vers: Version) -> bool {
     let currently_supported: ProtoEntry = match ProtoEntry::supported() {
         Ok(result) => result,
         Err(_) => return false,

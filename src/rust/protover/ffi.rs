@@ -5,6 +5,8 @@
 //!
 //! Equivalent C versions of this api are in `protover.c`
 
+#![cfg_attr(feature = "cargo-clippy", allow(not_unsafe_ptr_arg_deref))]
+
 use libc::{c_char, c_int, uint32_t};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -105,7 +107,7 @@ pub extern "C" fn protocol_list_supports_protocol(
         Ok(n) => n.into(),
         Err(_) => return 0,
     };
-    if proto_entry.supports_protocol(&protocol, &version) {
+    if proto_entry.supports_protocol(&protocol, version) {
         1
     } else {
         0
@@ -166,7 +168,7 @@ pub extern "C" fn protocol_list_supports_protocol_or_later(
         Err(_) => return 1,
     };
 
-    if proto_entry.supports_protocol_or_later(&protocol.into(), &version) {
+    if proto_entry.supports_protocol_or_later(&protocol.into(), version) {
         return 1;
     }
     0
@@ -217,7 +219,7 @@ pub extern "C" fn protover_compute_vote(
         proto_entries.push(entry);
     }
     let vote: UnvalidatedProtoEntry =
-        ProtoverVote::compute(&proto_entries, &hold);
+        ProtoverVote::compute(&proto_entries, hold);
 
     allocate_and_copy_string(&vote.to_string())
 }
@@ -234,9 +236,13 @@ pub extern "C" fn protover_is_supported_here(
         Err(_) => return 0,
     };
 
-    let is_supported = is_supported_here(&protocol, &version);
+    let is_supported = is_supported_here(&protocol, version);
 
-    return if is_supported { 1 } else { 0 };
+    if is_supported {
+        1
+    } else {
+        0
+    }
 }
 
 /// Provide an interface for C to translate arguments and return types for
