@@ -104,7 +104,7 @@ pub extern "C" fn protocol_list_supports_protocol(
         Ok(n) => n.into(),
         Err(_) => return 0,
     };
-    if proto_entry.supports_protocol(&protocol, &version) {
+    if proto_entry.supports_protocol(&protocol, version) {
         1
     } else {
         0
@@ -163,7 +163,7 @@ pub extern "C" fn protocol_list_supports_protocol_or_later(
         Err(_) => return 1,
     };
 
-    if proto_entry.supports_protocol_or_later(&protocol.into(), &version) {
+    if proto_entry.supports_protocol_or_later(&protocol.into(), version) {
         return 1;
     }
     0
@@ -227,7 +227,7 @@ pub extern "C" fn protover_is_supported_here(c_protocol: uint32_t, version: uint
         Err(_) => return 0,
     };
 
-    let is_supported = is_supported_here(&protocol, &version);
+    let is_supported = is_supported_here(&protocol, version);
 
     return if is_supported { 1 } else { 0 };
 }

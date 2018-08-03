@@ -31,8 +31,8 @@ pub type Version = u32;
 /// // We could also equivalently call:
 /// let protoset: ProtoSet = "3-5,8".parse()?;
 ///
-/// assert!(protoset.contains(&4));
-/// assert!(!protoset.contains(&7));
+/// assert!(protoset.contains(4));
+/// assert!(!protoset.contains(7));
 ///
 /// let expanded: Vec<Version> = protoset.clone().into();
 ///
@@ -224,16 +224,16 @@ impl ProtoSet {
     /// # fn do_test() -> Result<ProtoSet, ProtoverError> {
     /// let protoset: ProtoSet = ProtoSet::from_slice(&[(0, 5), (7, 9), (13, 14)])?;
     ///
-    /// assert!(protoset.contains(&5));
-    /// assert!(!protoset.contains(&10));
+    /// assert!(protoset.contains(5));
+    /// assert!(!protoset.contains(10));
     /// #
     /// # Ok(protoset)
     /// # }
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
-    pub fn contains(&self, version: &Version) -> bool {
+    pub fn contains(&self, version: Version) -> bool {
         for &(low, high) in self.iter() {
-            if low <= *version && *version <= high {
+            if low <= version && version <= high {
                 return true;
             }
         }
@@ -253,7 +253,7 @@ impl ProtoSet {
     /// let mut protoset: ProtoSet = "1,3-5,9".parse()?;
     ///
     /// // Keep only versions less than or equal to 8:
-    /// protoset.retain(|x| x <= &8);
+    /// protoset.retain(|&x| x <= 8);
     ///
     /// assert_eq!(protoset.expand(), vec![1, 3, 4, 5]);
     /// #
@@ -310,8 +310,8 @@ impl FromStr for ProtoSet {
     /// # fn do_test() -> Result<ProtoSet, ProtoverError> {
     /// let protoset: ProtoSet = ProtoSet::from_str("2-5,8")?;
     ///
-    /// assert!(protoset.contains(&5));
-    /// assert!(!protoset.contains(&10));
+    /// assert!(protoset.contains(5));
+    /// assert!(!protoset.contains(10));
     ///
     /// // We can also equivalently call `ProtoSet::from_str` by doing (all
     /// // implementations of `FromStr` can be called this way, this one isn't
@@ -498,7 +498,7 @@ mod test {
 
     macro_rules! assert_contains_each {
         ($protoset:expr, $versions:expr) => {
-            for version in $versions {
+            for &version in $versions {
                 assert!($protoset.contains(version));
             }
         };
@@ -609,17 +609,17 @@ mod test {
         let protoset: ProtoSet = ProtoSet::from_slice(&[(0, 5), (7, 9), (13, 14)]).unwrap();
 
         for x in 0..6 {
-            assert!(protoset.contains(&x), format!("should contain {}", x));
+            assert!(protoset.contains(x), format!("should contain {}", x));
         }
         for x in 7..10 {
-            assert!(protoset.contains(&x), format!("should contain {}", x));
+            assert!(protoset.contains(x), format!("should contain {}", x));
         }
         for x in 13..15 {
-            assert!(protoset.contains(&x), format!("should contain {}", x));
+            assert!(protoset.contains(x), format!("should contain {}", x));
         }
 
-        for x in [6, 10, 11, 12, 15, 42, 43, 44, 45, 1234584].iter() {
-            assert!(!protoset.contains(&x), format!("should not contain {}", x));
+        for &x in &[6, 10, 11, 12, 15, 42, 43, 44, 45, 1234584] {
+            assert!(!protoset.contains(x), format!("should not contain {}", x));
         }
     }
 
@@ -628,7 +628,7 @@ mod test {
         let protoset: ProtoSet = ProtoSet::from_slice(&[(0, 3)]).unwrap();
 
         for x in 0..4 {
-            assert!(protoset.contains(&x), format!("should contain {}", x));
+            assert!(protoset.contains(x), format!("should contain {}", x));
         }
     }
 
@@ -637,8 +637,8 @@ mod test {
             let vec: Vec<Version> = vec!($($x),*);
             let protoset: ProtoSet = vec.clone().into();
 
-            for x in vec.iter() {
-                assert!(protoset.contains(&x));
+            for &x in &vec {
+                assert!(protoset.contains(x));
             }
         )
     }

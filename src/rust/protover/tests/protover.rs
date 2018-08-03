@@ -131,21 +131,21 @@ fn protocol_all_supported_with_mix_of_supported_and_unsupproted() {
 #[test]
 fn protover_string_supports_protocol_returns_true_for_single_supported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4 Cons=1".parse().unwrap();
-    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), &1);
+    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), 1);
     assert_eq!(true, is_supported);
 }
 
 #[test]
 fn protover_string_supports_protocol_returns_false_for_single_unsupported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4 Cons=1".parse().unwrap();
-    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), &2);
+    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), 2);
     assert_eq!(false, is_supported);
 }
 
 #[test]
 fn protover_string_supports_protocol_returns_false_for_unsupported() {
     let protocols: UnvalidatedProtoEntry = "Link=3-4".parse().unwrap();
-    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), &2);
+    let is_supported = protocols.supports_protocol(&protover::Protocol::Cons.into(), 2);
     assert_eq!(false, is_supported);
 }
 
@@ -252,7 +252,7 @@ fn parse_protocol_with_single_protocol_and_two_nonsequential_versions() {
 fn protover_is_supported_here_returns_true_for_supported_protocol() {
     assert_eq!(
         true,
-        protover::is_supported_here(&protover::Protocol::Cons, &1)
+        protover::is_supported_here(&protover::Protocol::Cons, 1)
     );
 }
 
@@ -260,7 +260,7 @@ fn protover_is_supported_here_returns_true_for_supported_protocol() {
 fn protover_is_supported_here_returns_false_for_unsupported_protocol() {
     assert_eq!(
         false,
-        protover::is_supported_here(&protover::Protocol::Cons, &5)
+        protover::is_supported_here(&protover::Protocol::Cons, 5)
     );
 }
 
