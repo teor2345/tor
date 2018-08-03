@@ -2,7 +2,7 @@
 // Copyright (c) 2018, isis agora lovecruft
 // See LICENSE for licensing information
 
-//! Bindings to external (P)RNG interfaces and utilities in 
+//! Bindings to external (P)RNG interfaces and utilities in
 //! src/common/crypto_rand.[ch].
 //!
 //! We wrap our C implementations in src/common/crypto_rand.[ch] here in order
@@ -68,11 +68,17 @@ pub fn c_tor_crypto_strongest_rand(dest: &mut [u8]) {
 /// # Returns
 ///
 /// A `std::time::Duration` of seconds since the Unix Epoch.
-pub fn c_tor_crypto_rand_time_range(min: &Duration, max: &Duration) -> Duration {
+pub fn c_tor_crypto_rand_time_range(
+    min: &Duration,
+    max: &Duration,
+) -> Duration {
     let ret: time_t;
 
     unsafe {
-        ret = crypto_rand_time_range(min.as_secs() as time_t, max.as_secs() as time_t);
+        ret = crypto_rand_time_range(
+            min.as_secs() as time_t,
+            max.as_secs() as time_t,
+        );
     }
 
     Duration::from_secs(ret as u64)
@@ -80,8 +86,5 @@ pub fn c_tor_crypto_rand_time_range(min: &Duration, max: &Duration) -> Duration 
 
 /// Return a pseudorandom 64-bit float, chosen uniformly from the range [0.0, 1.0).
 pub fn c_tor_crypto_rand_double() -> f64 {
-    unsafe {
-        crypto_rand_double()
-    }
+    unsafe { crypto_rand_double() }
 }
-

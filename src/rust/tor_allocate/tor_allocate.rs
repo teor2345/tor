@@ -3,9 +3,9 @@
 // No-op defined purely for testing at the module level
 use libc::c_char;
 
-#[cfg(not(feature = "testing"))]
-use std::{ptr, slice, mem};
 use libc::c_void;
+#[cfg(not(feature = "testing"))]
+use std::{mem, ptr, slice};
 
 // Define a no-op implementation for testing Rust modules without linking to C
 #[cfg(feature = "testing")]
@@ -72,8 +72,8 @@ mod test {
 
     #[test]
     fn test_allocate_and_copy_string_with_empty() {
+        use libc::{c_void, free};
         use std::ffi::CStr;
-        use libc::{free, c_void};
 
         use tor_allocate::allocate_and_copy_string;
 
@@ -89,8 +89,8 @@ mod test {
 
     #[test]
     fn test_allocate_and_copy_string_with_not_empty_string() {
+        use libc::{c_void, free};
         use std::ffi::CStr;
-        use libc::{free, c_void};
 
         use tor_allocate::allocate_and_copy_string;
 
