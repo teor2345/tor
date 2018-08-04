@@ -363,48 +363,29 @@ impl ToString for ProtoSet {
 }
 
 /// Checks to see if there is a continuous range of integers, starting at the
-/// first in the list. Returns the last integer in the range if a range exists.
+/// first in the list. Returns the range of integers.
 ///
 /// # Inputs
 ///
-/// `list`, an ordered  vector of `u32` integers of "[0-9,-]" representing the
+/// `list`, an ordered slice of `Version` integers representing the
 /// supported versions for a single protocol.
 ///
 /// # Returns
 ///
-/// A `bool` indicating whether the list contains a range, starting at the first
-/// in the list, a`Version` of the last integer in the range, and a `usize` of
-/// the index of that version.
+/// An `Option` containing a tuple consisting of the first `Version` in the
+/// slice, and the `Version` of the last integer in the range. The two will
+/// be equal if no larger range is found. Returns None if passed an empty slice.
 ///
-/// For example, if given vec![1, 2, 3, 5], find_range will return true,
-/// as there is a continuous range, and 3, which is the last number in the
-/// continuous range, and 2 which is the index of 3.
-fn find_range(list: &[Version]) -> (bool, Version, usize) {
-    if list.is_empty() {
-        return (false, 0, 0);
-    }
-
-    let mut index: usize = 0;
-    let mut iterable = list.iter().peekable();
-    let mut range_end = match iterable.next() {
-        Some(n) => *n,
-        None => return (false, 0, 0),
+/// For example, if given &[1, 2, 3, 5], find_range will return Some((1, 3)),
+/// as there is a continuous range of 1 to 3.
+fn find_range(list: &[Version]) -> Option<(Version, Version)> {
+    let mut iter = list.iter();
+    let first = match iter.next() {
+        Some(&n) => n,
+        None => return None,
     };
-
-    let mut has_range = false;
-
-    while iterable.peek().is_some() {
-        let n = *iterable.next().unwrap();
-        if n != range_end + 1 {
-            break;
-        }
-
-        has_range = true;
-        range_end = n;
-        index += 1;
-    }
-
-    (has_range, range_end, index)
+    let last = iter.fold(first, |latest, &n| if latest + 1 == n { n } else { latest });
+    Some((first, last))
 }
 
 impl From<Vec<Version>> for ProtoSet {
@@ -413,35 +394,14 @@ impl From<Vec<Version>> for ProtoSet {
 
         v.sort_unstable();
         v.dedup();
+        let mut v = &v[..];
 
-        'vector: while !v.is_empty() {
-            let (has_range, end, index): (bool, Version, usize) = find_range(&v);
+        while let Some((first, last)) = find_range(v) {
+            let index = (last - first) as usize;
+            assert_eq!(last, v[index]);
 
-            if has_range {
-                let first: Version = match v.first() {
-                    Some(x) => *x,
-                    None => continue,
-                };
-                let last: Version = match v.get(index) {
-                    Some(x) => *x,
-                    None => continue,
-                };
-                debug_assert!(last == end, format!("last = {}, end = {}", last, end));
-
-                version_pairs.push((first, last));
-                v = v.split_off(index + 1);
-
-                if v.is_empty() {
-                    break 'vector;
-                }
-            } else {
-                let last: Version = match v.get(index) {
-                    Some(x) => *x,
-                    None => continue,
-                };
-                version_pairs.push((last, last));
-                v.remove(index);
-            }
+            version_pairs.push((first, last));
+            v = &v[index + 1..];
         }
         ProtoSet::from_slice(&version_pairs[..]).unwrap_or_default()
     }
@@ -453,11 +413,11 @@ mod test {
 
     #[test]
     fn test_find_range() {
-        assert_eq!((false, 0, 0), find_range(&vec![]));
-        assert_eq!((false, 1, 0), find_range(&vec![1]));
-        assert_eq!((true, 2, 1), find_range(&vec![1, 2]));
-        assert_eq!((true, 3, 2), find_range(&vec![1, 2, 3]));
-        assert_eq!((true, 3, 2), find_range(&vec![1, 2, 3, 5]));
+        assert_eq!(None, find_range(&vec![]));
+        assert_eq!(Some((1, 1)), find_range(&vec![1]));
+        assert_eq!(Some((1, 2)), find_range(&vec![1, 2]));
+        assert_eq!(Some((1, 3)), find_range(&vec![1, 2, 3]));
+        assert_eq!(Some((1, 3)), find_range(&vec![1, 2, 3, 5]));
     }
 
     macro_rules! assert_contains_each {
