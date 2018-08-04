@@ -65,7 +65,7 @@ impl<'a> ProtoSet {
         pairs.sort_unstable();
         pairs.dedup();
 
-        ProtoSet { pairs }.is_ok()
+        ProtoSet::from_sorted(pairs)
     }
 }
 
@@ -112,7 +112,7 @@ impl ProtoSet {
         length
     }
 
-    /// Check that this `ProtoSet` is well-formed.
+    /// Creates a `ProtoSet` from a vector. The vector must be already sorted.
     ///
     /// This is automatically called in `ProtoSet::from_str()`.
     ///
@@ -128,12 +128,12 @@ impl ProtoSet {
     ///
     /// # Returns
     ///
-    /// A `Result` whose `Ok` is this `Protoset`, and whose `Err` is one of the
+    /// A `Result` whose `Ok` is a new `Protoset`, and whose `Err` is one of the
     /// errors enumerated in the Errors section above.
-    fn is_ok(self) -> Result<ProtoSet, ProtoverError> {
+    fn from_sorted(pairs: Vec<(Version, Version)>) -> Result<ProtoSet, ProtoverError> {
         let mut last_high: Version = 0;
 
-        for &(low, high) in self.iter() {
+        for &(low, high) in &pairs {
             if low == u32::MAX || high == u32::MAX {
                 return Err(ProtoverError::ExceedsMax);
             }
@@ -145,7 +145,7 @@ impl ProtoSet {
             last_high = high;
         }
 
-        Ok(self)
+        Ok(ProtoSet { pairs })
     }
 
     /// Determine if this `ProtoSet` contains no `Version`s.
@@ -335,7 +335,9 @@ impl FromStr for ProtoSet {
         if pairs.is_empty() {
             return Ok(ProtoSet::default());
         }
-        ProtoSet::from_slice(&pairs[..])
+        pairs.sort_unstable();
+        pairs.dedup();
+        ProtoSet::from_sorted(pairs)
     }
 }
 
@@ -401,7 +403,7 @@ impl From<Vec<Version>> for ProtoSet {
             version_pairs.push((first, last));
             v = &v[index + 1..];
         }
-        ProtoSet::from_slice(&version_pairs[..]).unwrap_or_default()
+        ProtoSet::from_sorted(version_pairs).unwrap_or_default()
     }
 }
 
