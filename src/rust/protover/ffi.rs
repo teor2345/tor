@@ -63,7 +63,8 @@ pub extern "C" fn protover_all_supported(
             Err(_) => return 1,
         };
 
-    if let Some(unsupported) = relay_proto_entry.all_supported() {
+    let unsupported = relay_proto_entry.get_unsupported();
+    if !unsupported.is_empty() {
         let c_unsupported: CString = match CString::new(unsupported.to_string())
         {
             Ok(n) => n,

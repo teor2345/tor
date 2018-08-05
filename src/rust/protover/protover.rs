@@ -310,62 +310,59 @@ impl UnvalidatedProtoEntry {
     ///
     /// # Returns
     ///
-    /// Optionally, return parameters which the client supports but which we do not.
+    /// Return parameters which the client supports but which we do not.
     ///
     /// # Examples
     /// ```
     /// use protover::UnvalidatedProtoEntry;
     ///
     /// let protocols: UnvalidatedProtoEntry = "LinkAuth=1 Microdesc=1-2 Relay=2".parse().unwrap();
-    /// let unsupported: Option<UnvalidatedProtoEntry> = protocols.all_supported();
-    /// assert_eq!(true, unsupported.is_none());
+    /// let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+    /// assert_eq!(true, unsupported.is_empty());
     ///
     /// let protocols: UnvalidatedProtoEntry = "Link=1-2 Wombat=9".parse().unwrap();
-    /// let unsupported: Option<UnvalidatedProtoEntry> = protocols.all_supported();
-    /// assert_eq!(true, unsupported.is_some());
-    /// assert_eq!("Wombat=9", &unsupported.unwrap().to_string());
+    /// let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+    /// assert_eq!(false, unsupported.is_empty());
+    /// assert_eq!("Wombat=9", &unsupported.to_string());
     /// ```
-    pub fn all_supported(&self) -> Option<UnvalidatedProtoEntry> {
+    pub fn get_unsupported(&self) -> UnvalidatedProtoEntry {
         let mut unsupported: UnvalidatedProtoEntry =
             UnvalidatedProtoEntry::default();
         let supported: ProtoEntry = match ProtoEntry::supported() {
             Ok(x) => x,
-            Err(_) => return None,
+            Err(_) => return self.clone(),
         };
 
         for (protocol, versions) in self.iter() {
             let is_supported: Result<Protocol, ProtoverError> =
                 protocol.0.parse();
-            let supported_protocol: Protocol;
 
             // If the protocol wasn't even in the enum, then we definitely don't
             // know about it and don't support any of its versions.
-            if is_supported.is_err() {
-                if !versions.is_empty() {
-                    unsupported.insert(protocol.clone(), versions.clone());
+            let supported_protocol: Protocol = match is_supported {
+                Ok(p) => p,
+                Err(_) => {
+                    if !versions.is_empty() {
+                        unsupported.insert(protocol.clone(), versions.clone());
+                    }
+                    continue;
                 }
-                continue;
-            } else {
-                supported_protocol = is_supported.unwrap();
-            }
-
-            let maybe_supported_versions: Option<&ProtoSet> =
-                supported.get(&supported_protocol);
-            let supported_versions: &ProtoSet;
-            let mut unsupported_versions: ProtoSet;
+            };
 
             // If the protocol wasn't in the map, then we don't know about it
             // and don't support any of its versions.  Add its versions to the
             // map (if it has versions).
-            if maybe_supported_versions.is_none() {
-                if !versions.is_empty() {
-                    unsupported.insert(protocol.clone(), versions.clone());
+            let supported_versions = match supported.get(&supported_protocol) {
+                Some(v) => v,
+                None => {
+                    if !versions.is_empty() {
+                        unsupported.insert(protocol.clone(), versions.clone());
+                    }
+                    continue;
                 }
-                continue;
-            } else {
-                supported_versions = maybe_supported_versions.unwrap();
-            }
-            unsupported_versions = versions.clone();
+            };
+
+            let mut unsupported_versions: ProtoSet = versions.clone();
             unsupported_versions.retain(|&x| !supported_versions.contains(x));
 
             if !unsupported_versions.is_empty() {
@@ -373,10 +370,7 @@ impl UnvalidatedProtoEntry {
             }
         }
 
-        if unsupported.is_empty() {
-            return None;
-        }
-        Some(unsupported)
+        unsupported
     }
 
     /// Determine if we have support for some protocol and version.
@@ -862,54 +856,48 @@ mod test {
     #[test]
     fn test_protoentry_all_supported_single_protocol_single_version() {
         let protocol: UnvalidatedProtoEntry = "Cons=1".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocol.all_supported();
-        assert_eq!(true, unsupported.is_none());
+        let unsupported: UnvalidatedProtoEntry = protocol.get_unsupported();
+        assert_eq!(true, unsupported.is_empty());
     }
 
     #[test]
     fn test_protoentry_all_supported_multiple_protocol_multiple_versions() {
         let protocols: UnvalidatedProtoEntry =
             "Link=3-4 Desc=2".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocols.all_supported();
-        assert_eq!(true, unsupported.is_none());
+        let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+        assert_eq!(true, unsupported.is_empty());
     }
 
     #[test]
     fn test_protoentry_all_supported_three_values() {
         let protocols: UnvalidatedProtoEntry =
             "LinkAuth=1 Microdesc=1-2 Relay=2".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocols.all_supported();
-        assert_eq!(true, unsupported.is_none());
+        let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+        assert_eq!(true, unsupported.is_empty());
     }
 
     #[test]
     fn test_protoentry_all_supported_unknown_protocol() {
         let protocols: UnvalidatedProtoEntry = "Wombat=9".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocols.all_supported();
-        assert_eq!(true, unsupported.is_some());
-        assert_eq!("Wombat=9", &unsupported.unwrap().to_string());
+        let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+        assert_eq!(false, unsupported.is_empty());
+        assert_eq!("Wombat=9", &unsupported.to_string());
     }
 
     #[test]
     fn test_protoentry_all_supported_unsupported_high_version() {
         let protocols: UnvalidatedProtoEntry = "HSDir=12-100".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocols.all_supported();
-        assert_eq!(true, unsupported.is_some());
-        assert_eq!("HSDir=12-100", &unsupported.unwrap().to_string());
+        let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+        assert_eq!(false, unsupported.is_empty());
+        assert_eq!("HSDir=12-100", &unsupported.to_string());
     }
 
     #[test]
     fn test_protoentry_all_supported_unsupported_low_version() {
         let protocols: UnvalidatedProtoEntry = "Cons=0-1".parse().unwrap();
-        let unsupported: Option<UnvalidatedProtoEntry> =
-            protocols.all_supported();
-        assert_eq!(true, unsupported.is_some());
-        assert_eq!("Cons=0", &unsupported.unwrap().to_string());
+        let unsupported: UnvalidatedProtoEntry = protocols.get_unsupported();
+        assert_eq!(false, unsupported.is_empty());
+        assert_eq!("Cons=0", &unsupported.to_string());
     }
 
     #[test]
