@@ -281,12 +281,7 @@ impl UnvalidatedProtoEntry {
     }
 
     pub fn len(&self) -> usize {
-        let mut total: usize = 0;
-
-        for (_, versions) in self.iter() {
-            total += versions.len();
-        }
-        total
+        self.iter().map(|(_, versions)| versions.len()).sum()
     }
 
     /// Determine if we support every protocol a client supports, and if not,
@@ -426,9 +421,7 @@ impl UnvalidatedProtoEntry {
     fn parse_protocol_and_version_str<'a>(
         protocol_string: &'a str,
     ) -> Result<Vec<(&'a str, &'a str)>, ProtoverError> {
-        let mut protovers: Vec<(&str, &str)> = Vec::new();
-
-        for subproto in protocol_string.split(' ') {
+        let parse_subproto = |subproto: &'a str| {
             let mut parts = subproto.splitn(2, '=');
 
             let name = match parts.next() {
@@ -440,9 +433,9 @@ impl UnvalidatedProtoEntry {
                 Some(n) => n,
                 None => return Err(ProtoverError::Unparseable),
             };
-            protovers.push((name, vers));
-        }
-        Ok(protovers)
+            Ok((name, vers))
+        };
+        protocol_string.split(' ').map(parse_subproto).collect()
     }
 }
 
@@ -477,12 +470,13 @@ impl FromStr for UnvalidatedProtoEntry {
         let parts: Vec<(&str, &str)> =
             UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
 
-        for &(name, vers) in &parts {
+        let parse_parts = |(name, vers): (&str, &str)| {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str(name)?;
 
-            parsed.insert(protocol, versions);
-        }
+            Ok((protocol, versions))
+        };
+        parsed.0 = try!(parts.into_iter().map(parse_parts).collect());
         Ok(parsed)
     }
 }
@@ -497,12 +491,13 @@ impl UnvalidatedProtoEntry {
         let parts: Vec<(&str, &str)> =
             UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
 
-        for &(name, vers) in &parts {
+        let parse_parts = |(name, vers): (&str, &str)| {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str_any_len(name)?;
 
-            parsed.insert(protocol, versions);
-        }
+            Ok((protocol, versions))
+        };
+        parsed.0 = try!(parts.into_iter().map(parse_parts).collect());
         Ok(parsed)
     }
 }
@@ -511,10 +506,11 @@ impl UnvalidatedProtoEntry {
 impl From<ProtoEntry> for UnvalidatedProtoEntry {
     fn from(proto_entry: ProtoEntry) -> UnvalidatedProtoEntry {
         let mut unvalidated: UnvalidatedProtoEntry = UnvalidatedProtoEntry::default();
-
-        for (protocol, versions) in proto_entry.iter() {
-            unvalidated.insert(UnknownProtocol::from(protocol.clone()), versions.clone());
-        }
+        unvalidated.0 = proto_entry
+            .0
+            .into_iter()
+            .map(|(protocol, versions)| (UnknownProtocol::from(protocol), versions))
+            .collect();
         unvalidated
     }
 }
