@@ -34,7 +34,7 @@ pub type Version = u32;
 /// assert!(protoset.contains(4));
 /// assert!(!protoset.contains(7));
 ///
-/// let expanded: Vec<Version> = protoset.expand();
+/// let expanded: Vec<Version> = protoset.expand().collect();
 ///
 /// assert_eq!(&expanded[..], &[3, 4, 5, 8]);
 ///
@@ -86,21 +86,20 @@ impl ProtoSet {
     /// # fn do_test() -> Result<bool, ProtoverError> {
     /// let protoset: ProtoSet = "3-5,9".parse()?;
     ///
-    /// assert_eq!(protoset.expand(), vec![3, 4, 5, 9]);
+    /// assert!(protoset.expand().eq(vec![3, 4, 5, 9]));
     ///
     /// let protoset: ProtoSet = "1,3,5-7".parse()?;
     ///
-    /// assert_eq!(protoset.expand(), vec![1, 3, 5, 6, 7]);
+    /// assert!(protoset.expand().eq(vec![1, 3, 5, 6, 7]));
     /// #
     /// # Ok(true)
     /// # }
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
-    pub fn expand(&self) -> Vec<Version> {
+    pub fn expand(&self) -> impl DoubleEndedIterator<Item = Version> + '_ {
         self.iter()
             .map(|&(low, high)| low..high + 1)
             .flat_map(|x| x)
-            .collect()
     }
 
     pub fn len(&self) -> usize {
@@ -219,7 +218,7 @@ impl ProtoSet {
     /// // Keep only versions less than or equal to 8:
     /// protoset.retain(|&x| x <= 8);
     ///
-    /// assert_eq!(protoset.expand(), vec![1, 3, 4, 5]);
+    /// assert!(protoset.expand().eq(vec![1, 3, 4, 5]));
     /// #
     /// # Ok(true)
     /// # }
@@ -230,8 +229,7 @@ impl ProtoSet {
     where
         F: FnMut(&Version) -> bool,
     {
-        let mut expanded: Vec<Version> = self.expand();
-        expanded.retain(f);
+        let expanded: Vec<Version> = self.expand().filter(f).collect();
         *self = expanded.into();
     }
 }
@@ -628,7 +626,7 @@ mod test {
     #[test]
     fn test_protoset_into_vec() {
         let ps: ProtoSet = "1-13,42,9001,4294967294".parse().unwrap();
-        let v: Vec<Version> = ps.expand();
+        let v: Vec<Version> = ps.expand().collect();
 
         assert!(v.contains(&7));
         assert!(v.contains(&9001));
