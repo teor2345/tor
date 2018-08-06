@@ -44,17 +44,9 @@ pub type Version = u32;
 /// # Ok(protoset)
 /// # }
 /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Default, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ProtoSet {
     pub(crate) pairs: Vec<(Version, Version)>,
-}
-
-impl Default for ProtoSet {
-    fn default() -> Self {
-        let pairs: Vec<(Version, Version)> = Vec::new();
-
-        ProtoSet { pairs }
-    }
 }
 
 impl<'a> ProtoSet {
