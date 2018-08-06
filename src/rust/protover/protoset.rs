@@ -34,7 +34,7 @@ pub type Version = u32;
 /// assert!(protoset.contains(4));
 /// assert!(!protoset.contains(7));
 ///
-/// let expanded: Vec<Version> = protoset.clone().into();
+/// let expanded: Vec<Version> = protoset.clone().expand();
 ///
 /// assert_eq!(&expanded[..], &[3, 4, 5, 8]);
 ///
@@ -69,37 +69,6 @@ impl<'a> ProtoSet {
     }
 }
 
-/// Expand this `ProtoSet` to a `Vec` of all its `Version`s.
-///
-/// # Examples
-///
-/// ```
-/// use std::str::FromStr;
-/// use protover::protoset::ProtoSet;
-/// use protover::protoset::Version;
-/// # use protover::errors::ProtoverError;
-///
-/// # fn do_test() -> Result<Vec<Version>, ProtoverError> {
-/// let protoset: ProtoSet = ProtoSet::from_str("3-5,21")?;
-/// let versions: Vec<Version> = protoset.into();
-///
-/// assert_eq!(&versions[..], &[3, 4, 5, 21]);
-/// #
-/// # Ok(versions)
-/// # }
-/// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
-/// ```
-impl Into<Vec<Version>> for ProtoSet {
-    fn into(self) -> Vec<Version> {
-        let mut versions: Vec<Version> = Vec::new();
-
-        for &(low, high) in self.iter() {
-            versions.extend(low..high + 1);
-        }
-        versions
-    }
-}
-
 impl ProtoSet {
     /// Get an iterator over the `(low, high)` `pairs` in this `ProtoSet`.
     pub fn iter(&self) -> slice::Iter<(Version, Version)> {
@@ -128,7 +97,10 @@ impl ProtoSet {
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
     pub fn expand(self) -> Vec<Version> {
-        self.into()
+        self.iter()
+            .map(|&(low, high)| low..high + 1)
+            .flat_map(|x| x)
+            .collect()
     }
 
     pub fn len(&self) -> usize {
@@ -651,7 +623,7 @@ mod test {
     #[test]
     fn test_protoset_into_vec() {
         let ps: ProtoSet = "1-13,42,9001,4294967294".parse().unwrap();
-        let v: Vec<Version> = ps.into();
+        let v: Vec<Version> = ps.expand();
 
         assert!(v.contains(&7));
         assert!(v.contains(&9001));
