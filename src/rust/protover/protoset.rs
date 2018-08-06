@@ -58,12 +58,8 @@ impl ProtoSet {
     pub fn from_slice(
         low_high_pairs: &[(Version, Version)],
     ) -> Result<Self, ProtoverError> {
-        let mut pairs: Vec<(Version, Version)> =
-            Vec::with_capacity(low_high_pairs.len());
+        let mut pairs = low_high_pairs.to_vec();
 
-        for &(low, high) in low_high_pairs {
-            pairs.push((low, high));
-        }
         // Sort the pairs without reallocation and remove all duplicate pairs.
         pairs.sort_unstable();
         pairs.dedup();
@@ -106,13 +102,7 @@ impl ProtoSet {
     }
 
     pub fn len(&self) -> usize {
-        let mut length: usize = 0;
-
-        for &(low, high) in self.iter() {
-            length += (high as usize - low as usize) + 1;
-        }
-
-        length
+        self.iter().map(|&(low, high)| (low..high + 1).len()).sum()
     }
 
     /// Creates a `ProtoSet` from a vector. The vector must be already sorted.
@@ -170,7 +160,7 @@ impl ProtoSet {
     /// assert!(protoset.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.pairs.len() == 0
+        self.pairs.is_empty()
     }
 
     /// Determine if `version` is included within this `ProtoSet`.
@@ -200,12 +190,8 @@ impl ProtoSet {
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
     pub fn contains(&self, version: Version) -> bool {
-        for &(low, high) in self.iter() {
-            if low <= version && version <= high {
-                return true;
-            }
-        }
-        false
+        self.iter()
+            .any(|&(low, high)| low <= version && version <= high)
     }
 
     /// Retain only the `Version`s in this `ProtoSet` for which the predicate
@@ -307,15 +293,13 @@ impl FromStr for ProtoSet {
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
     fn from_str(version_string: &str) -> Result<Self, Self::Err> {
-        let mut pairs: Vec<(Version, Version)> = Vec::new();
-        let pieces: ::std::str::Split<char> = version_string.trim().split(',');
+        let ranges = version_string
+            .split(',')
+            .map(|p| p.trim())
+            .filter(|p| !p.is_empty());
 
-        for piece in pieces {
-            let p: &str = piece.trim();
-
-            if p.is_empty() {
-                continue;
-            } else if p.contains('-') {
+        let parse_range = |p: &str| {
+            if p.contains('-') {
                 let mut pair = p.split('-');
 
                 let low = pair.next().ok_or(ProtoverError::Unparseable)?;
@@ -329,21 +313,20 @@ impl FromStr for ProtoSet {
                 if lo == u32::MAX || hi == u32::MAX {
                     return Err(ProtoverError::ExceedsMax);
                 }
-                pairs.push((lo, hi));
+                Ok((lo, hi))
             } else {
                 let v: u32 = p.parse().or(Err(ProtoverError::Unparseable))?;
 
                 if v == u32::MAX {
                     return Err(ProtoverError::ExceedsMax);
                 }
-                pairs.push((v, v));
+                Ok((v, v))
             }
-        }
-        // If we were passed in an empty string, or a bunch of whitespace, or
-        // simply a comma, or a pile of commas, then return an empty ProtoSet.
-        if pairs.is_empty() {
-            return Ok(ProtoSet::default());
-        }
+        };
+
+        let mut pairs: Vec<(Version, Version)> =
+            try!(ranges.map(parse_range).collect());
+
         pairs.sort_unstable();
         pairs.dedup();
         ProtoSet::from_sorted(pairs)
