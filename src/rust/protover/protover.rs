@@ -228,32 +228,26 @@ impl FromStr for ProtoEntry {
     /// first element is the subprotocol type (see `protover::Protocol`) and the last
     /// element is an ordered set of `(low, high)` unique version numbers which are supported.
     /// Otherwise, the `Err` value of this `Result` is a `ProtoverError`.
-    fn from_str(protocol_entry: &str) -> Result<ProtoEntry, ProtoverError> {
-        let mut proto_entry: ProtoEntry = ProtoEntry::default();
-        let entries = protocol_entry.split(' ');
+    fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
+        let mut parsed = Self::default();
+        let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_entry);
 
-        for entry in entries {
-            let mut parts = entry.splitn(2, '=');
+        let parse_parts = |(len, name, versions): (usize, &str, ProtoSet)| {
+            let protocol: Protocol = name.parse()?;
 
-            let proto = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
-
-            let vers = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
-            let versions: ProtoSet = vers.parse()?;
-            let proto_name: Protocol = proto.parse()?;
-
-            proto_entry.insert(proto_name, versions);
-
-            if proto_entry.len() > MAX_PROTOCOLS_TO_EXPAND {
-                return Err(ProtoverError::ExceedsMax);
+            if len > MAX_PROTOCOLS_TO_EXPAND {
+                Err(ProtoverError::ExceedsMax)
+            } else {
+                Ok((protocol, versions))
             }
-        }
-        Ok(proto_entry)
+        };
+
+        let count_and_parse = |(i, r): (usize, Result<_, _>)| {
+            r.map(|(name, vers)| (i + 1, name, vers))
+                .and_then(parse_parts)
+        };
+        parsed.0 = try!(parts.enumerate().map(count_and_parse).collect());
+        Ok(parsed)
     }
 }
 
@@ -454,8 +448,8 @@ impl UnvalidatedProtoEntry {
     }
 
     /// Split a string containing (potentially) several protocols and their
-    /// versions into a `Vec` of tuples of string in `(protocol, versions)`
-    /// form.
+    /// versions into a sequence of tuples each consisting of a string protocol
+    /// name and its corresponding parsed ProtoSet.
     ///
     /// # Inputs
     ///
@@ -463,8 +457,8 @@ impl UnvalidatedProtoEntry {
     ///
     /// # Returns
     ///
-    /// A `Result` whose `Ok` variant is a `Vec<(&str, &str)>` of `(protocol,
-    /// versions)`, or whose `Err` variant is a `ProtoverError`.
+    /// An iterator of `Result` values whose `Ok` variant is a `(&str, ProtoSet)`
+    /// of `(protocol, versions)`, or whose `Err` variant is a `ProtoverError`.
     ///
     /// # Errors
     ///
@@ -475,19 +469,18 @@ impl UnvalidatedProtoEntry {
     /// * If an entry has no equals sign, e.g. `"Cons=1,3 Desc"`.
     /// * If there is leading or trailing whitespace, e.g. `" Cons=1,3 Link=3"`.
     /// * If there is any other extra whitespice, e.g. `"Cons=1,3  Link=3"`.
+    /// * If a version string is malformed. See `impl FromStr for ProtoSet`.
     fn parse_protocol_and_version_str<'a>(
-        protocol_string: &'a str,
-    ) -> Result<Vec<(&'a str, &'a str)>, ProtoverError> {
-        let mut protovers: Vec<(&str, &str)> = Vec::new();
-
-        for subproto in protocol_string.split(' ') {
+        protocol_entry: &'a str,
+    ) -> impl Iterator<Item = Result<(&'a str, ProtoSet), ProtoverError>> {
+        let parse_subproto = |subproto: &'a str| {
             let mut parts = subproto.splitn(2, '=');
 
             let name = parts.next().ok_or(ProtoverError::Unparseable)?;
             let vers = parts.next().ok_or(ProtoverError::Unparseable)?;
-            protovers.push((name, vers));
-        }
-        Ok(protovers)
+            Ok((name, vers.parse()?))
+        };
+        protocol_entry.split(' ').map(parse_subproto)
     }
 }
 
@@ -498,7 +491,7 @@ impl FromStr for UnvalidatedProtoEntry {
     ///
     /// # Inputs
     ///
-    /// * `protocol_string`, a string comprised of keys and values, both which are
+    /// * `protocol_entry`, a string comprised of keys and values, both which are
     /// strings. The keys are the protocol names while values are a string
     /// representation of the supported versions.
     ///
@@ -519,17 +512,16 @@ impl FromStr for UnvalidatedProtoEntry {
     /// * The protocol string does not follow the "protocol_name=version_list"
     ///   expected format, or
     /// * If the version string is malformed. See `impl FromStr for ProtoSet`.
-    fn from_str(protocol_string: &str) -> Result<UnvalidatedProtoEntry, ProtoverError> {
-        let mut parsed: UnvalidatedProtoEntry = UnvalidatedProtoEntry::default();
-        let parts: Vec<(&str, &str)> =
-            UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
+    fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
+        let mut parsed = Self::default();
+        let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_entry);
 
-        for &(name, vers) in parts.iter() {
-            let versions = ProtoSet::from_str(vers)?;
+        let parse_parts = |(name, versions): (&str, ProtoSet)| {
             let protocol = UnknownProtocol::from_str(name)?;
 
-            parsed.insert(protocol, versions);
-        }
+            Ok((protocol, versions))
+        };
+        parsed.0 = try!(parts.map(|r| r.and_then(parse_parts)).collect());
         Ok(parsed)
     }
 }
@@ -537,19 +529,16 @@ impl FromStr for UnvalidatedProtoEntry {
 impl UnvalidatedProtoEntry {
     /// Create an `UnknownProtocol`, ignoring whether or not it
     /// exceeds MAX_PROTOCOL_NAME_LENGTH.
-    pub(crate) fn from_str_any_len(protocol_string: &str)
-        -> Result<UnvalidatedProtoEntry, ProtoverError>
-    {
-        let mut parsed: UnvalidatedProtoEntry = UnvalidatedProtoEntry::default();
-        let parts: Vec<(&str, &str)> =
-            UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
+    pub(crate) fn from_str_any_len(protocol_entry: &str) -> Result<Self, ProtoverError> {
+        let mut parsed = Self::default();
+        let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_entry);
 
-        for &(name, vers) in parts.iter() {
-            let versions = ProtoSet::from_str(vers)?;
+        let parse_parts = |(name, versions): (&str, ProtoSet)| {
             let protocol = UnknownProtocol::from_str_any_len(name)?;
 
-            parsed.insert(protocol, versions);
-        }
+            Ok((protocol, versions))
+        };
+        parsed.0 = try!(parts.map(|r| r.and_then(parse_parts)).collect());
         Ok(parsed)
     }
 }
