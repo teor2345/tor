@@ -147,14 +147,8 @@ pub(crate) fn get_supported_protocols_cstr() -> &'static CStr {
 }
 
 /// A map of protocol names to the versions of them which are supported.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ProtoEntry(HashMap<Protocol, ProtoSet>);
-
-impl Default for ProtoEntry {
-    fn default() -> ProtoEntry {
-        ProtoEntry(HashMap::new())
-    }
-}
 
 impl ProtoEntry {
     /// Get an iterator over the `Protocol`s and their `ProtoSet`s in this `ProtoEntry`.
@@ -265,14 +259,8 @@ impl_to_string_for_proto_entry!(UnvalidatedProtoEntry);
 /// A `ProtoEntry`, but whose `Protocols` can be any `UnknownProtocol`, not just
 /// the supported ones enumerated in `Protocols`.  The protocol versions are
 /// validated, however.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct UnvalidatedProtoEntry(HashMap<UnknownProtocol, ProtoSet>);
-
-impl Default for UnvalidatedProtoEntry {
-    fn default() -> UnvalidatedProtoEntry {
-        UnvalidatedProtoEntry(HashMap::new())
-    }
-}
 
 impl UnvalidatedProtoEntry {
     /// Get an iterator over the `Protocol`s and their `ProtoSet`s in this `ProtoEntry`.
@@ -580,13 +568,8 @@ impl From<ProtoEntry> for UnvalidatedProtoEntry {
 /// The "protocols" are *not* guaranteed to be known/supported `Protocol`s, in
 /// order to allow new subprotocols to be introduced even if Directory
 /// Authorities don't yet know of them.
+#[derive(Default)]
 pub struct ProtoverVote(HashMap<UnknownProtocol, HashMap<Version, usize>>);
-
-impl Default for ProtoverVote {
-    fn default() -> ProtoverVote {
-        ProtoverVote(HashMap::new())
-    }
-}
 
 impl IntoIterator for ProtoverVote {
     type Item = (UnknownProtocol, HashMap<Version, usize>);
