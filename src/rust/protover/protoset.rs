@@ -34,7 +34,7 @@ pub type Version = u32;
 /// assert!(protoset.contains(4));
 /// assert!(!protoset.contains(7));
 ///
-/// let expanded: Vec<Version> = protoset.clone().expand();
+/// let expanded: Vec<Version> = protoset.expand();
 ///
 /// assert_eq!(&expanded[..], &[3, 4, 5, 8]);
 ///
@@ -99,7 +99,7 @@ impl ProtoSet {
     /// # }
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
-    pub fn expand(self) -> Vec<Version> {
+    pub fn expand(&self) -> Vec<Version> {
         self.iter()
             .map(|&(low, high)| low..high + 1)
             .flat_map(|x| x)
@@ -235,7 +235,7 @@ impl ProtoSet {
     where
         F: FnMut(&Version) -> bool,
     {
-        let mut expanded: Vec<Version> = self.clone().expand();
+        let mut expanded: Vec<Version> = self.expand();
         expanded.retain(f);
         *self = expanded.into();
     }

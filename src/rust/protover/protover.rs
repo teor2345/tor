@@ -636,7 +636,7 @@ impl ProtoverVote {
                 let supported_vers: &mut HashMap<_, usize> =
                     all_count.entry(protocol.clone()).or_insert(HashMap::new());
 
-                for version in versions.clone().expand() {
+                for version in versions.expand() {
                     let counter: &mut usize =
                         supported_vers.entry(version).or_insert(0);
                     *counter += 1;
