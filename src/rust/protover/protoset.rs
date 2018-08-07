@@ -144,6 +144,23 @@ impl ProtoSet {
         Ok(ProtoSet { pairs })
     }
 
+    /// Creates a `ProtoSet` from a sorted collection of unique integers.
+    ///
+    /// This is automatically called in `ProtoSet::from_str()`.
+    ///
+    /// # Errors
+    ///
+    /// * `ProtoverError::Overlap`: if the integers were not sorted,
+    /// * `ProtoverError::ExceedsMax`: if an integer exceeds the maximum,
+    fn from_versions<V>(v: V) -> Result<ProtoSet, ProtoverError>
+    where
+        V: IntoIterator<Item = Version>,
+    {
+        let version_pairs: Vec<(Version, Version)>;
+        version_pairs = to_ranges(v).collect();
+        ProtoSet::from_sorted(version_pairs)
+    }
+
     /// Determine if this `ProtoSet` contains no `Version`s.
     ///
     /// # Returns
@@ -401,10 +418,7 @@ impl From<Vec<Version>> for ProtoSet {
     fn from(mut v: Vec<Version>) -> ProtoSet {
         v.sort_unstable();
         v.dedup();
-
-        let version_pairs: Vec<(Version, Version)>;
-        version_pairs = to_ranges(v).collect();
-        ProtoSet::from_sorted(version_pairs).unwrap_or_default()
+        ProtoSet::from_versions(v.into_iter()).unwrap_or_default()
     }
 }
 
