@@ -233,13 +233,12 @@ impl ProtoSet {
     /// # }
     /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
     /// ```
-    // XXX we could probably do something more efficient here. —isis
     pub fn retain<F>(&mut self, f: F)
     where
         F: FnMut(&Version) -> bool,
     {
-        let expanded: Vec<Version> = self.expand().filter(f).collect();
-        *self = expanded.into();
+        let retained = Self::from_versions(self.expand().filter(f)).unwrap();
+        *self = retained;
     }
 }
 
