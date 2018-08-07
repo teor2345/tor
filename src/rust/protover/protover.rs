@@ -208,32 +208,27 @@ impl FromStr for ProtoEntry {
     ///
     /// A `Result` whose `Ok` value is a `ProtoEntry`.
     /// Otherwise, the `Err` value of this `Result` is a `ProtoverError`.
-    fn from_str(protocol_entry: &str) -> Result<ProtoEntry, ProtoverError> {
-        let mut proto_entry: ProtoEntry = ProtoEntry::default();
-        let entries = protocol_entry.split(' ');
+    fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
+        let mut parsed = Self::default();
+        let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_entry);
 
-        for entry in entries {
-            let mut parts = entry.splitn(2, '=');
-
-            let proto = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
-
-            let vers = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
+        let parse_parts = |(len, name, vers): (_, &str, &str)| {
             let versions: ProtoSet = vers.parse()?;
-            let proto_name: Protocol = proto.parse()?;
+            let protocol: Protocol = name.parse()?;
 
-            proto_entry.insert(proto_name, versions);
-
-            if proto_entry.len() > MAX_PROTOCOLS_TO_EXPAND {
-                return Err(ProtoverError::ExceedsMax);
+            if len > MAX_PROTOCOLS_TO_EXPAND {
+                Err(ProtoverError::ExceedsMax)
+            } else {
+                Ok((protocol, versions))
             }
-        }
-        Ok(proto_entry)
+        };
+
+        let count_and_parse = |(i, r): (usize, Result<_, _>)| {
+            r.map(|(name, vers)| (i + 1, name, vers))
+                .and_then(parse_parts)
+        };
+        parsed.0 = try!(parts.enumerate().map(count_and_parse).collect());
+        Ok(parsed)
     }
 }
 
