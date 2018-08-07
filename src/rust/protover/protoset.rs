@@ -294,28 +294,24 @@ impl FromStr for ProtoSet {
             .map(|p| p.trim())
             .filter(|p| !p.is_empty());
 
+        let parse_version = |x: &str| {
+            x.parse().or(Err(ProtoverError::Unparseable)).and_then(|n| {
+                if n < u32::MAX {
+                    Ok(n)
+                } else {
+                    Err(ProtoverError::ExceedsMax)
+                }
+            })
+        };
+
         let parse_range = |p: &str| {
-            if p.contains('-') {
-                let mut pair = p.splitn(2, '-');
+            let mut pair = p.splitn(2, '-');
+            let parse_error = Err(ProtoverError::Unparseable);
 
-                let low = pair.next().ok_or(ProtoverError::Unparseable)?;
-                let high = pair.next().ok_or(ProtoverError::Unparseable)?;
+            let lo = pair.next().map_or(parse_error, parse_version)?;
+            let hi = pair.next().map_or(Ok(lo), parse_version)?;
 
-                let lo: Version = low.parse().or(Err(ProtoverError::Unparseable))?;
-                let hi: Version = high.parse().or(Err(ProtoverError::Unparseable))?;
-
-                if lo == u32::MAX || hi == u32::MAX {
-                    return Err(ProtoverError::ExceedsMax);
-                }
-                Ok((lo, hi))
-            } else {
-                let v: u32 = p.parse().or(Err(ProtoverError::Unparseable))?;
-
-                if v == u32::MAX {
-                    return Err(ProtoverError::ExceedsMax);
-                }
-                Ok((v, v))
-            }
+            Ok((lo, hi))
         };
 
         let mut pairs: Vec<(Version, Version)> = try!(ranges.map(parse_range).collect());
