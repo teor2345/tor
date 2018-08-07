@@ -311,9 +311,8 @@ impl UnvalidatedProtoEntry {
     /// assert_eq!(false, unsupported.is_empty());
     /// assert_eq!("Wombat=9", &unsupported.to_string());
     /// ```
-    pub fn get_unsupported(&self) -> UnvalidatedProtoEntry {
-        let mut unsupported: UnvalidatedProtoEntry =
-            UnvalidatedProtoEntry::default();
+    pub fn get_unsupported(&self) -> Self {
+        let mut unsupported = Self::default();
         let supported: ProtoEntry = match ProtoEntry::supported() {
             Ok(x) => x,
             Err(_) => return self.clone(),
@@ -450,7 +449,7 @@ impl UnvalidatedProtoEntry {
     /// * If there is leading or trailing whitespace, e.g. `" Cons=1,3 Link=3"`.
     /// * If there is any other extra whitespice, e.g. `"Cons=1,3  Link=3"`.
     fn parse_protocol_and_version_str<'a>(
-        protocol_string: &'a str,
+        protocol_entry: &'a str,
     ) -> impl Iterator<Item = Result<(&'a str, &'a str), ProtoverError>> {
         let parse_subproto = |subproto: &'a str| {
             let mut parts = subproto.splitn(2, '=');
@@ -459,7 +458,7 @@ impl UnvalidatedProtoEntry {
             let vers = parts.next().ok_or(ProtoverError::Unparseable)?;
             Ok((name, vers))
         };
-        protocol_string.split(' ').map(parse_subproto)
+        protocol_entry.split(' ').map(parse_subproto)
     }
 }
 
@@ -470,7 +469,7 @@ impl FromStr for UnvalidatedProtoEntry {
     ///
     /// # Inputs
     ///
-    /// * `protocol_string`, a string comprised of keys and values, both which are
+    /// * `protocol_entry`, a string comprised of keys and values, both which are
     /// strings. The keys are the protocol names while values are a string
     /// representation of the supported versions.
     ///
@@ -489,13 +488,10 @@ impl FromStr for UnvalidatedProtoEntry {
     /// * The protocol string does not follow the "protocol_name=version_list"
     ///   expected format, or
     /// * If the version string is malformed. See `impl FromStr for ProtoSet`.
-    fn from_str(
-        protocol_string: &str,
-    ) -> Result<UnvalidatedProtoEntry, ProtoverError> {
-        let mut parsed: UnvalidatedProtoEntry =
-            UnvalidatedProtoEntry::default();
+    fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
+        let mut parsed = Self::default();
         let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(
-            protocol_string,
+            protocol_entry,
         );
 
         let parse_parts = |(name, vers): (&str, &str)| {
@@ -513,12 +509,11 @@ impl UnvalidatedProtoEntry {
     /// Create an `UnknownProtocol`, ignoring whether or not it
     /// exceeds MAX_PROTOCOL_NAME_LENGTH.
     pub(crate) fn from_str_any_len(
-        protocol_string: &str,
-    ) -> Result<UnvalidatedProtoEntry, ProtoverError> {
-        let mut parsed: UnvalidatedProtoEntry =
-            UnvalidatedProtoEntry::default();
+        protocol_entry: &str,
+    ) -> Result<Self, ProtoverError> {
+        let mut parsed = Self::default();
         let parts = UnvalidatedProtoEntry::parse_protocol_and_version_str(
-            protocol_string,
+            protocol_entry,
         );
 
         let parse_parts = |(name, vers): (&str, &str)| {
@@ -535,8 +530,7 @@ impl UnvalidatedProtoEntry {
 /// Pretend a `ProtoEntry` is actually an `UnvalidatedProtoEntry`.
 impl From<ProtoEntry> for UnvalidatedProtoEntry {
     fn from(proto_entry: ProtoEntry) -> UnvalidatedProtoEntry {
-        let mut unvalidated: UnvalidatedProtoEntry =
-            UnvalidatedProtoEntry::default();
+        let mut unvalidated = Self::default();
         unvalidated.0 = proto_entry
             .0
             .into_iter()
@@ -598,9 +592,8 @@ impl ProtoverVote {
         proto_entries: &[UnvalidatedProtoEntry],
         threshold: usize,
     ) -> UnvalidatedProtoEntry {
-        let mut all_count: ProtoverVote = ProtoverVote::default();
-        let mut final_output: UnvalidatedProtoEntry =
-            UnvalidatedProtoEntry::default();
+        let mut all_count = Self::default();
+        let mut final_output: UnvalidatedProtoEntry = Default::default();
 
         if proto_entries.is_empty() {
             return final_output;
