@@ -300,7 +300,7 @@ impl FromStr for ProtoSet {
 
         let parse_range = |p: &str| {
             if p.contains('-') {
-                let mut pair = p.split('-');
+                let mut pair = p.splitn(2, '-');
 
                 let low = pair.next().ok_or(ProtoverError::Unparseable)?;
                 let high = pair.next().ok_or(ProtoverError::Unparseable)?;
@@ -443,6 +443,7 @@ mod test {
         test_protoset_contains_versions!(&[1, 2, 5], "1-2,5");
         test_protoset_contains_versions!(&[1, 3, 4, 5], "1,3-5");
         test_protoset_contains_versions!(&[42, 55, 56, 57, 58], "42,55-58");
+        test_protoset_contains_versions!(&[0, 4294967294], "0-4294967294");
     }
 
     #[test]
@@ -453,6 +454,21 @@ mod test {
     #[test]
     fn test_versions_from_str_negative_1() {
         assert_eq!(Err(ProtoverError::Unparseable), ProtoSet::from_str("-1"));
+    }
+
+    #[test]
+    fn test_versions_from_str_hyphens() {
+        assert_eq!(Err(ProtoverError::Unparseable), ProtoSet::from_str("--1"));
+        assert_eq!(Err(ProtoverError::Unparseable), ProtoSet::from_str("-1-2"));
+        assert_eq!(Err(ProtoverError::Unparseable), ProtoSet::from_str("1--2"));
+    }
+
+    #[test]
+    fn test_versions_from_str_triple() {
+        assert_eq!(
+            Err(ProtoverError::Unparseable),
+            ProtoSet::from_str("1-2-3")
+        );
     }
 
     #[test]
@@ -491,6 +507,14 @@ mod test {
         assert_eq!(
             Err(ProtoverError::ExceedsMax),
             ProtoSet::from_slice(&[(4294967295, 4294967295)])
+        );
+    }
+
+    #[test]
+    fn test_versions_from_str_maxplusone() {
+        assert_eq!(
+            Err(ProtoverError::Unparseable),
+            ProtoSet::from_str("4294967296")
         );
     }
 
