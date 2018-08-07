@@ -353,7 +353,7 @@ impl ToString for ProtoSet {
 ///
 /// # Inputs
 ///
-/// `list`, an ordered slice of `Version` integers representing the
+/// `versions`, an ordered collection of `Version` integers representing the
 /// supported versions for a single protocol.
 ///
 /// # Returns
@@ -364,8 +364,11 @@ impl ToString for ProtoSet {
 ///
 /// For example, if given &[1, 2, 3, 5], find_range will return Some((1, 3)),
 /// as there is a continuous range of 1 to 3.
-fn find_range(list: &[Version]) -> Option<(Version, Version)> {
-    let mut iter = list.iter();
+fn find_range<'a, U>(versions: U) -> Option<(Version, Version)>
+where
+    U: IntoIterator<Item = &'a Version>,
+{
+    let mut iter = versions.into_iter();
     let first = match iter.next() {
         Some(&n) => n,
         None => return None,
