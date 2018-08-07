@@ -4,6 +4,7 @@
 
 //! Sets for lazily storing ordered, non-overlapping ranges of integers.
 
+use std::iter::Peekable;
 use std::slice;
 use std::str::FromStr;
 use std::u32;
@@ -348,8 +349,8 @@ impl ToString for ProtoSet {
     }
 }
 
-/// Checks to see if there is a continuous range of integers, starting at the
-/// first in the list. Returns the range of integers.
+/// Maps a collection of sorted integers, with no duplicates, to a sequence of
+/// continuous ranges of integers that were found in the input.
 ///
 /// # Inputs
 ///
@@ -358,41 +359,51 @@ impl ToString for ProtoSet {
 ///
 /// # Returns
 ///
-/// An `Option` containing a tuple consisting of the first `Version` in the
-/// slice, and the `Version` of the last integer in the range. The two will
-/// be equal if no larger range is found. Returns None if passed an empty slice.
+/// An `Iterator` yielding a series of tuples consisting of two `Version`
+/// values, the first and the last in a continuous range, inclusive. The two
+/// will be equal when no larger range is found.
 ///
-/// For example, if given &[1, 2, 3, 5], find_range will return Some((1, 3)),
-/// as there is a continuous range of 1 to 3.
-fn find_range<'a, U>(versions: U) -> Option<(Version, Version)>
+/// For example, to_ranges(&[1, 2, 3, 5]) will yield (1, 3) then (5, 5),
+/// as there is a continuous range of 1 to 3, and the next range contains only 5
+/// itself.
+fn to_ranges<V>(versions: V) -> impl Iterator<Item = (Version, Version)>
 where
-    U: IntoIterator<Item = &'a Version>,
+    V: IntoIterator<Item = Version>,
 {
-    let mut iter = versions.into_iter();
-    let first = match iter.next() {
-        Some(&n) => n,
-        None => return None,
-    };
-    let last =
-        iter.fold(first, |latest, &n| if latest + 1 == n { n } else { latest });
-    Some((first, last))
+    VersionRangeIterator {
+        0: versions.into_iter().peekable(),
+    }
+}
+
+struct VersionRangeIterator<I>(Peekable<I>)
+where
+    I: Iterator<Item = Version>;
+
+impl<I> Iterator for VersionRangeIterator<I>
+where
+    I: Iterator<Item = Version>,
+{
+    type Item = (Version, Version);
+    fn next(&mut self) -> Option<Self::Item> {
+        let iter = &mut self.0;
+        iter.next().map(|lo| {
+            let mut hi = lo;
+            while let Some(&n) = iter.peek().filter(|&&n| n == hi + 1) {
+                hi = n;
+                iter.next();
+            }
+            (lo, hi)
+        })
+    }
 }
 
 impl From<Vec<Version>> for ProtoSet {
     fn from(mut v: Vec<Version>) -> ProtoSet {
-        let mut version_pairs: Vec<(Version, Version)> = Vec::new();
-
         v.sort_unstable();
         v.dedup();
-        let mut v = &v[..];
 
-        while let Some((first, last)) = find_range(v) {
-            let index = (last - first) as usize;
-            assert_eq!(last, v[index]);
-
-            version_pairs.push((first, last));
-            v = &v[index + 1..];
-        }
+        let version_pairs: Vec<(Version, Version)>;
+        version_pairs = to_ranges(v).collect();
         ProtoSet::from_sorted(version_pairs).unwrap_or_default()
     }
 }
@@ -403,11 +414,11 @@ mod test {
 
     #[test]
     fn test_find_range() {
-        assert_eq!(None, find_range(&vec![]));
-        assert_eq!(Some((1, 1)), find_range(&vec![1]));
-        assert_eq!(Some((1, 2)), find_range(&vec![1, 2]));
-        assert_eq!(Some((1, 3)), find_range(&vec![1, 2, 3]));
-        assert_eq!(Some((1, 3)), find_range(&vec![1, 2, 3, 5]));
+        assert_eq!(None, to_ranges(vec![]).next());
+        assert_eq!(Some((1, 1)), to_ranges(vec![1]).next());
+        assert_eq!(Some((1, 2)), to_ranges(vec![1, 2]).next());
+        assert_eq!(Some((1, 3)), to_ranges(vec![1, 2, 3]).next());
+        assert_eq!(Some((1, 3)), to_ranges(vec![1, 2, 3, 5]).next());
     }
 
     macro_rules! assert_contains_each {
