@@ -93,7 +93,9 @@ impl FromStr for UnknownProtocol {
     type Err = ProtoverError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() <= MAX_PROTOCOL_NAME_LENGTH {
+        if s.is_empty() {
+            Err(ProtoverError::Unparseable)
+        } else if s.len() <= MAX_PROTOCOL_NAME_LENGTH {
             Ok(UnknownProtocol(s.to_string()))
         } else {
             Err(ProtoverError::ExceedsNameLimit)
@@ -105,7 +107,11 @@ impl UnknownProtocol {
     /// Create an `UnknownProtocol`, ignoring whether or not it
     /// exceeds MAX_PROTOCOL_NAME_LENGTH.
     fn from_str_any_len(s: &str) -> Result<Self, ProtoverError> {
-        Ok(UnknownProtocol(s.to_string()))
+        if s.is_empty() {
+            Err(ProtoverError::Unparseable)
+        } else {
+            Ok(UnknownProtocol(s.to_string()))
+        }
     }
 }
 
@@ -414,7 +420,6 @@ impl UnvalidatedProtoEntry {
     /// This will error with a `ProtoverError::Unparseable` if any of the
     /// following are true:
     ///
-    /// * If a protocol name is an empty string, e.g. `"Cons=1,3 =3-5"`.
     /// * If an entry has no equals sign, e.g. `"Cons=1,3 Desc"`.
     /// * If there is leading or trailing whitespace, e.g. `" Cons=1,3 Link=3"`.
     /// * If there is any other extra whitespice, e.g. `"Cons=1,3  Link=3"`.
@@ -424,15 +429,8 @@ impl UnvalidatedProtoEntry {
         let parse_subproto = |subproto: &'a str| {
             let mut parts = subproto.splitn(2, '=');
 
-            let name = match parts.next() {
-                Some("") => return Err(ProtoverError::Unparseable),
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
-            let vers = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
+            let name = parts.next().ok_or(ProtoverError::Unparseable)?;
+            let vers = parts.next().ok_or(ProtoverError::Unparseable)?;
             Ok((name, vers))
         };
         protocol_string.split(' ').map(parse_subproto)
@@ -753,6 +751,11 @@ mod test {
     #[test]
     fn test_protoentry_from_str_empty() {
         assert_protoentry_is_unparseable!("");
+        assert_protoentry_is_unparseable!("=");
+        assert_protoentry_is_unparseable!("=1-2");
+
+        let unvalidated: Result<UnvalidatedProtoEntry, ProtoverError> = "=1-2".parse();
+        assert_eq!(unvalidated, Err(ProtoverError::Unparseable));
     }
 
     #[test]
@@ -773,11 +776,6 @@ mod test {
     #[test]
     fn test_protoentry_from_str_too_many_versions() {
         assert_protoentry_is_unparseable!("Desc=1-4294967295");
-    }
-
-    #[test]
-    fn test_protoentry_from_str_() {
-        assert_protoentry_is_unparseable!("");
     }
 
     #[test]
