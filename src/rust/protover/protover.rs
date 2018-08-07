@@ -114,7 +114,7 @@ impl fmt::Display for UnknownProtocol {
 }
 
 fn is_valid_proto(s: &str) -> bool {
-    s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
 }
 
 impl FromStr for UnknownProtocol {
@@ -483,15 +483,8 @@ impl UnvalidatedProtoEntry {
         for subproto in protocol_string.split(' ') {
             let mut parts = subproto.splitn(2, '=');
 
-            let name = match parts.next() {
-                Some("") => return Err(ProtoverError::Unparseable),
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
-            let vers = match parts.next() {
-                Some(n) => n,
-                None => return Err(ProtoverError::Unparseable),
-            };
+            let name = parts.next().ok_or(ProtoverError::Unparseable)?;
+            let vers = parts.next().ok_or(ProtoverError::Unparseable)?;
             protovers.push((name, vers));
         }
         Ok(protovers)
@@ -834,6 +827,11 @@ mod test {
     #[test]
     fn test_protoentry_from_str_empty() {
         assert_protoentry_is_unparseable!("");
+        assert_protoentry_is_unparseable!("=");
+        assert_protoentry_is_unparseable!("=1-2");
+
+        let unvalidated: Result<UnvalidatedProtoEntry, ProtoverError> = "=1-2".parse();
+        assert_eq!(unvalidated, Err(ProtoverError::InvalidProtocol));
     }
 
     #[test]
@@ -854,11 +852,6 @@ mod test {
     #[test]
     fn test_protoentry_from_str_too_many_versions() {
         assert_protoentry_is_unparseable!("Desc=1-4294967295");
-    }
-
-    #[test]
-    fn test_protoentry_from_str_() {
-        assert_protoentry_is_unparseable!("");
     }
 
     #[test]
