@@ -5,7 +5,8 @@ cache:
   ## cargo: true
   directories:
     - $HOME/.cargo
-    - $TRAVIS_BUILD_DIR/target
+    ## where we point CARGO_TARGET_DIR in all our cargo invocations
+    - $TRAVIS_BUILD_DIR/src/rust/target
 
 compiler:
   - gcc
