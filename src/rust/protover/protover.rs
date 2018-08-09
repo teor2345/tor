@@ -317,7 +317,7 @@ impl UnvalidatedProtoEntry {
         };
 
         let emptyset = ProtoSet::default();
-        for (protocol, versions) in self.iter() {
+        let f = |(protocol, versions): (&UnknownProtocol, &ProtoSet)| {
             let is_supported: Result<Protocol, ProtoverError> = protocol.0.parse();
 
             // If the protocol wasn't in the enum, or wasn't in the map, then we
@@ -329,10 +329,13 @@ impl UnvalidatedProtoEntry {
 
             let unsupported_versions = versions.and_not_in(supported_versions);
 
-            if !unsupported_versions.is_empty() {
-                unsupported.insert(protocol.clone(), unsupported_versions);
+            if unsupported_versions.is_empty() {
+                None
+            } else {
+                Some((protocol.clone(), unsupported_versions))
             }
-        }
+        };
+        unsupported.0 = self.iter().filter_map(f).collect();
 
         unsupported
     }
