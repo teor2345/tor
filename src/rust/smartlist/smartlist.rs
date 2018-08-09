@@ -24,36 +24,36 @@ pub struct Stringlist {
 
 impl Smartlist<String> for Stringlist {
     fn get_list(&self) -> Vec<String> {
-        let empty: Vec<String> = Vec::new();
-        let mut rust_list: Vec<String> = Vec::new();
+        let result: Result<Vec<String>, _> = self
+            .get_cstr_list()
+            .map(|c| c.to_str().map(String::from))
+            .collect();
+        result.unwrap_or(Vec::new())
+    }
+}
 
-        if self.list.is_null() || self.num_used == 0 {
-            return empty;
-        }
+impl Stringlist {
+    pub fn get_cstr_list(&self) -> impl Iterator<Item = &CStr> {
+        assert!(!self.list.is_null());
+        assert!(self.num_used >= 0);
 
         // unsafe, as we need to extract the smartlist list into a vector of
         // pointers, and then transform each element into a Rust string.
         let elems: &[*const c_char] =
             unsafe { slice::from_raw_parts(self.list, self.num_used as usize) };
 
-        for elem in elems.iter() {
+        elems.iter().filter_map(|&elem| {
+            debug_assert!(!elem.is_null(), "smartlist of strings contained null ptr?");
             if elem.is_null() {
-                continue;
+                return None;
             }
 
             // unsafe, as we need to create a cstring from the referenced
             // element
-            let c_string = unsafe { CStr::from_ptr(*elem) };
+            let c_string = unsafe { CStr::from_ptr(elem) };
 
-            let r_string = match c_string.to_str() {
-                Ok(n) => n,
-                Err(_) => return empty,
-            };
-
-            rust_list.push(String::from(r_string));
-        }
-
-        rust_list
+            Some(c_string)
+        })
     }
 }
 
@@ -70,20 +70,6 @@ mod test {
 
         use super::Smartlist;
         use super::Stringlist;
-
-        {
-            // test to verify that null pointers are gracefully handled
-            use std::ptr;
-
-            let sl = Stringlist {
-                list: ptr::null(),
-                num_used: 0,
-                capacity: 0,
-            };
-
-            let data = sl.get_list();
-            assert_eq!(0, data.len());
-        }
 
         {
             let args = vec![String::from("a"), String::from("b")];
