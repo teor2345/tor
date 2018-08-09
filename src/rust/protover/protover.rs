@@ -544,15 +544,11 @@ impl ProtoverVote {
     /// assert_eq!("Link=3", vote.to_string());
     /// ```
     // C_RUST_COUPLED: protover.c protover_compute_vote
-    pub fn compute(
-        proto_entries: &[UnvalidatedProtoEntry],
-        threshold: usize,
-    ) -> UnvalidatedProtoEntry {
+    pub fn compute<'a, E>(proto_entries: E, threshold: usize) -> UnvalidatedProtoEntry
+    where
+        E: IntoIterator<Item = &'a UnvalidatedProtoEntry>,
+    {
         let mut final_output: UnvalidatedProtoEntry = Default::default();
-
-        if proto_entries.is_empty() {
-            return final_output;
-        }
 
         // parse and collect all of the protos and their versions and collect them
         let count_votes = |mut all_count: Self, vote: &UnvalidatedProtoEntry| {
