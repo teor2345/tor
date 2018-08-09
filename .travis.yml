@@ -1,5 +1,8 @@
 language: c
 
+cache:
+  ccache: true
+
 compiler:
   - gcc
   - clang
@@ -92,6 +95,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
 
 install:
+  ## If we're on OSX use brew to install ccache (ccache is automatically installed on Linux)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated ccache     || brew upgrade ccache;     }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { export PATH="/usr/local/opt/ccache/libexec:$PATH";   }; fi
   ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated libevent   || brew upgrade libevent;   }; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated openssl    || brew upgrade openssl;    }; fi
@@ -99,7 +105,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated zlib       || brew upgrade zlib;       }; fi
   ## If we're on OSX also install the optional dependencies
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated libscrypt  || brew upgrade libscrypt;  }; fi
-  ## OpenSSL is keg-only, so tor 0.2.9 needs to be configured --with-openssl-dir= to build on OSX
+  ## If we're on OSX, OpenSSL is keg-only, so tor 0.2.9 needs to be configured --with-openssl-dir= to build
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then OPENSSL_OPTIONS=--with-openssl-dir=`brew --prefix openssl`; fi
   ## Install conditional features
   ## Install coveralls
