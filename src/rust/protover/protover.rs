@@ -565,10 +565,10 @@ impl ProtoverVote {
     /// assert_eq!("Link=3", vote.to_string());
     /// ```
     // C_RUST_COUPLED: protover.c protover_compute_vote
-    pub fn compute(
-        proto_entries: &[UnvalidatedProtoEntry],
-        threshold: usize,
-    ) -> UnvalidatedProtoEntry {
+    pub fn compute<'a, E>(proto_entries: E, threshold: usize) -> UnvalidatedProtoEntry
+    where
+        E: IntoIterator<Item = &'a UnvalidatedProtoEntry>,
+    {
         // parse and collect all of the protos and their versions and collect them
         let count_votes = |mut all_count: Self, vote: &UnvalidatedProtoEntry| {
             // C_RUST_DIFFERS: This doesn't actually differ, bu this check on
