@@ -6,6 +6,7 @@ compiler:
 
 os:
   - linux
+  - osx
 
 ## The build matrix in the following stanza expands into builds for each
 ## OS and compiler.
@@ -81,7 +82,23 @@ addons:
       - libscrypt-dev
       - libseccomp-dev
 
+## (OSX only) Use the default OSX image
+## See https://docs.travis-ci.com/user/reference/osx#os-x-version
+## Default is Xcode 9.4 on macOS 10.13 as of August 2018
+#osx_image: xcode9.4
+
+before_install:
+  ## If we're on OSX, homebrew usually needs to updated first
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+
 install:
+  ## If we're on OSX use brew to install required dependencies (for Linux, see the "apt:" section above)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated libevent   || brew upgrade libevent;   }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated openssl    || brew upgrade openssl;    }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated pkg-config || brew upgrade pkg-config; }; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated zlib       || brew upgrade zlib;       }; fi
+  ## If we're on OSX also install the optional dependencies
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then { brew outdated libscrypt  || brew upgrade libscrypt;  }; fi
   ## Install conditional features
   ## Install coveralls
   - if [[ "$COVERAGE_OPTIONS" != "" ]]; then pip install --user cpp-coveralls; fi
