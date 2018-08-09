@@ -548,7 +548,6 @@ impl ProtoverVote {
         proto_entries: &[UnvalidatedProtoEntry],
         threshold: usize,
     ) -> UnvalidatedProtoEntry {
-        let mut all_count = Self::default();
         let mut final_output: UnvalidatedProtoEntry = Default::default();
 
         if proto_entries.is_empty() {
@@ -556,7 +555,7 @@ impl ProtoverVote {
         }
 
         // parse and collect all of the protos and their versions and collect them
-        for vote in proto_entries {
+        let count_votes = |mut all_count: Self, vote: &UnvalidatedProtoEntry| {
             // C_RUST_DIFFERS: This doesn't actually differ, bu this check on
             // the total is here to make it match.  Because the C version calls
             // expand_protocol_list() which checks if there would be too many
@@ -565,7 +564,7 @@ impl ProtoverVote {
             // match it's behaviour and ensure we're not allowing more than it
             // would.
             if vote.len() > MAX_PROTOCOLS_TO_EXPAND {
-                continue;
+                return all_count;
             }
 
             for (protocol, versions) in vote.iter() {
@@ -577,7 +576,9 @@ impl ProtoverVote {
                     *counter += 1;
                 }
             }
-        }
+            all_count
+        };
+        let all_count = proto_entries.into_iter().fold(Self::default(), count_votes);
 
         let m = |(protocol, versions): (_, HashMap<Version, usize>)| {
             // Go through and remove versions that are less than the threshold
