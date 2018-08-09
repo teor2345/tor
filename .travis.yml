@@ -2,6 +2,11 @@ language: c
 
 cache:
   ccache: true
+  ## cargo: true
+  directories:
+    - $HOME/.cargo
+    ## where we point CARGO_TARGET_DIR in all our cargo invocations
+    - $TRAVIS_BUILD_DIR/src/rust/target
 
 compiler:
   - gcc
@@ -83,6 +88,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   ## Download rustup
   - if [[ "$RUST_OPTIONS" != "" ]]; then curl -Ssf -o rustup.sh https://sh.rustup.rs; fi
+  ## Create empty rust directories for non-Rust builds, so caching succeeds
+  - if [[ "$RUST_OPTIONS" == "" ]]; then mkdir -p $HOME/.cargo $TRAVIS_BUILD_DIR/src/rust/target; fi
+  ## Install coveralls
   - if [[ "$COVERAGE_OPTIONS" != "" ]]; then pip install --user cpp-coveralls; fi
 
 ## (Linux only) Use the latest Linux image (Ubuntu Trusty)
