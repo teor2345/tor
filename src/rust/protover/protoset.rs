@@ -4,6 +4,7 @@
 
 //! Sets for lazily storing ordered, non-overlapping ranges of integers.
 
+use std::iter;
 use std::slice;
 use std::str::FromStr;
 use std::u32;
@@ -218,6 +219,56 @@ impl ProtoSet {
     {
         let expanded: Vec<Version> = self.expand().filter(f).collect();
         *self = expanded.into();
+    }
+
+    /// Returns all the `Version`s in `self` which are not also in the `other`
+    /// `ProtoSet`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use protover::errors::ProtoverError;
+    /// use protover::protoset::ProtoSet;
+    ///
+    /// # fn do_test() -> Result<bool, ProtoverError> {
+    /// let protoset: ProtoSet = "1,3-6,10-12,15-16".parse()?;
+    /// let other: ProtoSet = "2,5-7,9-11,14-20".parse()?;
+    ///
+    /// let subset: ProtoSet = protoset.and_not_in(&other);
+    ///
+    /// assert!(subset.expand().eq(vec![1, 3, 4, 12]));
+    /// #
+    /// # Ok(true)
+    /// # }
+    /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
+    /// ```
+    pub fn and_not_in(&self, other: &Self) -> Self {
+        if self.is_empty() || other.is_empty() {
+            return self.clone();
+        }
+
+        let pairs = self.iter().flat_map(|&(lo, hi)| {
+            let the_end = (hi + 1, hi + 1); // special case to mark the end of the range.
+            let excluded_ranges = other
+                .iter()
+                .cloned() // have to be owned tuples, to match iter::once(the_end).
+                .skip_while(move|&(_, hi2)| hi2 < lo) // skip the non-overlapping ranges.
+                .take_while(move|&(lo2, _)| lo2 <= hi) // take all the overlapping ones.
+                .chain(iter::once(the_end));
+
+            let mut nextlo = lo;
+            excluded_ranges.filter_map(move |(excluded_lo, excluded_hi)| {
+                let pair = if nextlo < excluded_lo {
+                    Some((nextlo, excluded_lo - 1))
+                } else {
+                    None
+                };
+                nextlo = excluded_hi + 1;
+                pair
+            })
+        });
+
+        ProtoSet::from_sorted(pairs.collect()).expect("should be already sorted")
     }
 }
 
