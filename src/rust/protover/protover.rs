@@ -570,11 +570,6 @@ impl ProtoverVote {
         threshold: usize,
     ) -> UnvalidatedProtoEntry {
         let mut all_count: ProtoverVote = ProtoverVote::default();
-        let mut final_output: UnvalidatedProtoEntry = UnvalidatedProtoEntry::default();
-
-        if proto_entries.is_empty() {
-            return final_output;
-        }
 
         // parse and collect all of the protos and their versions and collect them
         for vote in proto_entries {
@@ -600,18 +595,24 @@ impl ProtoverVote {
             }
         }
 
-        for (protocol, mut versions) in all_count {
+        let m = |(protocol, versions): (_, HashMap<Version, usize>)| {
             // Go through and remove versions that are less than the threshold
-            versions.retain(|_, &mut count| count as usize >= threshold);
+            let voted_versions: Vec<Version> = versions
+                .into_iter()
+                .filter(|&(_, count)| count >= threshold)
+                .map(|(version, _)| version)
+                .collect();
 
-            if !versions.is_empty() {
-                let voted_versions: Vec<Version> = versions.keys().cloned().collect();
+            if voted_versions.is_empty() {
+                None
+            } else {
                 let voted_protoset: ProtoSet = ProtoSet::from(voted_versions);
 
-                final_output.insert(protocol, voted_protoset);
+                Some((protocol, voted_protoset))
             }
-        }
-        final_output
+        };
+
+        UnvalidatedProtoEntry(all_count.into_iter().filter_map(m).collect())
     }
 }
 
