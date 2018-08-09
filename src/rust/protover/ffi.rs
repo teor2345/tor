@@ -198,24 +198,21 @@ pub extern "C" fn protover_compute_vote(
 
     // Dereference of raw pointer requires an unsafe block. The pointer is
     // checked above to ensure it is not null.
-    let data: Vec<String> = unsafe { (*list).get_list() };
+    let list: &Stringlist = unsafe { &*list };
+    let data = list.get_cstr_list();
     let hold: usize = threshold as usize;
-    let mut proto_entries: Vec<UnvalidatedProtoEntry> = Vec::new();
 
-    for datum in data {
-        let entry: UnvalidatedProtoEntry = if allow_long_proto_names {
-            match UnvalidatedProtoEntry::from_str_any_len(datum.as_str()) {
-                Ok(n) => n,
-                Err(_) => continue,
+    let proto_entries: Vec<UnvalidatedProtoEntry> = data
+        .into_iter()
+        .filter_map(|c| c.to_str().ok()) // TODO: warn on non-UTF8 input somehow
+        .filter_map(|datum| {
+            if allow_long_proto_names {
+                UnvalidatedProtoEntry::from_str_any_len(datum).ok()
+            } else {
+                datum.parse().ok()
             }
-        } else {
-            match datum.parse() {
-                Ok(n) => n,
-                Err(_) => continue,
-            }
-        };
-        proto_entries.push(entry);
-    }
+        }).collect();
+
     let vote: UnvalidatedProtoEntry = ProtoverVote::compute(&proto_entries, hold);
 
     allocate_and_copy_string(&vote.to_string())
