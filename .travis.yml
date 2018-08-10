@@ -38,25 +38,18 @@ env:
     ##   https:/trac.torproject.org/projects/tor/ticket/25386
     ##   https:/trac.torproject.org/projects/tor/ticket/26398
     - RUST_OPTIONS="--enable-rust --enable-cargo-online-mode" HARDENING_OPTIONS=""
-
-matrix:
-  ## include creates builds with gcc, linux, sudo: false
-  include:
-    ## We include a single coverage build with the best options for coverage
-    - env: COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
-    ## We only want to check these build option combinations once
-    ## (they shouldn't vary by compiler or OS)
-    ## We run rust and coverage with hardening off, which seems like enough
-    # - env: HARDENING_OPTIONS=""
+    - COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
+    - HARDENING_OPTIONS=""
     ## We check asciidoc with distcheck, to make sure we remove doc products
-    - env: DISTCHECK="yes" ASCIIDOC_OPTIONS=""
+    - DISTCHECK="yes" ASCIIDOC_OPTIONS=""
     ## Check rust offline with distcheck, to make sure we remove rust products
     ## But without hardening (see above)
-    - env: DISTCHECK="yes" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
+    - DISTCHECK="yes" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
     ## Check disable module dirauth with rust, and without rust but with distcheck
-    - env: MODULES_OPTIONS="--disable-module-dirauth" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
-    - env: DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
+    - MODULES_OPTIONS="--disable-module-dirauth" RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true HARDENING_OPTIONS=""
+    - DISTCHECK="yes" MODULES_OPTIONS="--disable-module-dirauth"
 
+matrix:
   ## Uncomment to allow the build to report success (with non-required
   ## sub-builds continuing to run) if all required sub-builds have
   ## succeeded.  This is somewhat buggy currently: it can cause
