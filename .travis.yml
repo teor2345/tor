@@ -28,18 +28,12 @@ env:
     ## We don't list default variable values, because we set the defaults
     ## in global (or the default is unset)
     -
+    - COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
+    - HARDENING_OPTIONS=""
+    ## We check asciidoc with distcheck, to make sure we remove doc products
+    - DISTCHECK="yes" ASCIIDOC_OPTIONS=""
 
 matrix:
-  ## include creates builds with gcc, linux, sudo: false
-  include:
-    ## We include a single coverage build with the best options for coverage
-    - env: COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS=""
-    ## We only want to check these build option combinations once
-    ## (they shouldn't vary by compiler or OS)
-    - env: HARDENING_OPTIONS=""
-    ## We check asciidoc with distcheck, to make sure we remove doc products
-    - env: DISTCHECK="yes" ASCIIDOC_OPTIONS=""
-
   ## Uncomment to allow the build to report success (with non-required
   ## sub-builds continuing to run) if all required sub-builds have
   ## succeeded.  This is somewhat buggy currently: it can cause
