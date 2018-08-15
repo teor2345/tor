@@ -202,7 +202,7 @@ pub extern "C" fn protover_compute_vote(
     let data = list.get_cstr_list();
     let hold: usize = threshold as usize;
 
-    let proto_entries: Vec<UnvalidatedProtoEntry> = data
+    let proto_entries = data
         .into_iter()
         .filter_map(|c| c.to_str().ok()) // TODO: warn on non-UTF8 input somehow
         .filter_map(|datum| {
@@ -211,9 +211,9 @@ pub extern "C" fn protover_compute_vote(
             } else {
                 datum.parse().ok()
             }
-        }).collect();
+        });
 
-    let vote: UnvalidatedProtoEntry = ProtoverVote::compute(&proto_entries, hold);
+    let vote: UnvalidatedProtoEntry = ProtoverVote::compute(proto_entries, hold);
 
     allocate_and_copy_string(&vote.to_string())
 }
