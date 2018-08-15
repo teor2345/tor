@@ -1,6 +1,7 @@
 // Copyright (c) 2016-2018, The Tor Project, Inc. */
 // See LICENSE for licensing information */
 
+use std::borrow::Borrow;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -544,14 +545,16 @@ impl ProtoverVote {
     /// assert_eq!("Link=3", vote.to_string());
     /// ```
     // C_RUST_COUPLED: protover.c protover_compute_vote
-    pub fn compute<'a, E>(proto_entries: E, threshold: usize) -> UnvalidatedProtoEntry
+    pub fn compute<E>(proto_entries: E, threshold: usize) -> UnvalidatedProtoEntry
     where
-        E: IntoIterator<Item = &'a UnvalidatedProtoEntry>,
+        E: IntoIterator,
+        E::Item: Borrow<UnvalidatedProtoEntry>,
     {
         let mut final_output: UnvalidatedProtoEntry = Default::default();
 
         // parse and collect all of the protos and their versions and collect them
-        let count_votes = |mut all_count: Self, vote: &UnvalidatedProtoEntry| {
+        let count_votes = |mut all_count: Self, vote: E::Item| {
+            let vote: &UnvalidatedProtoEntry = vote.borrow();
             // C_RUST_DIFFERS: This doesn't actually differ, bu this check on
             // the total is here to make it match.  Because the C version calls
             // expand_protocol_list() which checks if there would be too many
