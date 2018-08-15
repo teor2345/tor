@@ -191,36 +191,6 @@ impl ProtoSet {
             .any(|&(low, high)| low <= version && version <= high)
     }
 
-    /// Retain only the `Version`s in this `ProtoSet` for which the predicate
-    /// `F` returns `true`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use protover::errors::ProtoverError;
-    /// use protover::protoset::ProtoSet;
-    ///
-    /// # fn do_test() -> Result<bool, ProtoverError> {
-    /// let mut protoset: ProtoSet = "1,3-5,9".parse()?;
-    ///
-    /// // Keep only versions less than or equal to 8:
-    /// protoset.retain(|&x| x <= 8);
-    ///
-    /// assert!(protoset.expand().eq(vec![1, 3, 4, 5]));
-    /// #
-    /// # Ok(true)
-    /// # }
-    /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
-    /// ```
-    // XXX we could probably do something more efficient here. —isis
-    pub fn retain<F>(&mut self, f: F)
-    where
-        F: FnMut(&Version) -> bool,
-    {
-        let expanded: Vec<Version> = self.expand().filter(f).collect();
-        *self = expanded.into();
-    }
-
     /// Returns all the `Version`s in `self` which are not also in the `other`
     /// `ProtoSet`.
     ///
