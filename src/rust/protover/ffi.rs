@@ -213,7 +213,7 @@ pub extern "C" fn protover_compute_vote(
         };
         proto_entries.push(entry);
     }
-    let vote: UnvalidatedProtoEntry = ProtoverVote::compute(&proto_entries, &hold);
+    let vote: UnvalidatedProtoEntry = ProtoverVote::compute(&proto_entries, hold);
 
     allocate_and_copy_string(&vote.to_string())
 }
