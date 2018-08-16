@@ -37,10 +37,7 @@ pub fn c_tor_crypto_seed_rng() -> bool {
     unsafe {
         ret = crypto_seed_rng();
     }
-    match ret {
-        0 => return true,
-        _ => return false,
-    }
+    ret == 0
 }
 
 /// Fill the bytes of `dest` with random data.

@@ -5,6 +5,8 @@
 //!
 //! Equivalent C versions of this api are in `protover.c`
 
+#![cfg_attr(feature = "cargo-clippy", allow(not_unsafe_ptr_arg_deref))]
+
 use libc::{c_char, c_int, uint32_t};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -229,7 +231,11 @@ pub extern "C" fn protover_is_supported_here(c_protocol: uint32_t, version: uint
 
     let is_supported = is_supported_here(&protocol, version);
 
-    return if is_supported { 1 } else { 0 };
+    if is_supported {
+        1
+    } else {
+        0
+    }
 }
 
 /// Provide an interface for C to translate arguments and return types for

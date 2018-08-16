@@ -8,6 +8,7 @@
 //! We wrap our C implementations in src/common/crypto_digest.[ch] with more
 //! Rusty types and interfaces in src/rust/crypto/digest/.
 
+use std::mem::drop;
 use std::process::abort;
 
 use libc::c_char;
@@ -373,6 +374,7 @@ pub fn get_256_bit_digest(digest: CryptoDigest) -> [u8; DIGEST256_LEN] {
             abort();
         }
     }
+    drop(digest);
     buffer
 }
 
@@ -417,6 +419,7 @@ pub fn get_512_bit_digest(digest: CryptoDigest) -> [u8; DIGEST512_LEN] {
             abort();
         }
     }
+    drop(digest);
     buffer
 }
 

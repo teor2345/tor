@@ -7,14 +7,14 @@
 /// The related domain which the logging message is relevant. For example,
 /// log messages relevant to networking would use LogDomain::LdNet, whereas
 /// general messages can use LdGeneral.
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum LogDomain {
     Net,
     General,
 }
 
 /// The severity level at which to log messages.
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum LogSeverity {
     Notice,
     Warn,
