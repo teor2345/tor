@@ -20,7 +20,7 @@ use protoset::Version;
 ///
 /// C_RUST_COUPLED:
 ///     protover.h `FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS`
-const FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS: &'static str = "0.2.9.3-alpha";
+const FIRST_TOR_VERSION_TO_ADVERTISE_PROTOCOLS: &str = "0.2.9.3-alpha";
 
 /// The maximum number of subprotocol version numbers we will attempt to expand
 /// before concluding that someone is trying to DoS us
@@ -509,7 +509,7 @@ impl FromStr for UnvalidatedProtoEntry {
         let parts: Vec<(&str, &str)> =
             UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
 
-        for &(name, vers) in parts.iter() {
+        for &(name, vers) in &parts {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str(name)?;
 
@@ -529,7 +529,7 @@ impl UnvalidatedProtoEntry {
         let parts: Vec<(&str, &str)> =
             UnvalidatedProtoEntry::parse_protocol_and_version_str(protocol_string)?;
 
-        for &(name, vers) in parts.iter() {
+        for &(name, vers) in &parts {
             let versions = ProtoSet::from_str(vers)?;
             let protocol = UnknownProtocol::from_str_any_len(name)?;
 
@@ -641,7 +641,7 @@ impl ProtoverVote {
             // Go through and remove versions that are less than the threshold
             versions.retain(|_, &mut count| count as usize >= threshold);
 
-            if versions.len() > 0 {
+            if !versions.is_empty() {
                 let voted_versions: Vec<Version> = versions.keys().cloned().collect();
                 let voted_protoset: ProtoSet = ProtoSet::from(voted_versions);
 

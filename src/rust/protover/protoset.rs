@@ -370,7 +370,7 @@ impl FromStr for ProtoSet {
         }
         // If we were passed in an empty string, or
         // simply a comma, or a pile of commas, then return an empty ProtoSet.
-        if pairs.len() == 0 {
+        if pairs.is_empty() {
             return Ok(ProtoSet::default());
         }
         ProtoSet::from_slice(&pairs[..])
@@ -415,8 +415,8 @@ impl ToString for ProtoSet {
 /// For example, if given vec![1, 2, 3, 5], find_range will return true,
 /// as there is a continuous range, and 3, which is the last number in the
 /// continuous range, and 2 which is the index of 3.
-fn find_range(list: &Vec<Version>) -> (bool, Version, usize) {
-    if list.len() == 0 {
+fn find_range(list: &[Version]) -> (bool, Version, usize) {
+    if list.is_empty() {
         return (false, 0, 0);
     }
 
@@ -467,7 +467,7 @@ impl From<Vec<Version>> for ProtoSet {
                 version_pairs.push((first, last));
                 v = v.split_off(index + 1);
 
-                if v.len() == 0 {
+                if v.is_empty() {
                     break 'vector;
                 }
             } else {
@@ -479,7 +479,7 @@ impl From<Vec<Version>> for ProtoSet {
                 v.remove(index);
             }
         }
-        ProtoSet::from_slice(&version_pairs[..]).unwrap_or(ProtoSet::default())
+        ProtoSet::from_slice(&version_pairs[..]).unwrap_or_default()
     }
 }
 
