@@ -598,13 +598,13 @@ impl ProtoverVote {
     ///
     /// let protos: &[UnvalidatedProtoEntry] = &["Link=3-4".parse().unwrap(),
     ///                                          "Link=3".parse().unwrap()];
-    /// let vote = ProtoverVote::compute(protos, &2);
+    /// let vote = ProtoverVote::compute(protos, 2);
     /// assert_eq!("Link=3", vote.to_string());
     /// ```
     // C_RUST_COUPLED: protover.c protover_compute_vote
     pub fn compute(
         proto_entries: &[UnvalidatedProtoEntry],
-        threshold: &usize,
+        threshold: usize,
     ) -> UnvalidatedProtoEntry {
         let mut all_count: ProtoverVote = ProtoverVote::default();
         let mut final_output: UnvalidatedProtoEntry = UnvalidatedProtoEntry::default();
@@ -639,7 +639,7 @@ impl ProtoverVote {
 
         for (protocol, mut versions) in all_count {
             // Go through and remove versions that are less than the threshold
-            versions.retain(|_, count| *count as usize >= *threshold);
+            versions.retain(|_, &mut count| count as usize >= threshold);
 
             if versions.len() > 0 {
                 let voted_versions: Vec<Version> = versions.keys().cloned().collect();
