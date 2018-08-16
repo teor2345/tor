@@ -525,6 +525,7 @@ mod test {
         test_protoset_contains_versions!(&[1, 2, 5], "1-2,5");
         test_protoset_contains_versions!(&[1, 3, 4, 5], "1,3-5");
         test_protoset_contains_versions!(&[42, 55, 56, 57, 58], "42,55-58");
+        test_protoset_contains_versions!(&[0, 4294967294], "0-4294967294");
     }
 
     #[test]
@@ -592,6 +593,14 @@ mod test {
         assert_eq!(
             Err(ProtoverError::ExceedsMax),
             ProtoSet::from_slice(&[(4294967295, 4294967295)])
+        );
+    }
+
+    #[test]
+    fn test_versions_from_str_maxplusone() {
+        assert_eq!(
+            Err(ProtoverError::Unparseable),
+            ProtoSet::from_str("4294967296")
         );
     }
 
