@@ -316,35 +316,17 @@ impl UnvalidatedProtoEntry {
             Err(_) => return self.clone(),
         };
 
+        let emptyset = ProtoSet::default();
         for (protocol, versions) in self.iter() {
             let is_supported: Result<Protocol, ProtoverError> = protocol.0.parse();
-            let supported_protocol: Protocol;
 
-            // If the protocol wasn't even in the enum, then we definitely don't
-            // know about it and don't support any of its versions.
-            if is_supported.is_err() {
-                if !versions.is_empty() {
-                    unsupported.insert(protocol.clone(), versions.clone());
-                }
-                continue;
-            } else {
-                supported_protocol = is_supported.unwrap();
-            }
+            // If the protocol wasn't in the enum, or wasn't in the map, then we
+            // don't support any of its versions.
+            let supported_versions: &ProtoSet = is_supported
+                .ok()
+                .and_then(|supported_protocol| supported.get(&supported_protocol))
+                .unwrap_or(&emptyset);
 
-            let maybe_supported_versions: Option<&ProtoSet> = supported.get(&supported_protocol);
-            let supported_versions: &ProtoSet;
-
-            // If the protocol wasn't in the map, then we don't know about it
-            // and don't support any of its versions.  Add its versions to the
-            // map (if it has versions).
-            if maybe_supported_versions.is_none() {
-                if !versions.is_empty() {
-                    unsupported.insert(protocol.clone(), versions.clone());
-                }
-                continue;
-            } else {
-                supported_versions = maybe_supported_versions.unwrap();
-            }
             let unsupported_versions = versions.and_not_in(supported_versions);
 
             if !unsupported_versions.is_empty() {
