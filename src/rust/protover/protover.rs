@@ -282,12 +282,7 @@ impl UnvalidatedProtoEntry {
     }
 
     pub fn len(&self) -> usize {
-        let mut total: usize = 0;
-
-        for (_, versions) in self.iter() {
-            total += versions.len();
-        }
-        total
+        self.iter().map(|(_, versions)| versions.len()).sum()
     }
 
     /// Determine if we support every protocol a client supports, and if not,
