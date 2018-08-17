@@ -308,6 +308,8 @@ test_protover_vote_roundtrip(void *args)
       "Bar=3 Foo=1,3 Quux=9-12,14-16,900 Zn=1,4294967294" },
     { "Zu16=1,65536", "Zu16=1,65536" },
     { "N-1=1,2", "N-1=1-2" },
+    { "Foo=1 Foo=1", NULL },
+    { "Foo=1,3 Foo=2", NULL },
     { "-1=4294967295", NULL },
     { "-1=3", "-1=3" },
     { " Foo=1,3 Bar=3", NULL },

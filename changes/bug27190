@@ -1,0 +1,3 @@
+  o Minor bugfixes (protover):
+    - Reject duplicate protocol entries, and log a warning about it.
+      Fixes bug 27190; bugfix on 0.2.9.4-alpha.

@@ -381,6 +381,38 @@ encode_protocol_list(const smartlist_t *sl)
   return result;
 }
 
+static int
+compare_proto_name(const void **_a, const void **_b)
+{
+  const proto_entry_t *a = (const proto_entry_t *)*_a;
+  const proto_entry_t *b = (const proto_entry_t *)*_b;
+
+  return strcmp(a->name, b->name);
+}
+
+static void
+free_entry(void *entry) {
+  proto_entry_free((proto_entry_t *)entry);
+}
+
+/** Voting helper: Given a list of proto_entry_t, sort the entries by
+ * protocol name, and remove entries if any protocol name occurs more
+ * than once.
+ *
+ * Return 0 if duplicates were found, 1 if all protocol names are unique.
+ */
+static int
+uniq_protocol_list(smartlist_t *protos) {
+  int num_protos, num_unique_protos;
+
+  smartlist_sort(protos, compare_proto_name);
+  num_protos = smartlist_len(protos);
+  smartlist_uniq(protos, compare_proto_name, free_entry);
+  num_unique_protos = smartlist_len(protos);
+
+  return num_protos == num_unique_protos;
+}
+
 /* We treat any protocol list with more than this many subprotocols in it
  * as a DoS attempt. */
 static const int MAX_PROTOCOLS_TO_EXPAND = (1<<16);
@@ -587,6 +619,13 @@ protover_compute_vote(const smartlist_t *list_of_proto_strings,
                escaped(vote));
       continue;
     }
+
+    if (!uniq_protocol_list(unexpanded)) {
+      log_warn(LD_NET, "Duplicate entries were found in the protocol list. "
+               "The offending string was: %s", escaped(vote));
+      goto skip_vote;
+    }
+
     smartlist_t *this_vote = expand_protocol_list(unexpanded);
     if (this_vote == NULL) {
       log_warn(LD_NET, "When expanding a protocol list from an authority, I "
@@ -598,6 +637,7 @@ protover_compute_vote(const smartlist_t *list_of_proto_strings,
       smartlist_add_all(all_entries, this_vote);
       smartlist_free(this_vote);
     }
+  skip_vote:
     SMARTLIST_FOREACH(unexpanded, proto_entry_t *, e, proto_entry_free(e));
     smartlist_free(unexpanded);
   } SMARTLIST_FOREACH_END(vote);
