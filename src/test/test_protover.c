@@ -130,7 +130,7 @@ test_protover_vote(void *arg)
   tt_str_op(result, OP_EQ, "Bar=1,3-8 Foo=1-10,500");
   tor_free(result);
 
-  smartlist_add(lst, (void*) "Quux=123-456,78 Bar=2-6,8 Foo=9");
+  smartlist_add(lst, (void*) "Quux=78,123-456 Bar=2-6,8 Foo=9");
   result = protover_compute_vote(lst, 1);
   tt_str_op(result, OP_EQ, "Bar=1-8 Foo=1-10,500 Quux=78,123-456");
   tor_free(result);
@@ -297,6 +297,9 @@ test_protover_vote_roundtrip(void *args)
     { "Zn=4294967293-4294967295", NULL },
     { "Foo=1-2", "Foo=1-2" },
     { "Foo=2-1", NULL },
+    { "Foo=1-2,2-3", NULL },
+    { "Foo=1-5,2-4", NULL },
+    { "Foo=3-4,1-2", NULL },
     /* Version 0 is illegal. */
     { "Foo=0", NULL },
     { "Foo=0-0", NULL },

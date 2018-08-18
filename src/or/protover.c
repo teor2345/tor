@@ -183,6 +183,7 @@ parse_single_entry(const char *s, const char *end_of_entry)
 {
   proto_entry_t *out = tor_malloc_zero(sizeof(proto_entry_t));
   const char *equals;
+  uint32_t highest_seen = 0;
 
   out->ranges = smartlist_new();
 
@@ -213,6 +214,11 @@ parse_single_entry(const char *s, const char *end_of_entry)
     if (parse_version_range(s, comma, &range->low, &range->high) < 0) {
       goto error;
     }
+    // Check for overlapping ranges, and ranges out of order.
+    if (range->low <= highest_seen) {
+      goto error;
+    }
+    highest_seen = range->high;
 
     s = comma;
     // Skip the comma separator between ranges. Don't ignore a trailing comma.
@@ -446,8 +452,6 @@ expand_protocol_list(const smartlist_t *protos)
     } SMARTLIST_FOREACH_END(range);
   } SMARTLIST_FOREACH_END(ent);
 
-  smartlist_sort_strings(expanded);
-  smartlist_uniq_strings(expanded); // This makes voting work. do not remove
   return expanded;
 
  too_many:
