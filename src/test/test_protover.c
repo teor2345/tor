@@ -287,6 +287,8 @@ test_protover_vote_roundtrip(void *args)
     { "Zn=4294967295", NULL },
     { "Zn=4294967295-1", NULL },
     { "Zn=4294967293-4294967295", NULL },
+    { "Foo=1-2", "Foo=1-2" },
+    { "Foo=2-1", NULL },
     /* Version 0 is illegal. */
     { "Foo=0", NULL },
     { "Foo=0-0", NULL },
