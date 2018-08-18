@@ -138,6 +138,9 @@ parse_version_range(const char *s, const char *end_of_range,
     goto error;
   if (next > end_of_range)
     goto error;
+  // Version 0 is forbidden.
+  if (low == 0)
+    goto error;
   if (next == end_of_range) {
     high = low;
     goto done;
@@ -402,6 +405,7 @@ expand_protocol_list(const smartlist_t *protos)
     const char *name = ent->name;
     SMARTLIST_FOREACH_BEGIN(ent->ranges, const proto_range_t *, range) {
       uint32_t u;
+      tor_assert(range->low != 0 && range->low <= range->high);
       for (u = range->low; u <= range->high; ++u) {
         smartlist_add_asprintf(expanded, "%s=%lu", name, (unsigned long)u);
         if (smartlist_len(expanded) > MAX_PROTOCOLS_TO_EXPAND)
