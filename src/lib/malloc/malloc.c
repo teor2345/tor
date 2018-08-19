@@ -11,6 +11,7 @@
 
 #include "orconfig.h"
 
+#include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,17 +20,37 @@
 #include "lib/malloc/malloc.h"
 #include "lib/cc/torint.h"
 #include "lib/err/torerr.h"
+#include "lib/intmath/cmp.h"
 
 #ifdef __clang_analyzer__
 #undef MALLOC_ZERO_WORKS
 #endif
 
-/** Allocate a chunk of <b>size</b> bytes of memory, and return a pointer to
- * result.  On error, log and terminate the process.  (Same as malloc(size),
- * but never returns NULL.)
+#ifndef HAVE_ALIGNED_ALLOC
+static void *aligned_alloc(size_t alignment, size_t size) {
+#ifdef _WIN32
+  return _aligned_malloc(size, alignment);
+#elif defined(HAVE_MEMALIGN)
+  return memalign(alignment, size);
+#else
+  void *result = NULL;
+  alignment = MAX(alignment, sizeof(void*));
+  if (posix_memalign(&result, alignment, size))
+    return NULL;
+  return result;
+#endif
+}
+#endif
+
+/** Allocate a chunk of <b>size</b> bytes of memory, and return a pointer.
+ * The pointer is guaranteed to be a multiple of <b>alignment</b>.
+ * <b>size</b> should be a multiple of <b>alignment</b>, and <b>alignment</b>
+ * should be a power of two (this includes one).  On error, log and terminate
+ * the process.  (Same as C11's aligned_alloc(alignment, size), but never
+ * returns NULL.)
  */
 void *
-tor_malloc_(size_t size)
+tor_aligned_alloc_(size_t alignment, size_t size)
 {
   void *result;
 
@@ -42,7 +63,7 @@ tor_malloc_(size_t size)
   }
 #endif /* !defined(MALLOC_ZERO_WORKS) */
 
-  result = raw_malloc(size);
+  result = aligned_alloc(alignment, size);
 
   if (PREDICT_UNLIKELY(result == NULL)) {
     /* LCOV_EXCL_START */
@@ -53,6 +74,16 @@ tor_malloc_(size_t size)
     /* LCOV_EXCL_STOP */
   }
   return result;
+}
+
+/** Allocate a chunk of <b>size</b> bytes of memory, and return a pointer to
+ * result.  On error, log and terminate the process.  (Same as malloc(size),
+ * but never returns NULL.)
+ */
+void *
+tor_malloc_(size_t size)
+{
+  return tor_aligned_alloc_(1, size);
 }
 
 /** Allocate a chunk of <b>size</b> bytes of memory, fill the memory with
@@ -113,6 +144,8 @@ tor_calloc_(size_t nmemb, size_t size)
 /** Change the size of the memory block pointed to by <b>ptr</b> to <b>size</b>
  * bytes long; return the new memory block.  On error, log and
  * terminate. (Like realloc(ptr,size), but never returns NULL.)
+ *
+ * NOTE: This does not preserve alignment!
  */
 void *
 tor_realloc_(void *ptr, size_t size)
@@ -226,5 +259,9 @@ tor_memdup_nulterm_(const void *mem, size_t len)
 void
 tor_free_(void *mem)
 {
-  tor_free(mem);
+#if !defined(HAVE_ALIGNED_ALLOC) && defined(_WIN32)
+  _aligned_free(mem);
+#else
+  raw_free(mem);
+#endif
 }

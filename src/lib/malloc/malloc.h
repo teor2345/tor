@@ -16,6 +16,7 @@
 #include "lib/cc/compat_compiler.h"
 
 /* Memory management */
+void *tor_aligned_alloc_(size_t alignment, size_t size) ATTR_MALLOC;
 void *tor_malloc_(size_t size) ATTR_MALLOC;
 void *tor_malloc_zero_(size_t size) ATTR_MALLOC;
 void *tor_calloc_(size_t nmemb, size_t size) ATTR_MALLOC;
@@ -45,16 +46,17 @@ void tor_free_(void *mem);
 #ifdef __GNUC__
 #define tor_free(p) STMT_BEGIN                                 \
     typeof(&(p)) tor_free__tmpvar = &(p);                      \
-    raw_free(*tor_free__tmpvar);                               \
+    tor_free_(*tor_free__tmpvar);                              \
     *tor_free__tmpvar=NULL;                                    \
   STMT_END
 #else
 #define tor_free(p) STMT_BEGIN                                 \
-  raw_free(p);                                                 \
+  tor_free_(p);                                                \
   (p)=NULL;                                                    \
   STMT_END
 #endif
 
+#define tor_aligned_alloc(align, size) tor_aligned_alloc_(align, size)
 #define tor_malloc(size)       tor_malloc_(size)
 #define tor_malloc_zero(size)  tor_malloc_zero_(size)
 #define tor_calloc(nmemb,size) tor_calloc_(nmemb, size)

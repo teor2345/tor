@@ -576,6 +576,7 @@ AC_CHECK_FUNCS(
 	RtlSecureZeroMemory \
 	SecureZeroMemory \
 	accept4 \
+	aligned_alloc \
 	backtrace \
 	backtrace_symbols_fd \
 	eventfd \
@@ -600,6 +601,7 @@ AC_CHECK_FUNCS(
 	llround \
 	localtime_r \
 	lround \
+	memalign \
 	memmem \
 	memset_s \
 	mmap \
