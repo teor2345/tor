@@ -145,7 +145,7 @@ tor_calloc_(size_t nmemb, size_t size)
  * bytes long; return the new memory block.  On error, log and
  * terminate. (Like realloc(ptr,size), but never returns NULL.)
  *
- * NOTE: This does not preserve alignment!
+ * NOTE: This MUST not be called on a pointer returned from tor_aligned_alloc.
  */
 void *
 tor_realloc_(void *ptr, size_t size)
@@ -161,7 +161,14 @@ tor_realloc_(void *ptr, size_t size)
   }
 #endif /* !defined(MALLOC_ZERO_WORKS) */
 
+#if !defined(HAVE_ALIGNED_ALLOC) && defined(_WIN32)
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-realloc
+  // "It is an error to reallocate memory and change the alignment of a block."
+  // Pass the exact same alignment it was allocated with.
+  result = _aligned_realloc(ptr, size, 1);
+#else
   result = raw_realloc(ptr, size);
+#endif
 
   if (PREDICT_UNLIKELY(result == NULL)) {
     /* LCOV_EXCL_START */
