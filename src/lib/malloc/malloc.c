@@ -33,13 +33,17 @@ static void *aligned_alloc(size_t alignment, size_t size) {
 #elif defined(HAVE_MEMALIGN)
   return memalign(alignment, size);
 #else
+#define MIN_ALIGN sizeof(void*)
   void *result = NULL;
-  alignment = MAX(alignment, sizeof(void*));
-  if (posix_memalign(&result, alignment, size))
+  if (PREDICT_UNLIKELY(posix_memalign(&result, alignment, size)))
     return NULL;
   return result;
 #endif
 }
+#endif
+
+#ifndef MIN_ALIGN
+#define MIN_ALIGN 1
 #endif
 
 /** Allocate a chunk of <b>size</b> bytes of memory, and return a pointer.
@@ -83,7 +87,7 @@ tor_aligned_alloc_(size_t alignment, size_t size)
 void *
 tor_malloc_(size_t size)
 {
-  return tor_aligned_alloc_(1, size);
+  return tor_aligned_alloc_(MIN_ALIGN, size);
 }
 
 /** Allocate a chunk of <b>size</b> bytes of memory, fill the memory with
@@ -165,7 +169,7 @@ tor_realloc_(void *ptr, size_t size)
   // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-realloc
   // "It is an error to reallocate memory and change the alignment of a block."
   // Pass the exact same alignment it was allocated with.
-  result = _aligned_realloc(ptr, size, 1);
+  result = _aligned_realloc(ptr, size, MIN_ALIGN);
 #else
   result = raw_realloc(ptr, size);
 #endif
