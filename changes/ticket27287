@@ -1,0 +1,3 @@
+  o Minor features (testing):
+    - Run check-local when using `make distcheck`
+      Implements ticket 27287.

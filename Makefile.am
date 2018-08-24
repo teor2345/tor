@@ -205,6 +205,9 @@ test: all
 
 check-local: check-spaces check-changes check-includes
 
+# Automake doesn't seem to run check-local during distcheck
+distcheck-hook: check-local
+
 need-chutney-path:
 	@if test ! -d "$$CHUTNEY_PATH"; then \
 		echo '$$CHUTNEY_PATH was not set.'; \
