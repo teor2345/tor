@@ -150,7 +150,7 @@ test-network-all: need-chutney-path test-driver $(TESTING_TOR_BINARY) src/tools/
 		$(top_srcdir)/src/test/test-network.sh $(TEST_NETWORK_WARNING_FLAGS); \
 	done; \
 	echo "Log and result files are available in $(TEST_NETWORK_ALL_LOG_DIR)."; \
-	! grep -q FAIL test_network_log/*.trs
+	! grep -q FAIL $(TEST_NETWORK_ALL_LOG_DIR)/*.trs
 
 need-stem-path:
 	@if test ! -d "$$STEM_SOURCE_DIR"; then \
