@@ -2389,13 +2389,13 @@ static uint32_t
 conn_get_buffer_age(const connection_t *conn, uint32_t now_ts)
 {
   uint32_t age = 0, age2;
-  if (conn->outbuf) {
-    age2 = buf_get_oldest_chunk_timestamp(conn->outbuf, now_ts);
+  if (connection_get_outbuf_len(conn) > 0) {
+    age2 = now_ts - (uintptr_t)smartlist_get(conn->outbuf_timestamps, 0);
     if (age2 > age)
       age = age2;
   }
-  if (conn->inbuf) {
-    age2 = buf_get_oldest_chunk_timestamp(conn->inbuf, now_ts);
+  if (connection_get_inbuf_len(conn) > 0) {
+    age2 = now_ts - (uintptr_t)smartlist_get(conn->inbuf_timestamps, 0);
     if (age2 > age)
       age = age2;
   }

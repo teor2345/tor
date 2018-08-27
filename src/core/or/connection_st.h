@@ -95,6 +95,10 @@ struct connection_t {
                          * connection. */
   size_t outbuf_flushlen; /**< How much data should we try to flush from the
                            * outbuf? */
+  smartlist_t *outbuf_timestamps; /**< Timestamps of when chunks were added to
+                                   * outbuf. */
+  smartlist_t *inbuf_timestamps; /**< Timestamps of when chunks were added to
+                                  * inbuf. */
   time_t timestamp_last_read_allowed; /**< When was the last time libevent said
                                        * we could read? */
   time_t timestamp_last_write_allowed; /**< When was the last time libevent

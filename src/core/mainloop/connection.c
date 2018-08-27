@@ -499,6 +499,8 @@ connection_init(time_t now, connection_t *conn, int type, int socket_family)
     /* listeners never use their buf */
     conn->inbuf = buf_new();
     conn->outbuf = buf_new();
+    conn->inbuf_timestamps = smartlist_new();
+    conn->outbuf_timestamps = smartlist_new();
   }
 
   conn->timestamp_created = now;
@@ -598,6 +600,8 @@ connection_free_minimal(connection_t *conn)
   if (!connection_is_listener(conn)) {
     buf_free(conn->inbuf);
     buf_free(conn->outbuf);
+    smartlist_free(conn->inbuf_timestamps);
+    smartlist_free(conn->outbuf_timestamps);
   } else {
     if (conn->socket_family == AF_UNIX) {
       /* For now only control and SOCKS ports can be Unix domain sockets
@@ -3399,6 +3403,9 @@ connection_handle_read_impl(connection_t *conn)
       return 0;
   }
 
+  tor_assert_nonfatal(buf_num_chunks(conn->inbuf) ==
+                      (unsigned)smartlist_len(conn->inbuf_timestamps));
+
  loop_again:
   try_to_read = max_to_read;
   tor_assert(!conn->marked_for_close);
@@ -3489,12 +3496,39 @@ connection_handle_read(connection_t *conn)
   return res;
 }
 
+/** If any of the oldest chunk(s) in outbuf have been flushed,
+ *  remove their corresponding timestamps.
+ */
+static void
+drain_outbuf_timestamps(connection_t *conn)
+{
+  size_t chunks = buf_num_chunks(conn->outbuf);
+  while ((unsigned)smartlist_len(conn->outbuf_timestamps) > chunks) {
+    smartlist_del_keeporder(conn->outbuf_timestamps, 0);
+  }
+}
+
+/** Add timestamps for any new chunks added to inbuf.
+ */
+static void
+add_inbuf_timestamps(connection_t *conn)
+{
+  uint32_t now = monotime_coarse_get_stamp();
+  size_t chunks = buf_num_chunks(conn->inbuf);
+  // Add timestamps for newly arrived chunks. Needed by the OOM handler.
+  while ((unsigned)smartlist_len(conn->inbuf_timestamps) < chunks) {
+    smartlist_add(conn->inbuf_timestamps, (void*)(uintptr_t)now);
+  }
+}
+
 /** Flush bytes from <b>conn_send</b>'s outbuf to <b>conn_recv</b>'s inbuf. */
 static int
 flush_from_linked_conn(connection_t *conn_recv, connection_t *conn_send)
 {
   int ret = buf_move_to_buf(conn_recv->inbuf, conn_send->outbuf,
                             &conn_send->outbuf_flushlen);
+  drain_outbuf_timestamps(conn_send);
+  add_inbuf_timestamps(conn_recv);
   return ret;
 }
 
@@ -3516,6 +3550,9 @@ connection_buf_read_from_socket(connection_t *conn, ssize_t *max_to_read,
   ssize_t at_most = *max_to_read;
   size_t slack_in_buf, more_to_read;
   size_t n_read = 0, n_written = 0;
+
+  tor_assert_nonfatal(buf_num_chunks(conn->inbuf) ==
+                      (unsigned)smartlist_len(conn->inbuf_timestamps));
 
   if (at_most == -1) { /* we need to initialize it */
     /* how many bytes are we allowed to read? */
@@ -3669,6 +3706,8 @@ connection_buf_read_from_socket(connection_t *conn, ssize_t *max_to_read,
     }
   }
 
+  add_inbuf_timestamps(conn);
+
   connection_buckets_decrement(conn, approx_time(), n_read, n_written);
 
   if (more_to_read && result == at_most) {
@@ -3687,11 +3726,25 @@ connection_buf_read_from_socket(connection_t *conn, ssize_t *max_to_read,
   return 0;
 }
 
+/** If any of the oldest chunk(s) in inbuf have been processed and removed,
+ *  remove their corresponding timestamps.
+ */
+static void
+drain_inbuf_timestamps(connection_t *conn)
+{
+  size_t chunks = buf_num_chunks(conn->inbuf);
+  while ((unsigned)smartlist_len(conn->inbuf_timestamps) > chunks) {
+    smartlist_del_keeporder(conn->inbuf_timestamps, 0);
+  }
+}
+
 /** A pass-through to fetch_from_buf. */
 int
 connection_buf_get_bytes(char *string, size_t len, connection_t *conn)
 {
-  return buf_get_bytes(conn->inbuf, string, len);
+  int ret = buf_get_bytes(conn->inbuf, string, len);
+  drain_inbuf_timestamps(conn);
+  return ret;
 }
 
 /** As buf_get_line(), but read from a connection's input buffer. */
@@ -3699,7 +3752,9 @@ int
 connection_buf_get_line(connection_t *conn, char *data,
                                size_t *data_len)
 {
-  return buf_get_line(conn->inbuf, data, data_len);
+  int ret = buf_get_line(conn->inbuf, data, data_len);
+  drain_inbuf_timestamps(conn);
+  return ret;
 }
 
 /** As fetch_from_buf_http, but fetches from a connection's input buffer_t as
@@ -3710,8 +3765,10 @@ connection_fetch_from_buf_http(connection_t *conn,
                                char **body_out, size_t *body_used,
                                size_t max_bodylen, int force_complete)
 {
-  return fetch_from_buf_http(conn->inbuf, headers_out, max_headerlen,
+  int ret = fetch_from_buf_http(conn->inbuf, headers_out, max_headerlen,
                              body_out, body_used, max_bodylen, force_complete);
+  drain_inbuf_timestamps(conn);
+  return ret;
 }
 
 /** Return conn-\>outbuf_flushlen: how many bytes conn wants to flush
@@ -3807,6 +3864,9 @@ connection_handle_write_impl(connection_t *conn, int force)
     log_warn(LD_BUG, "called recursively from inside conn->in_flushed_some");
     return 0;
   }
+
+  tor_assert_nonfatal(buf_num_chunks(conn->outbuf) ==
+                      (unsigned)smartlist_len(conn->outbuf_timestamps));
 
   conn->timestamp_last_write_allowed = now;
 
@@ -4209,6 +4269,13 @@ connection_write_to_buf_commit(connection_t *conn, size_t len)
     connection_start_writing(conn);
   }
   conn->outbuf_flushlen += len;
+
+  uint32_t now = monotime_coarse_get_stamp();
+  size_t chunks = buf_num_chunks(conn->outbuf);
+  // Add timestamps for newly buffered chunks. Needed by the OOM handler.
+  while ((unsigned)smartlist_len(conn->outbuf_timestamps) < chunks) {
+    smartlist_add(conn->outbuf_timestamps, (void*)(uintptr_t)now);
+  }
 }
 
 /** Append <b>len</b> bytes of <b>string</b> onto <b>conn</b>'s
@@ -4232,6 +4299,9 @@ connection_write_to_buf_impl_,(const char *string, size_t len,
     return;
 
   size_t written;
+
+  tor_assert_nonfatal(buf_num_chunks(conn->outbuf) ==
+                      (unsigned)smartlist_len(conn->outbuf_timestamps));
 
   if (zlib) {
     size_t old_datalen = buf_datalen(conn->outbuf);
@@ -4666,26 +4736,36 @@ set_constrained_socket_buffers(tor_socket_t sock, int size)
 static int
 connection_process_inbuf(connection_t *conn, int package_partial)
 {
+  int ret;
   tor_assert(conn);
 
   switch (conn->type) {
     case CONN_TYPE_OR:
-      return connection_or_process_inbuf(TO_OR_CONN(conn));
+      ret = connection_or_process_inbuf(TO_OR_CONN(conn));
+      break;
     case CONN_TYPE_EXT_OR:
-      return connection_ext_or_process_inbuf(TO_OR_CONN(conn));
+      ret = connection_ext_or_process_inbuf(TO_OR_CONN(conn));
+      break;
     case CONN_TYPE_EXIT:
     case CONN_TYPE_AP:
-      return connection_edge_process_inbuf(TO_EDGE_CONN(conn),
-                                           package_partial);
+      ret = connection_edge_process_inbuf(TO_EDGE_CONN(conn),
+                                          package_partial);
+      break;
     case CONN_TYPE_DIR:
-      return connection_dir_process_inbuf(TO_DIR_CONN(conn));
+      ret = connection_dir_process_inbuf(TO_DIR_CONN(conn));
+      break;
     case CONN_TYPE_CONTROL:
-      return connection_control_process_inbuf(TO_CONTROL_CONN(conn));
+      ret = connection_control_process_inbuf(TO_CONTROL_CONN(conn));
+      break;
     default:
       log_err(LD_BUG,"got unexpected conn type %d.", conn->type);
       tor_fragile_assert();
       return -1;
   }
+
+  drain_inbuf_timestamps(conn);
+
+  return ret;
 }
 
 /** Called whenever we've written data on a connection. */
@@ -4695,6 +4775,9 @@ connection_flushed_some(connection_t *conn)
   int r = 0;
   tor_assert(!conn->in_flushed_some);
   conn->in_flushed_some = 1;
+
+  drain_outbuf_timestamps(conn);
+
   if (conn->type == CONN_TYPE_DIR &&
       conn->state == DIR_CONN_STATE_SERVER_WRITING) {
     r = connection_dirserv_flushed_some(TO_DIR_CONN(conn));

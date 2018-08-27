@@ -97,6 +97,9 @@ dummy_edge_conn_new(circuit_t *circ,
    * edge connection read/write machinery. */
   add_bytes_to_buf(inbuf, in_bytes);
   add_bytes_to_buf(outbuf, out_bytes);
+  uint32_t now = monotime_coarse_get_stamp();
+  smartlist_add(TO_CONN(conn)->inbuf_timestamps, (void*)(uintptr_t)now);
+  smartlist_add(TO_CONN(conn)->outbuf_timestamps, (void*)(uintptr_t)now);
 
   conn->on_circuit = circ;
   if (type == CONN_TYPE_EXIT) {
