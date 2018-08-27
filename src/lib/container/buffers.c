@@ -260,6 +260,7 @@ buf_pullup(buf_t *buf, size_t bytes, const char **head_out, size_t *len_out)
       if (buf->tail == src)
         buf->tail = dest;
       buf_chunk_free_unchecked(src);
+      buf->num_chunks--;
     } else {
       memcpy(CHUNK_WRITE_PTR(dest), src->data, n);
       dest->datalen += n;
@@ -343,6 +344,7 @@ buf_drain(buf_t *buf, size_t n)
       if (buf->tail == victim)
         buf->tail = NULL;
       buf_chunk_free_unchecked(victim);
+      buf->num_chunks--;
     }
   }
   check();
@@ -385,6 +387,7 @@ buf_clear(buf_t *buf)
     buf_chunk_free_unchecked(chunk);
   }
   buf->head = buf->tail = NULL;
+  buf->num_chunks = 0;
 }
 
 /** Return the number of bytes stored in <b>buf</b> */
@@ -392,6 +395,13 @@ MOCK_IMPL(size_t,
 buf_datalen, (const buf_t *buf))
 {
   return buf->datalen;
+}
+
+/** Return the number of chunks stored in <b>buf</b> */
+size_t
+buf_num_chunks(const buf_t *buf)
+{
+  return buf->num_chunks;
 }
 
 /** Return the total length of all chunks used in <b>buf</b>. */
@@ -492,6 +502,7 @@ buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, int capped)
     tor_assert(!buf->head);
     buf->head = buf->tail = chunk;
   }
+  buf->num_chunks++;
   check();
   return chunk;
 }
@@ -699,8 +710,10 @@ buf_move_all(buf_t *buf_out, buf_t *buf_in)
   }
 
   buf_out->datalen += buf_in->datalen;
+  buf_out->num_chunks += buf_in->num_chunks;
   buf_in->head = buf_in->tail = NULL;
   buf_in->datalen = 0;
+  buf_in->num_chunks = 0;
 }
 
 /** Internal structure: represents a position in a buffer. */
@@ -898,11 +911,13 @@ buf_assert_ok(buf_t *buf)
   if (! buf->head) {
     tor_assert(!buf->tail);
     tor_assert(buf->datalen == 0);
+    tor_assert(buf->num_chunks == 0);
   } else {
     chunk_t *ch;
-    size_t total = 0;
+    size_t total = 0, num_chunks = 0;
     tor_assert(buf->tail);
     for (ch = buf->head; ch; ch = ch->next) {
+      num_chunks++;
       total += ch->datalen;
       tor_assert(ch->datalen <= ch->memlen);
       tor_assert(ch->data >= &ch->mem[0]);
@@ -921,5 +936,6 @@ buf_assert_ok(buf_t *buf)
         tor_assert(ch == buf->tail);
     }
     tor_assert(buf->datalen == total);
+    tor_assert(buf->num_chunks == num_chunks);
   }
 }

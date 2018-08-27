@@ -32,6 +32,7 @@ buf_t *buf_copy(const buf_t *buf);
 MOCK_DECL(size_t, buf_datalen, (const buf_t *buf));
 size_t buf_allocation(const buf_t *buf);
 size_t buf_slack(const buf_t *buf);
+size_t buf_num_chunks(const buf_t *buf);
 
 uint32_t buf_get_oldest_chunk_timestamp(const buf_t *buf, uint32_t now);
 size_t buf_get_total_allocation(void);
@@ -90,6 +91,7 @@ struct buf_t {
   uint32_t magic; /**< Magic cookie for debugging: Must be set to
                    *   BUFFER_MAGIC. */
   size_t datalen; /**< How many bytes is this buffer holding right now? */
+  size_t num_chunks; /**< How many chunks is this buffer holding right now? */
   size_t default_chunk_size; /**< Don't allocate any chunks smaller than
                               * this for this buffer. */
   chunk_t *head; /**< First chunk in the list, or NULL for none. */
