@@ -34,7 +34,6 @@ size_t buf_allocation(const buf_t *buf);
 size_t buf_slack(const buf_t *buf);
 size_t buf_num_chunks(const buf_t *buf);
 
-uint32_t buf_get_oldest_chunk_timestamp(const buf_t *buf, uint32_t now);
 size_t buf_get_total_allocation(void);
 
 int buf_add(buf_t *buf, const char *string, size_t string_len);
@@ -79,7 +78,6 @@ typedef struct chunk_t {
   size_t DBG_alloc;
 #endif
   char *data; /**< A pointer to the first byte of data stored in <b>mem</b>. */
-  uint32_t inserted_time; /**< Timestamp when this chunk was inserted. */
   char mem[FLEXIBLE_ARRAY_MEMBER]; /**< The actual memory used for storage in
                 * this chunk. */
 } chunk_t;

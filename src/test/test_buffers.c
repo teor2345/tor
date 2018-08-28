@@ -436,79 +436,6 @@ test_buffer_allocation_tracking(void *arg)
 }
 
 static void
-test_buffer_time_tracking(void *arg)
-{
-  buf_t *buf=NULL, *buf2=NULL;
-  const time_t START = 1389288246;
-  const uint64_t START_NSEC = ((uint64_t)START) * 1000000000;
-  int i;
-  char tmp[4096];
-  (void)arg;
-
-  crypto_rand(tmp, sizeof(tmp));
-
-  monotime_enable_test_mocking();
-
-  buf = buf_new_with_capacity(3000); /* rounds up to next power of 2. */
-  tt_assert(buf);
-
-  monotime_coarse_set_mock_time_nsec(START_NSEC);
-  const uint32_t START_TS = monotime_coarse_get_stamp();
-
-  /* Empty buffer means the timestamp is 0. */
-  tt_int_op(0, OP_EQ, buf_get_oldest_chunk_timestamp(buf, START_TS));
-  tt_int_op(0, OP_EQ, buf_get_oldest_chunk_timestamp(buf, START_TS+1000));
-
-  buf_add(buf, "ABCDEFG", 7);
-  tt_int_op(1000, OP_EQ, buf_get_oldest_chunk_timestamp(buf, START_TS+1000));
-
-  buf2 = buf_copy(buf);
-  tt_assert(buf2);
-  tt_int_op(1234, OP_EQ,
-            buf_get_oldest_chunk_timestamp(buf2, START_TS+1234));
-
-  /* Now add more bytes; enough to overflow the first chunk. */
-  monotime_coarse_set_mock_time_nsec(START_NSEC + 123 * (uint64_t)1000000);
-  const uint32_t TS2 = monotime_coarse_get_stamp();
-  for (i = 0; i < 600; ++i)
-    buf_add(buf, "ABCDEFG", 7);
-  tt_int_op(4207, OP_EQ, buf_datalen(buf));
-
-  /* The oldest bytes are still in the front. */
-  tt_int_op(2000, OP_EQ, buf_get_oldest_chunk_timestamp(buf, START_TS+2000));
-
-  /* Once those bytes are dropped, the chunk is still on the first
-   * timestamp. */
-  buf_get_bytes(buf, tmp, 100);
-  tt_int_op(2000, OP_EQ, buf_get_oldest_chunk_timestamp(buf, START_TS+2000));
-
-  /* But once we discard the whole first chunk, we get the data in the second
-   * chunk. */
-  buf_get_bytes(buf, tmp, 4000);
-  tt_int_op(107, OP_EQ, buf_datalen(buf));
-  tt_int_op(2000, OP_EQ, buf_get_oldest_chunk_timestamp(buf, TS2+2000));
-
-  /* This time we'll be grabbing a chunk from the freelist, and making sure
-     its time gets updated */
-  monotime_coarse_set_mock_time_nsec(START_NSEC + 5617 * (uint64_t)1000000);
-  const uint32_t TS3 = monotime_coarse_get_stamp();
-  for (i = 0; i < 600; ++i)
-    buf_add(buf, "ABCDEFG", 7);
-  tt_int_op(4307, OP_EQ, buf_datalen(buf));
-
-  tt_int_op(2000, OP_EQ, buf_get_oldest_chunk_timestamp(buf, TS2+2000));
-  buf_get_bytes(buf, tmp, 4000);
-  buf_get_bytes(buf, tmp, 306);
-  tt_int_op(0, OP_EQ, buf_get_oldest_chunk_timestamp(buf, TS3));
-  tt_int_op(383, OP_EQ, buf_get_oldest_chunk_timestamp(buf, TS3+383));
-
- done:
-  buf_free(buf);
-  buf_free(buf2);
-  monotime_disable_test_mocking();
-}
-
-static void
 test_buffers_compress_fin_at_chunk_end_impl(compress_method_t method,
                                             compression_level_t level)
 {
@@ -802,7 +729,6 @@ struct testcase_t buffer_tests[] = {
   { "startswith", test_buffer_peek_startswith, 0, NULL, NULL },
   { "allocation_tracking", test_buffer_allocation_tracking, TT_FORK,
     NULL, NULL },
-  { "time_tracking", test_buffer_time_tracking, TT_FORK, NULL, NULL },
   { "tls_read_mocked", test_buffers_tls_read_mocked, 0,
     NULL, NULL },
   { "chunk_size", test_buffers_chunk_size, 0, NULL, NULL },
