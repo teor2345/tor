@@ -541,3 +541,15 @@ string_is_utf8(const char *str, size_t len)
   }
   return true;
 }
+
+/** As string_is_utf8(), but returns false if the string begins with a UTF-8
+ * byte order mark (BOM).
+ */
+int
+string_is_utf8_no_bom(const char *str, size_t len)
+{
+  if (len >= 3 && (!strncmp(str, "\uFEFF", 3) || !strncmp(str, "\uFFFE", 3))) {
+    return false;
+  }
+  return string_is_utf8(str, len);
+}
