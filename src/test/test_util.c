@@ -4041,7 +4041,7 @@ test_util_validate_utf8(void *ptr)
   tt_int_op(1, OP_EQ, validate_utf8("\xee\x80\x80", 4));
 
   tt_int_op(1, OP_EQ, validate_utf8("\U0010FFFF", 5));
-  tt_int_op(0, OP_EQ, validate_utf8("\U00110000", 5));
+  tt_int_op(0, OP_EQ, validate_utf8("\xf4\x90\x80\x80", 5));
 
  done:
   ;
