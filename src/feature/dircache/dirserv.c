@@ -607,6 +607,11 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
     *msg = "descriptor(s) or extrainfo(s) not valid UTF-8.";
     return ROUTER_AUTHDIR_REJECTS;
   }
+  if (desclen >= 3 && (!strncmp(desc, "\uFEFF", 3) ||
+                       !strncmp(desc, "\uFFFE", 3))) {
+    *msg = "descriptor(s) or extrainfo(s) started with BOM";
+    return ROUTER_AUTHDIR_REJECTS;
+  }
 
   format_iso_time(time_buf, now);
   if (tor_snprintf(annotation_buf, sizeof(annotation_buf),
