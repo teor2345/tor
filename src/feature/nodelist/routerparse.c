@@ -2120,7 +2120,7 @@ extrainfo_parse_entry_from_string(const char *s, const char *end,
     end = s + strlen(s);
   }
 
-  if (!validate_utf8(s, end-s)) {
+  if (!string_is_utf8(s, end-s)) {
     log_warn(LD_DIR, "extrainfo was not valid UTF-8.");
     return NULL;
   }
