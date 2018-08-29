@@ -522,7 +522,7 @@ validate_char(const uint8_t *c, uint8_t len)
 /** Returns true iff the first <b>len</b> bytes in <b>str</b> are a
     valid UTF-8 string. */
 int
-validate_utf8(const char *str, size_t len)
+string_is_utf8(const char *str, size_t len)
 {
   for (size_t i = 0; i < len;) {
     uint8_t num_bytes = bytes_in_char(str[i]);

@@ -52,6 +52,6 @@ const char *find_str_at_start_of_line(const char *haystack,
 
 int string_is_C_identifier(const char *string);
 
-int validate_utf8(const char *str, size_t len);
+int string_is_utf8(const char *str, size_t len);
 
 #endif /* !defined(TOR_UTIL_STRING_H) */
