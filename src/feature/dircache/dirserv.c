@@ -603,6 +603,11 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
 
   r=ROUTER_ADDED_SUCCESSFULLY; /*Least severe return value. */
 
+  if (!string_is_utf8(desc, desclen)) {
+    *msg = "descriptor(s) or extrainfo(s) not valid UTF-8.";
+    return ROUTER_AUTHDIR_REJECTS;
+  }
+
   format_iso_time(time_buf, now);
   if (tor_snprintf(annotation_buf, sizeof(annotation_buf),
                    "@uploaded-at %s\n"
@@ -619,7 +624,7 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
 
   s = desc;
   list = smartlist_new();
-  if (!router_parse_list_from_string(&s, s+desclen, list, SAVED_NOWHERE, 0, 0,
+  if (!router_parse_list_from_string(&s, NULL, list, SAVED_NOWHERE, 0, 0,
                                      annotation_buf, NULL)) {
     SMARTLIST_FOREACH(list, routerinfo_t *, ri, {
         msg_out = NULL;
@@ -635,7 +640,7 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
   smartlist_clear(list);
 
   s = desc;
-  if (!router_parse_list_from_string(&s, s+desclen, list, SAVED_NOWHERE, 1, 0,
+  if (!router_parse_list_from_string(&s, NULL, list, SAVED_NOWHERE, 1, 0,
                                      NULL, NULL)) {
     SMARTLIST_FOREACH(list, extrainfo_t *, ei, {
         msg_out = NULL;

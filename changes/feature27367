@@ -1,3 +1,0 @@
-  o Minor feature (router parsing):
-    - Tor now validates that the router descriptors and ExtraInfo documents are
-      valid UTF-8, and rejects them if not. Closes ticket 27367.
