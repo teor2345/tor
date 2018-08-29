@@ -1325,16 +1325,9 @@ find_start_of_next_router_or_extrainfo(const char **s_ptr,
       return 0;
     }
 
-    const char *next = memchr(s+1, '\n', eos-(s+1));
-    if (!next)
+    if (!(s = memchr(s+1, '\n', eos-(s+1))))
       break;
-
-    if (!string_is_utf8_no_bom(s, next-s)) {
-      log_warn(LD_DIR, "descriptor(s) or extrainfo(s) not valid UTF-8.");
-      break;
-    }
-
-    s = eat_whitespace_eos(next, eos);
+    s = eat_whitespace_eos(s, eos);
   }
   return -1;
 }
@@ -1548,11 +1541,6 @@ router_parse_entry_from_string(const char *s, const char *end,
 
   if (!end) {
     end = s + strlen(s);
-  }
-
-  if (!string_is_utf8_no_bom(s, end-s)) {
-    log_warn(LD_DIR, "router descriptor was not valid UTF-8.");
-    return NULL;
   }
 
   /* point 'end' to a point immediately after the final newline. */
@@ -2123,11 +2111,6 @@ extrainfo_parse_entry_from_string(const char *s, const char *end,
 
   if (!end) {
     end = s + strlen(s);
-  }
-
-  if (!string_is_utf8_no_bom(s, end-s)) {
-    log_warn(LD_DIR, "extrainfo was not valid UTF-8.");
-    return NULL;
   }
 
   /* point 'end' to a point immediately after the final newline. */

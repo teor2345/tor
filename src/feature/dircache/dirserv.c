@@ -603,6 +603,11 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
 
   r=ROUTER_ADDED_SUCCESSFULLY; /*Least severe return value. */
 
+  if (!string_is_utf8_no_bom(desc, desclen)) {
+    *msg = "descriptor(s) or extrainfo(s) not valid UTF-8 or had BOM.";
+    return ROUTER_AUTHDIR_REJECTS;
+  }
+
   format_iso_time(time_buf, now);
   if (tor_snprintf(annotation_buf, sizeof(annotation_buf),
                    "@uploaded-at %s\n"
