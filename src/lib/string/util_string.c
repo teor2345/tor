@@ -452,9 +452,14 @@ string_is_C_identifier(const char *string)
   return 1;
 }
 
+/** A byte with the top <b>x</b> bits set. */
 #define TOP_BITS(x) ((uint8_t)(0xFF << (8 - (x))))
+/** A byte with the lowest <b>x</b> bits set. */
 #define LOW_BITS(x) ((uint8_t)(0xFF >> (8 - (x))))
 
+/** Given the leading byte <b>b</b>, return the total number of bytes in the
+ * UTF-8 character. Returns 0 if it's an invalid leading byte.
+ */
 static uint8_t
 bytes_in_char(uint8_t b)
 {
@@ -471,14 +476,19 @@ bytes_in_char(uint8_t b)
   return 0;
 }
 
-/** Check if top 2 bits are 10. */
-static bool is_continuation_byte(uint8_t b)
+/** Returns true iff <b>b</b> is a UTF-8 continuation byte. */
+static bool
+is_continuation_byte(uint8_t b)
 {
   uint8_t top2bits = b & TOP_BITS(2);
   return top2bits == TOP_BITS(1);
 }
 
-static bool validate_char(const uint8_t *c, uint8_t len)
+/** Returns true iff the <b>len</b> bytes in <b>c</b> are a valid UTF-8
+ * character.
+ */
+static bool
+validate_char(const uint8_t *c, uint8_t len)
 {
   if (len == 1)
     return true; // already validated this is an ASCII char earlier.
