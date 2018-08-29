@@ -4018,28 +4018,34 @@ test_util_validate_utf8(void *ptr)
 
   tt_int_op(1, OP_EQ, validate_utf8(NULL, 0));
   tt_int_op(1, OP_EQ, validate_utf8("", 1));
-  tt_int_op(0, OP_EQ, validate_utf8("\0\x80", 2));
   tt_int_op(1, OP_EQ, validate_utf8("\uFEFF", 3));
   tt_int_op(1, OP_EQ, validate_utf8("\uFFFE", 3));
   tt_int_op(1, OP_EQ, validate_utf8("ascii\x7f\n", 8));
   tt_int_op(1, OP_EQ, validate_utf8("Risqu\u00e9=1", 10));
+
+  // Validate exactly 'len' bytes.
+  tt_int_op(0, OP_EQ, validate_utf8("\0\x80", 2));
   tt_int_op(0, OP_EQ, validate_utf8("Risqu\u00e9=1", 6));
 
+  // Reject sequences with missing bytes.
   tt_int_op(0, OP_EQ, validate_utf8("\x80", 2));
   tt_int_op(0, OP_EQ, validate_utf8("\xc2", 2));
   tt_int_op(0, OP_EQ, validate_utf8("\xe1\x80", 3));
   tt_int_op(0, OP_EQ, validate_utf8("\xf1\x80\x80", 4));
 
+  // Reject encodings that are overly long.
   tt_int_op(0, OP_EQ, validate_utf8("\xc1\xbf", 3));
   tt_int_op(1, OP_EQ, validate_utf8("\xc2\x80", 3));
   tt_int_op(0, OP_EQ, validate_utf8("\xe0\x80\x80", 4));
   tt_int_op(0, OP_EQ, validate_utf8("\xf0\x80\x80\x80", 5));
 
+  // Reject UTF-16 surrogate halves.
   tt_int_op(1, OP_EQ, validate_utf8("\xed\x9f\xbf", 4));
   tt_int_op(0, OP_EQ, validate_utf8("\xed\xa0\x80", 4));
   tt_int_op(0, OP_EQ, validate_utf8("\xed\xbf\xbf", 4));
   tt_int_op(1, OP_EQ, validate_utf8("\xee\x80\x80", 4));
 
+  // The maximum legal codepoint.
   tt_int_op(1, OP_EQ, validate_utf8("\U0010FFFF", 5));
   tt_int_op(0, OP_EQ, validate_utf8("\xf4\x90\x80\x80", 5));
 
