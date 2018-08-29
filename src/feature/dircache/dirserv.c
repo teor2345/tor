@@ -603,13 +603,8 @@ dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
 
   r=ROUTER_ADDED_SUCCESSFULLY; /*Least severe return value. */
 
-  if (!string_is_utf8(desc, desclen)) {
-    *msg = "descriptor(s) or extrainfo(s) not valid UTF-8.";
-    return ROUTER_AUTHDIR_REJECTS;
-  }
-  if (desclen >= 3 && (!strncmp(desc, "\uFEFF", 3) ||
-                       !strncmp(desc, "\uFFFE", 3))) {
-    *msg = "descriptor(s) or extrainfo(s) started with BOM";
+  if (!string_is_utf8_no_bom(desc, desclen)) {
+    *msg = "descriptor(s) or extrainfo(s) not valid UTF-8 or had BOM.";
     return ROUTER_AUTHDIR_REJECTS;
   }
 
