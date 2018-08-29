@@ -4036,8 +4036,10 @@ test_util_validate_utf8(void *ptr)
   // Reject encodings that are overly long.
   tt_int_op(0, OP_EQ, validate_utf8("\xc1\xbf", 3));
   tt_int_op(1, OP_EQ, validate_utf8("\xc2\x80", 3));
-  tt_int_op(0, OP_EQ, validate_utf8("\xe0\x80\x80", 4));
-  tt_int_op(0, OP_EQ, validate_utf8("\xf0\x80\x80\x80", 5));
+  tt_int_op(0, OP_EQ, validate_utf8("\xe0\x9f\xbf", 4));
+  tt_int_op(1, OP_EQ, validate_utf8("\xe0\xa0\x80", 4));
+  tt_int_op(0, OP_EQ, validate_utf8("\xf0\x8f\xbf\xbf", 5));
+  tt_int_op(1, OP_EQ, validate_utf8("\xf0\x90\x80\x80", 5));
 
   // Reject UTF-16 surrogate halves.
   tt_int_op(1, OP_EQ, validate_utf8("\xed\x9f\xbf", 4));
@@ -4045,8 +4047,8 @@ test_util_validate_utf8(void *ptr)
   tt_int_op(0, OP_EQ, validate_utf8("\xed\xbf\xbf", 4));
   tt_int_op(1, OP_EQ, validate_utf8("\xee\x80\x80", 4));
 
-  // The maximum legal codepoint.
-  tt_int_op(1, OP_EQ, validate_utf8("\U0010FFFF", 5));
+  // The maximum legal codepoint, 10FFFF.
+  tt_int_op(1, OP_EQ, validate_utf8("\xf4\x8f\xbf\xbf", 5));
   tt_int_op(0, OP_EQ, validate_utf8("\xf4\x90\x80\x80", 5));
 
  done:
