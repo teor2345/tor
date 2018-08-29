@@ -4016,7 +4016,7 @@ test_util_validate_utf8(void *ptr)
 {
   (void)ptr;
 
-  tt_int_op(1, OP_EQ, validate_utf8("ascii\x7f\n", 9));
+  tt_int_op(1, OP_EQ, validate_utf8("ascii\x7f\n", 8));
   tt_int_op(1, OP_EQ, validate_utf8("Risqu\u00e9=1", 10));
   tt_int_op(0, OP_EQ, validate_utf8("Risqu\u00e9=1", 6));
 
