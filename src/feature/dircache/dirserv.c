@@ -585,7 +585,8 @@ WRA_MORE_SEVERE(was_router_added_t a, was_router_added_t b)
 /** As for dirserv_add_descriptor(), but accepts multiple documents, and
  * returns the most severe error that occurred for any one of them. */
 was_router_added_t
-dirserv_add_multiple_descriptors(const char *desc, uint8_t purpose,
+dirserv_add_multiple_descriptors(const char *desc, size_t desclen,
+                                 uint8_t purpose,
                                  const char *source,
                                  const char **msg)
 {
@@ -601,6 +602,11 @@ dirserv_add_multiple_descriptors(const char *desc, uint8_t purpose,
   tor_assert(msg);
 
   r=ROUTER_ADDED_SUCCESSFULLY; /*Least severe return value. */
+
+  if (!string_is_utf8(desc, desclen)) {
+    *msg = "descriptor(s) or extrainfo(s) not valid UTF-8.";
+    return ROUTER_AUTHDIR_REJECTS;
+  }
 
   format_iso_time(time_buf, now);
   if (tor_snprintf(annotation_buf, sizeof(annotation_buf),
