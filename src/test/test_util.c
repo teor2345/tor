@@ -4030,8 +4030,11 @@ test_util_string_is_utf8(void *ptr)
   // Reject sequences with missing bytes.
   tt_int_op(0, OP_EQ, string_is_utf8("\x80", 1));
   tt_int_op(0, OP_EQ, string_is_utf8("\xc2", 1));
+  tt_int_op(0, OP_EQ, string_is_utf8("\xc2 ", 2));
   tt_int_op(0, OP_EQ, string_is_utf8("\xe1\x80", 2));
+  tt_int_op(0, OP_EQ, string_is_utf8("\xe1\x80 ", 3));
   tt_int_op(0, OP_EQ, string_is_utf8("\xf1\x80\x80", 3));
+  tt_int_op(0, OP_EQ, string_is_utf8("\xf1\x80\x80 ", 4));
 
   // Reject encodings that are overly long.
   tt_int_op(0, OP_EQ, string_is_utf8("\xc1\xbf", 2));
