@@ -13,6 +13,14 @@ environment:
     compiler_path: mingw64
     openssl_path: /c/OpenSSL-Win64
 
+matrix:
+  # 64-bit builds fail due to a broken compiler as of 30 Aug 2018
+  # see #27389 for details
+  allow_failures:
+  - target: x86_64-w64-mingw32
+    compiler_path: mingw64
+    openssl_path: /c/OpenSSL-Win64
+
 install:
 - ps: >-
     Function Execute-Command ($commandPath)
