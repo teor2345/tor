@@ -2815,32 +2815,51 @@ dirvote_act(const or_options_t *options, time_t now)
         IF_TIME_FOR_NEXT_ACTION(when_field, 0, interval_starts /*dummy*/,     \
                                 done_field, action_str)
 
-  IF_TIME_FOR_NEXT_REQUIRED_ACTION(voting_starts,
-                                   have_voted,
-                                   "vote") {
+  /* If it's past the time when we should start voting, but voting hasn't
+   * ended yet, create and start uploading our vote. */
+  IF_TIME_FOR_NEXT_SKIPPABLE_ACTION(voting_starts,
+                                    voting_ends,
+                                    have_voted,
+                                    "vote") {
     dirvote_perform_vote();
     voting_schedule.have_voted = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_REQUIRED_ACTION(fetch_missing_votes,
-                                   have_fetched_missing_votes,
-                                   "fetch any votes that we're missing") {
+  /* If it's past the time when we should fetch missing votes, but voting
+   * hasn't ended yet, start asking other authorities for missing votes. */
+  IF_TIME_FOR_NEXT_SKIPPABLE_ACTION(fetch_missing_votes,
+                                    voting_ends,
+                                    have_fetched_missing_votes,
+                                    "fetch any votes that we're missing") {
     dirvote_fetch_missing_votes();
     voting_schedule.have_fetched_missing_votes = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_REQUIRED_ACTION(voting_ends,
-                                   have_built_consensus,
-                                   "compute a consensus") {
+  /* If it's past the time when we should start creating the consensus, but
+   * the consensus hasn't been published yet, create and sign the consensus,
+   * and start uploading our signature. */
+  IF_TIME_FOR_NEXT_SKIPPABLE_ACTION(voting_ends,
+                                    interval_starts,
+                                    have_built_consensus,
+                                    "compute a consensus") {
     dirvote_compute_consensuses();
     /* XXXX We will want to try again later if we haven't got enough
      * votes yet.  Implement this if it turns out to ever happen. */
     voting_schedule.have_built_consensus = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_REQUIRED_ACTION(fetch_missing_signatures,
+  /* If it's past the time when we should start fetch missing signatures, but
+   * the consensus hasn't been published yet, start asking other authorities
+   * for missing signatures. */
+  IF_TIME_FOR_NEXT_SKIPPABLE_ACTION(fetch_missing_signatures,
+                                   interval_starts,
                                    have_fetched_missing_signatures,
                                    "fetch any signatures that we're missing") {
     dirvote_fetch_missing_signatures();
     voting_schedule.have_fetched_missing_signatures = 1;
   } ENDIF
+  /* If it's past the time when the consensus interval starts, try to publish
+   * the consensus with the signatures we have right now. If we have enough
+   * signatures to publish, clear the previous consensus and signatures.
+   * Always clear previous votes, update the shared random state, and
+   * calculate the next voting schedule. */
   IF_TIME_FOR_NEXT_REQUIRED_ACTION(interval_starts,
                                have_published_consensus,
                                "publish the consensus and discard old votes") {
