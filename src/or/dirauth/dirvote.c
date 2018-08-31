@@ -3130,8 +3130,9 @@ dirvote_add_vote(const char *vote_body, const char **msg_out, int *status_out)
     char tbuf1[ISO_TIME_LEN+1], tbuf2[ISO_TIME_LEN+1];
     format_iso_time(tbuf1, vote->valid_after);
     format_iso_time(tbuf2, voting_schedule.interval_starts);
-    log_warn(LD_DIR, "Rejecting vote from %s with valid-after time of %s; "
-             "we were expecting %s", vi->address, tbuf1, tbuf2);
+    log_warn(LD_DIR, "Rejecting vote from %s at %s with valid-after time of "
+             "%s; we were expecting %s", vi->nickname, vi->address,
+             tbuf1, tbuf2);
     *msg_out = "Bad valid-after time";
     goto err;
   }
@@ -3147,14 +3148,15 @@ dirvote_add_vote(const char *vote_body, const char **msg_out, int *status_out)
         networkstatus_voter_info_t *vi_old = get_voter(v->vote);
         if (fast_memeq(vi_old->vote_digest, vi->vote_digest, DIGEST_LEN)) {
           /* Ah, it's the same vote. Not a problem. */
-          log_info(LD_DIR, "Discarding a vote we already have (from %s).",
-                   vi->address);
+          log_info(LD_DIR, "Discarding a vote we already have "
+                   "(from %s at %s).",
+                   vi->nickname, vi->address);
           if (*status_out < 200)
             *status_out = 200;
           goto discard;
         } else if (v->vote->published < vote->published) {
           log_notice(LD_DIR, "Replacing an older pending vote from this "
-                     "directory (%s)", vi->address);
+                     "directory (%s at %s)", vi->nickname, vi->address);
           cached_dir_decref(v->vote_body);
           networkstatus_vote_free(v->vote);
           v->vote_body = new_cached_dir(tor_strndup(vote_body,
