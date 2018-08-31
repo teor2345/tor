@@ -2772,6 +2772,10 @@ dirvote_act(const or_options_t *options, time_t now)
    * not be aligned to what we should expect with "now". This is especially
    * true for TestingTorNetwork using smaller timings.  */
   if (voting_schedule.created_on_demand) {
+    log_voting_schedule(LOG_INFO,
+                        "in dirvote_act(), before on demand recalculation",
+                        now, &voting_schedule);
+
     char *keys = list_v3_auth_ids();
     authority_cert_t *c = get_my_v3_authority_cert();
     log_notice(LD_DIR, "Scheduling voting.  Known authority IDs are %s. "
@@ -2780,6 +2784,9 @@ dirvote_act(const or_options_t *options, time_t now)
     tor_free(keys);
     voting_schedule_recalculate_timing(options, now);
   }
+
+  log_voting_schedule(LOG_DEBUG, "in dirvote_act(), before acting",
+                      now, &voting_schedule);
 
 #define IF_TIME_FOR_NEXT_ACTION(when_field, done_field) \
   if (! voting_schedule.done_field) {                   \
@@ -2825,6 +2832,8 @@ dirvote_act(const or_options_t *options, time_t now)
     /* XXXX We will want to try again later if we haven't got enough
      * signatures yet.  Implement this if it turns out to ever happen. */
     voting_schedule_recalculate_timing(options, now);
+    log_voting_schedule(LOG_INFO, "in dirvote_act(), next vote",
+                        now, &voting_schedule);
     return voting_schedule.voting_starts;
   } ENDIF
 

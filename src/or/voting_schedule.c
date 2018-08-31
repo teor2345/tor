@@ -190,3 +190,38 @@ voting_schedule_recalculate_timing(const or_options_t *options, time_t now)
   voting_schedule_free(new_voting_schedule);
 }
 
+/* Log sched in LD_DIR at severity. If description is not NULL, add it to
+ * the log message. Log times relative to now. Pass 0 for now to log absolute
+ * times. */
+void
+log_voting_schedule(int severity, const char *description,
+                    time_t now, const voting_schedule_t *sched)
+{
+  if (BUG(!sched)) {
+    return;
+  }
+
+  tor_log(severity, LD_DIR, "Voting schedule%s%s, times relative to now: %ld. "
+          "created_on_demand: %d. "
+          "voting_starts: %+ld have_voted: %d. "
+          "fetch_missing_votes: %+ld have_fetched_missing_votes: %d. "
+          "voting_ends: %+ld have_built_consensus: %d. "
+          "fetch_missing_signatures: %+ld "
+          "have_fetched_missing_signatures: %d. "
+          "interval_starts: %+ld have_published_consensus: %d.",
+          description ? " " : "",
+          description ? description : "",
+          now,
+          sched->created_on_demand,
+          sched->voting_starts - now,
+          sched->have_voted,
+          sched->fetch_missing_votes - now,
+          sched->have_fetched_missing_votes,
+          sched->voting_ends - now,
+          sched->have_built_consensus,
+          sched->fetch_missing_signatures - now,
+          sched->have_fetched_missing_signatures,
+          sched->interval_starts - now,
+          sched->have_published_consensus);
+}
+
