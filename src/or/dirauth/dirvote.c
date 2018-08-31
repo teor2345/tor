@@ -2783,6 +2783,10 @@ dirvote_act(const or_options_t *options, time_t now)
                keys, hex_str(c->cache_info.identity_digest, DIGEST_LEN));
     tor_free(keys);
     voting_schedule_recalculate_timing(options, now);
+
+    log_voting_schedule(LOG_INFO,
+                        "in dirvote_act(), after on demand recalculation",
+                        now, &voting_schedule);
   }
 
   log_voting_schedule(LOG_DEBUG, "in dirvote_act(), before acting",
