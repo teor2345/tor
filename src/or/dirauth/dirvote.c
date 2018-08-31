@@ -2792,41 +2792,58 @@ dirvote_act(const or_options_t *options, time_t now)
   log_voting_schedule(LOG_DEBUG, "in dirvote_act(), before acting",
                       now, &voting_schedule);
 
-#define IF_TIME_FOR_NEXT_ACTION(when_field, done_field, action_str) \
-  if (! voting_schedule.done_field) {                   \
-    if (voting_schedule.when_field > now) {             \
-      return voting_schedule.when_field;                \
-    } else {                                            \
+#define IF_TIME_FOR_NEXT_ACTION(when_field, can_skip, skip_field, done_field, \
+                                action_str)                                   \
+  if (! voting_schedule.done_field) {                                         \
+    if (voting_schedule.when_field > now) {                                   \
+      return voting_schedule.when_field;                                      \
+    } else if (can_skip && voting_schedule.skip_field <= now) {               \
+      log_notice(LD_DIR, "Too late to %s, skipping.", action_str);            \
+      voting_schedule.done_field = 1;                                         \
+    } else {                                                                  \
       log_notice(LD_DIR, "Time to %s.", action_str);
-#define ENDIF \
-    }         \
+#define ENDIF                                                                 \
+    }                                                                         \
   }
 
-  IF_TIME_FOR_NEXT_ACTION(voting_starts, have_voted, "vote") {
+#define IF_TIME_FOR_NEXT_SKIPPABLE_ACTION(when_field, skip_field, done_field, \
+                                          action_str)                         \
+        IF_TIME_FOR_NEXT_ACTION(when_field, 1, skip_field, done_field,        \
+                                action_str)
+
+#define IF_TIME_FOR_NEXT_REQUIRED_ACTION(when_field, done_field, action_str)  \
+        IF_TIME_FOR_NEXT_ACTION(when_field, 0, interval_starts /*dummy*/,     \
+                                done_field, action_str)
+
+  IF_TIME_FOR_NEXT_REQUIRED_ACTION(voting_starts,
+                                   have_voted,
+                                   "vote") {
     dirvote_perform_vote();
     voting_schedule.have_voted = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_ACTION(fetch_missing_votes, have_fetched_missing_votes,
-                          "fetch any votes that we're missing") {
+  IF_TIME_FOR_NEXT_REQUIRED_ACTION(fetch_missing_votes,
+                                   have_fetched_missing_votes,
+                                   "fetch any votes that we're missing") {
     dirvote_fetch_missing_votes();
     voting_schedule.have_fetched_missing_votes = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_ACTION(voting_ends, have_built_consensus,
-                          "compute a consensus") {
+  IF_TIME_FOR_NEXT_REQUIRED_ACTION(voting_ends,
+                                   have_built_consensus,
+                                   "compute a consensus") {
     dirvote_compute_consensuses();
     /* XXXX We will want to try again later if we haven't got enough
      * votes yet.  Implement this if it turns out to ever happen. */
     voting_schedule.have_built_consensus = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_ACTION(fetch_missing_signatures,
-                          have_fetched_missing_signatures,
-                          "fetch any signatures that we're missing") {
+  IF_TIME_FOR_NEXT_REQUIRED_ACTION(fetch_missing_signatures,
+                                   have_fetched_missing_signatures,
+                                   "fetch any signatures that we're missing") {
     dirvote_fetch_missing_signatures();
     voting_schedule.have_fetched_missing_signatures = 1;
   } ENDIF
-  IF_TIME_FOR_NEXT_ACTION(interval_starts,
-                          have_published_consensus,
-                          "publish the consensus and discard old votes") {
+  IF_TIME_FOR_NEXT_REQUIRED_ACTION(interval_starts,
+                               have_published_consensus,
+                               "publish the consensus and discard old votes") {
     dirvote_publish_consensus();
     dirvote_clear_votes(0);
     voting_schedule.have_published_consensus = 1;
@@ -2844,6 +2861,8 @@ dirvote_act(const or_options_t *options, time_t now)
   tor_assert_nonfatal_unreached();
   return now + 1;
 
+#undef IF_TIME_FOR_NEXT_REQUIRED_ACTION
+#undef IF_TIME_FOR_NEXT_SKIPPABLE_ACTION
 #undef ENDIF
 #undef IF_TIME_FOR_NEXT_ACTION
 }
