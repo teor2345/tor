@@ -902,10 +902,10 @@ dump_desc,(const char *desc, const char *type))
   debugfile = get_datadir_fname2(DESC_DUMP_DATADIR_SUBDIR, debugfile_base);
 
   /*
-   * Check if the sandbox is active or will become active; see comment
-   * below at the log message for why.
+   * Check if the sandbox is active; see comment below at the log message for
+   * why.
    */
-  if (!(sandbox_is_active() || get_options()->Sandbox)) {
+  if (!(sandbox_is_active())) {
     if (len <= get_options()->MaxUnparseableDescSizeToLog) {
       if (!dump_desc_fifo_bump_hash(digest_sha256)) {
         /* Create the directory if needed */
@@ -955,7 +955,7 @@ dump_desc,(const char *desc, const char *type))
      * Not logging because the sandbox is active and seccomp2 apparently
      * doesn't have a sensible way to allow filenames according to a pattern
      * match.  (If we ever figure out how to say "allow writes to /regex/",
-     * remove this checK).
+     * remove this check).
      */
     log_info(LD_DIR,
              "Unable to parse descriptor of type %s with hash %s and "
