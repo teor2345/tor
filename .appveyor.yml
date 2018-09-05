@@ -28,6 +28,8 @@ install:
     Execute-Command "C:\msys64\usr\bin\pacman" -Sy --noconfirm openssl-devel openssl libevent-devel libevent mingw-w64-i686-libevent mingw-w64-x86_64-libevent mingw-w64-i686-openssl mingw-w64-x86_64-openssl mingw-w64-i686-zstd mingw-w64-x86_64-zstd
 
 build_script:
+- sh: export APPVEYOR_SSH_BLOCK=true
+- sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 - ps: >-
     if ($env:compiler -eq "mingw") {
             $oldpath = ${env:Path} -split ';'
@@ -54,10 +56,6 @@ test_script:
             Set-Location "${env:build}"
             Execute-Bash "VERBOSE=1 make -j2 check"
     }
-
-on_finish:
-- sh: export APPVEYOR_SSH_BLOCK=true
-- sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 
 on_failure:
 - ps: >-
