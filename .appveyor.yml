@@ -41,7 +41,7 @@ build_script:
             Set-Location "${env:build}"
             Execute-Bash "which ${env:target}-gcc"
             Execute-Bash "${env:target}-gcc --version"
-            Execute-Bash "../configure --prefix=/${env:compiler_path} --build=${env:target} --host=${env:target} --disable-asciidoc --enable-fatal-warnings --with-openssl-dir=${env:openssl_path}"
+            Execute-Bash "../configure --prefix=/${env:compiler_path} --build=${env:target} --host=${env:target} --disable-asciidoc --enable-fatal-warnings --with-openssl-dir=${env:openssl_path} --disable-gcc-hardening"
             Execute-Bash "V=1 make -j2"
             Execute-Bash "V=1 make -j2 install"
      }
