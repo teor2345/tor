@@ -4200,12 +4200,17 @@ tor_run_main(const tor_main_configuration_t *tor_cfg)
   int argc = tor_cfg->argc;
   char **argv = tor_cfg->argv;
 
+  /* 32-bit Windows defines _WIN32.
+   * 64-bit Windows defines _WIN32 and _WIN64. */
 #ifdef _WIN32
 #ifndef HeapEnableTerminationOnCorruption
 #define HeapEnableTerminationOnCorruption 1
 #endif
   /* On heap corruption, just give up; don't try to play along. */
   HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+
+  /* SetProcessDEPPolicy is only supported on 32-bit Windows. */
+#ifndef _WIN64
   /* Call SetProcessDEPPolicy to permanently enable DEP.
      The function will not resolve on earlier versions of Windows,
      and failure is not dangerous. */
@@ -4219,6 +4224,7 @@ tor_run_main(const tor_main_configuration_t *tor_cfg)
       setdeppolicy(3);
     }
   }
+#endif /* !defined(_WIN64) */
 #endif /* defined(_WIN32) */
 
   configure_backtrace_handler(get_version());
