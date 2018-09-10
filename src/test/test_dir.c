@@ -2892,8 +2892,9 @@ test_a_networkstatus(
                                                    sign_skey_leg1,
                                                    FLAV_NS);
   tt_assert(consensus_text);
-  con = networkstatus_parse_vote_from_string(consensus_text, NULL,
-                                             NS_TYPE_CONSENSUS);
+  con = networkstatus_parse_vote_from_string(consensus_text,
+                                             strlen(consensus_text),
+                                             NULL, NS_TYPE_CONSENSUS);
   tt_assert(con);
   //log_notice(LD_GENERAL, "<<%s>>\n<<%s>>\n<<%s>>\n",
   //           v1_text, v2_text, v3_text);
@@ -2904,8 +2905,9 @@ test_a_networkstatus(
                                                    sign_skey_leg1,
                                                    FLAV_MICRODESC);
   tt_assert(consensus_text_md);
-  con_md = networkstatus_parse_vote_from_string(consensus_text_md, NULL,
-                                                NS_TYPE_CONSENSUS);
+  con_md = networkstatus_parse_vote_from_string(consensus_text_md,
+                                                strlen(consensus_text_md),
+                                                NULL, NS_TYPE_CONSENSUS);
   tt_assert(con_md);
   tt_int_op(con_md->flavor,OP_EQ, FLAV_MICRODESC);
 
@@ -3003,14 +3005,18 @@ test_a_networkstatus(
     tt_assert(consensus_text3);
     tt_assert(consensus_text_md2);
     tt_assert(consensus_text_md3);
-    con2 = networkstatus_parse_vote_from_string(consensus_text2, NULL,
-                                                NS_TYPE_CONSENSUS);
-    con3 = networkstatus_parse_vote_from_string(consensus_text3, NULL,
-                                                NS_TYPE_CONSENSUS);
-    con_md2 = networkstatus_parse_vote_from_string(consensus_text_md2, NULL,
-                                                NS_TYPE_CONSENSUS);
-    con_md3 = networkstatus_parse_vote_from_string(consensus_text_md3, NULL,
-                                                NS_TYPE_CONSENSUS);
+    con2 = networkstatus_parse_vote_from_string(consensus_text2,
+                                                strlen(consensus_text2),
+                                                NULL, NS_TYPE_CONSENSUS);
+    con3 = networkstatus_parse_vote_from_string(consensus_text3,
+                                                strlen(consensus_text3),
+                                                NULL, NS_TYPE_CONSENSUS);
+    con_md2 = networkstatus_parse_vote_from_string(consensus_text_md2,
+                                                strlen(consensus_text_md2),
+                                                NULL, NS_TYPE_CONSENSUS);
+    con_md3 = networkstatus_parse_vote_from_string(consensus_text_md3,
+                                                strlen(consensus_text_md3),
+                                                NULL, NS_TYPE_CONSENSUS);
     tt_assert(con2);
     tt_assert(con3);
     tt_assert(con_md2);

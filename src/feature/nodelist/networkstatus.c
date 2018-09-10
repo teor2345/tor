@@ -1853,6 +1853,7 @@ networkstatus_set_current_consensus(const char *consensus,
   time_t current_valid_after = 0;
   int free_consensus = 1; /* Free 'c' at the end of the function */
   int checked_protocols_already = 0;
+  size_t len = strlen(consensus);
 
   if (flav < 0) {
     /* XXXX we don't handle unrecognized flavors yet. */
@@ -1861,7 +1862,9 @@ networkstatus_set_current_consensus(const char *consensus,
   }
 
   /* Make sure it's parseable. */
-  c = networkstatus_parse_vote_from_string(consensus, NULL, NS_TYPE_CONSENSUS);
+  size_t parsed;
+  c = networkstatus_parse_vote_from_string(consensus, len, &parsed,
+                                           NS_TYPE_CONSENSUS);
   if (!c) {
     log_warn(LD_DIR, "Unable to parse networkstatus consensus");
     result = -2;
