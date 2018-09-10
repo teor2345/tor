@@ -43,18 +43,19 @@ fuzz_main(const uint8_t *stdin_buf, size_t data_size)
   if (! separator)
     return 0;
   size_t c1_len = separator - stdin_buf;
-  char *c1 = tor_memdup_nulterm(stdin_buf, c1_len);
+  const char *c1 = (const char*)stdin_buf;
   size_t c2_len = data_size - c1_len - SEPLEN;
-  char *c2 = tor_memdup_nulterm(separator + SEPLEN, c2_len);
+  const char *c2 = (const char*)separator + SEPLEN;
 
   char *c3 = consensus_diff_generate(c1, c1_len, c2, c2_len);
 
   if (c3) {
     char *c4 = consensus_diff_apply(c1, c3);
     tor_assert(c4);
-    if (strcmp(c2, c4)) {
-      printf("%s\n", escaped(c1));
-      printf("%s\n", escaped(c2));
+    if (strncmp(c2, c4, c2_len)) {
+      // These aren't necessarily NUL-terminated.
+      //printf("%s\n", escaped(c1));
+      //printf("%s\n", escaped(c2));
       printf("%s\n", escaped(c3));
       printf("%s\n", escaped(c4));
     }
@@ -62,8 +63,6 @@ fuzz_main(const uint8_t *stdin_buf, size_t data_size)
     tor_free(c3);
     tor_free(c4);
   }
-  tor_free(c1);
-  tor_free(c2);
 
   return 0;
 }
