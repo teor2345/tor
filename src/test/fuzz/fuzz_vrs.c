@@ -53,23 +53,20 @@ int
 fuzz_main(const uint8_t *data, size_t sz)
 {
   char *str = tor_memdup_nulterm(data, sz);
-  const char *s;
   routerstatus_t *rs_ns = NULL, *rs_md = NULL, *rs_vote = NULL;
   vote_routerstatus_t *vrs = tor_malloc_zero(sizeof(*vrs));
   smartlist_t *tokens = smartlist_new();
+  size_t bytes;
 
-  s = str;
-  rs_ns = routerstatus_parse_entry_from_string(area, &s, tokens,
+  rs_ns = routerstatus_parse_entry_from_string(area, str, sz, &bytes, tokens,
                                                NULL, NULL, 26, FLAV_NS);
   tor_assert(smartlist_len(tokens) == 0);
 
-  s = str;
-  rs_md = routerstatus_parse_entry_from_string(area, &s, tokens,
+  rs_md = routerstatus_parse_entry_from_string(area, str, sz, &bytes, tokens,
                                                NULL, NULL, 26, FLAV_MICRODESC);
   tor_assert(smartlist_len(tokens) == 0);
 
-  s = str;
-  rs_vote = routerstatus_parse_entry_from_string(area, &s, tokens,
+  rs_vote = routerstatus_parse_entry_from_string(area, str, sz, &bytes, tokens,
                                               dummy_vote, vrs, 26, FLAV_NS);
   tor_assert(smartlist_len(tokens) == 0);
 
