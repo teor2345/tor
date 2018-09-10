@@ -12,13 +12,13 @@
 #ifndef TOR_NS_PARSE_H
 #define TOR_NS_PARSE_H
 
-int router_get_networkstatus_v3_hashes(const char *s,
+int router_get_networkstatus_v3_hashes(const char *s, size_t len,
                                        common_digests_t *digests);
-int router_get_networkstatus_v3_signed_boundaries(const char *s,
+int router_get_networkstatus_v3_signed_boundaries(const char *s, size_t len,
                                                   const char **start_out,
                                                   const char **end_out);
 int router_get_networkstatus_v3_sha3_as_signed(uint8_t *digest_out,
-                                               const char *s);
+                                               const char *s, size_t len);
 int compare_vote_routerstatus_entries(const void **_a, const void **_b);
 
 int networkstatus_verify_bw_weights(networkstatus_t *ns, int);

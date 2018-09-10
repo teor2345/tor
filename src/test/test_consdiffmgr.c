@@ -153,7 +153,8 @@ lookup_diff_from(consensus_cache_entry_t **out,
                  const char *str1)
 {
   uint8_t digest[DIGEST256_LEN];
-  if (router_get_networkstatus_v3_sha3_as_signed(digest, str1)<0) {
+  size_t len = strlen(str1);
+  if (router_get_networkstatus_v3_sha3_as_signed(digest, str1, len)<0) {
     TT_FAIL(("Unable to compute sha3-as-signed"));
     return CONSDIFF_NOT_FOUND;
   }
@@ -370,7 +371,8 @@ test_consdiffmgr_make_diffs(void *arg)
   ns = fake_ns_new(FLAV_MICRODESC, now-3600);
   md_ns_body = fake_ns_body_new(FLAV_MICRODESC, now-3600);
   r = consdiffmgr_add_consensus(md_ns_body, ns);
-  router_get_networkstatus_v3_sha3_as_signed(md_ns_sha3, md_ns_body);
+  router_get_networkstatus_v3_sha3_as_signed(md_ns_sha3, md_ns_body,
+                                             strlen(md_ns_body));
   networkstatus_vote_free(ns);
   tt_int_op(r, OP_EQ, 0);
 
