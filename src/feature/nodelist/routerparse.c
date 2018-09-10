@@ -2615,10 +2615,11 @@ summarize_protover_flags(protover_summary_flags_t *out,
   }
 }
 
-/** Given a string at *<b>s</b>, containing a routerstatus object, and an
+/** Given <b>len</b> bytes at <b>s</b> containing a routerstatus object, and an
  * empty smartlist at <b>tokens</b>, parse and return the first router status
- * object in the string, and advance *<b>s</b> to just after the end of the
- * router status.  Return NULL and advance *<b>s</b> on error.
+ * object in the string. if <b>len_out</b> is not NULL, *<b>len_out</b> will
+ * be set to the number of bytes parsed, whether or not parsing hit an error.
+ * Return NULL on error.
  *
  * If <b>vote</b> and <b>vote_rs</b> are provided, don't allocate a fresh
  * routerstatus but use <b>vote_rs</b> instead.
@@ -2631,13 +2632,15 @@ summarize_protover_flags(protover_summary_flags_t *out,
  **/
 STATIC routerstatus_t *
 routerstatus_parse_entry_from_string(memarea_t *area,
-                                     const char **s, smartlist_t *tokens,
+                                     const char *s, size_t len,
+                                     size_t *len_out,
+                                     smartlist_t *tokens,
                                      networkstatus_t *vote,
                                      vote_routerstatus_t *vote_rs,
                                      int consensus_method,
                                      consensus_flavor_t flav)
 {
-  const char *eos, *s_dup = *s;
+  const char *eos, *s_dup = s;
   routerstatus_t *rs = NULL;
   directory_token_t *tok;
   char timebuf[ISO_TIME_LEN+1];
@@ -2650,9 +2653,9 @@ routerstatus_parse_entry_from_string(memarea_t *area,
     flav = FLAV_NS;
   tor_assert(flav == FLAV_NS || flav == FLAV_MICRODESC);
 
-  eos = find_start_of_next_routerstatus(*s, strlen(*s));
+  eos = find_start_of_next_routerstatus(s, len);
 
-  if (tokenize_string(area,*s, eos, tokens, rtrstatus_token_table,0)) {
+  if (tokenize_string(area, s, eos, tokens, rtrstatus_token_table,0)) {
     log_warn(LD_DIR, "Error tokenizing router status");
     goto err;
   }
@@ -2910,7 +2913,8 @@ routerstatus_parse_entry_from_string(memarea_t *area,
     DUMP_AREA(area, "routerstatus entry");
     memarea_clear(area);
   }
-  *s = eos;
+  if (len_out)
+    *len_out = eos-s;
 
   return rs;
 }
@@ -3765,21 +3769,24 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   /* Parse routerstatus lines. */
   rs_tokens = smartlist_new();
   rs_area = memarea_new();
+  len -= end_of_header - s;
   s = end_of_header;
   ns->routerstatus_list = smartlist_new();
 
-  while (!strcmpstart(s, "r ")) {
+  while (!fast_memcmpstart(s, len, "r ")) {
+    size_t bytes_parsed;
     if (ns->type != NS_TYPE_CONSENSUS) {
       vote_routerstatus_t *rs = tor_malloc_zero(sizeof(vote_routerstatus_t));
-      if (routerstatus_parse_entry_from_string(rs_area, &s, rs_tokens, ns,
-                                               rs, 0, 0)) {
+      if (routerstatus_parse_entry_from_string(rs_area, s, len, &bytes_parsed,
+                                               rs_tokens, ns, rs, 0, 0)) {
         smartlist_add(ns->routerstatus_list, rs);
       } else {
         vote_routerstatus_free(rs);
       }
     } else {
       routerstatus_t *rs;
-      if ((rs = routerstatus_parse_entry_from_string(rs_area, &s, rs_tokens,
+      if ((rs = routerstatus_parse_entry_from_string(rs_area, s, len,
+                                                     &bytes_parsed, rs_tokens,
                                                      NULL, NULL,
                                                      ns->consensus_method,
                                                      flav))) {
@@ -3787,6 +3794,9 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
         smartlist_add(ns->routerstatus_list, rs);
       }
     }
+    tor_assert(bytes_parsed <= len);
+    s += bytes_parsed;
+    len -= bytes_parsed;
   }
   for (i = 1; i < smartlist_len(ns->routerstatus_list); ++i) {
     routerstatus_t *rs1, *rs2;
