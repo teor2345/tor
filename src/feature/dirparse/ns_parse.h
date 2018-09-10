@@ -24,7 +24,7 @@ int compare_vote_routerstatus_entries(const void **_a, const void **_b);
 int networkstatus_verify_bw_weights(networkstatus_t *ns, int);
 enum networkstatus_type_t;
 networkstatus_t *networkstatus_parse_vote_from_string(const char *s,
-                                           const char **eos_out,
+                                           size_t len, size_t *len_out,
                                            enum networkstatus_type_t ns_type);
 
 #ifdef NS_PARSE_PRIVATE
