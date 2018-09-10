@@ -6046,8 +6046,10 @@ test_dir_assumed_flags(void *arg)
     "s Fast Guard Stable\n";
 
   const char *cp = str1;
-  rs = routerstatus_parse_entry_from_string(area, &cp, tokens, NULL, NULL,
-                                            24, FLAV_MICRODESC);
+  size_t cplen = strlen(cp), parsed;
+  rs = routerstatus_parse_entry_from_string(area, cp, cplen, &parsed, tokens,
+                                            NULL, NULL, 24, FLAV_MICRODESC);
+  tt_int_op(cplen, OP_EQ, parsed);
   tt_assert(rs);
   tt_assert(rs->is_flagged_running);
   tt_assert(rs->is_valid);

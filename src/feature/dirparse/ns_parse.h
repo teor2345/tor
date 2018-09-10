@@ -35,7 +35,9 @@ STATIC int routerstatus_parse_guardfraction(const char *guardfraction_str,
 struct memarea_t;
 STATIC routerstatus_t *routerstatus_parse_entry_from_string(
                                      struct memarea_t *area,
-                                     const char **s, smartlist_t *tokens,
+                                     const char *s, size_t len,
+                                     size_t *len_out,
+                                     smartlist_t *tokens,
                                      networkstatus_t *vote,
                                      vote_routerstatus_t *vote_rs,
                                      int consensus_method,
