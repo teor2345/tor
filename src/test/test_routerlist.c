@@ -271,8 +271,9 @@ test_router_pick_directory_server_impl(void *arg)
 
   construct_consensus(&consensus_text_md, now);
   tt_assert(consensus_text_md);
-  con_md = networkstatus_parse_vote_from_string(consensus_text_md, NULL,
-                                                NS_TYPE_CONSENSUS);
+  con_md = networkstatus_parse_vote_from_string(consensus_text_md,
+                                                strlen(consensus_text_md),
+                                                NULL, NS_TYPE_CONSENSUS);
   tt_assert(con_md);
   tt_int_op(con_md->flavor,OP_EQ, FLAV_MICRODESC);
   tt_assert(con_md->routerstatus_list);

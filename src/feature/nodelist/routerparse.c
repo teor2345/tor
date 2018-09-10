@@ -3398,7 +3398,8 @@ extract_shared_random_srvs(networkstatus_t *ns, smartlist_t *tokens)
 /** Parse a v3 networkstatus vote, opinion, or consensus (depending on
  * ns_type), from <b>s</b>, and return the result.  Return NULL on failure. */
 networkstatus_t *
-networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
+networkstatus_parse_vote_from_string(const char *s, size_t len,
+                                     size_t *len_out,
                                      networkstatus_type_t ns_type)
 {
   smartlist_t *tokens = smartlist_new();
@@ -3414,14 +3415,10 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   memarea_t *area = NULL, *rs_area = NULL;
   consensus_flavor_t flav = FLAV_NS;
   char *last_kwd=NULL;
-  size_t len;
+  const size_t orig_len = len;
 
   tor_assert(s);
 
-  if (eos_out)
-    *eos_out = NULL;
-
-  len = strlen(s);
   if (router_get_networkstatus_v3_hashes(s, len, &ns_digests) ||
       router_get_networkstatus_v3_sha3_as_signed(sha3_as_signed, s, len)<0) {
     log_warn(LD_DIR, "Unable to compute digest of network-status");
@@ -3459,11 +3456,11 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   }
 
   if (ns_type != NS_TYPE_CONSENSUS) {
-    if (!(cert = strstr(s, "\ndir-key-certificate-version")))
+    if (!(cert = tor_memstr(s, len, "\ndir-key-certificate-version")))
       goto err;
     ++cert;
-    size_t cert_len;
-    ns->cert = authority_cert_parse_from_string(cert, strlen(cert), &cert_len);
+    size_t cert_len = len - (cert - s);
+    ns->cert = authority_cert_parse_from_string(cert, cert_len, &cert_len);
     if (!ns->cert || (cert + cert_len) > end_of_header)
       goto err;
   }
@@ -3835,10 +3832,10 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
 
   /* Parse footer; check signature. */
   footer_tokens = smartlist_new();
-  if ((end_of_footer = strstr(s, "\nnetwork-status-version ")))
+  if ((end_of_footer = tor_memstr(s, len, "\nnetwork-status-version ")))
     ++end_of_footer;
   else
-    end_of_footer = s + strlen(s);
+    end_of_footer = s + len;
   if (tokenize_string(area,s, end_of_footer, footer_tokens,
                       networkstatus_vote_footer_token_table, 0)) {
     log_warn(LD_DIR, "Error tokenizing network-status vote footer.");
@@ -3996,8 +3993,10 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
     goto err;
   }
 
-  if (eos_out)
-    *eos_out = end_of_footer;
+  size_t footer_len = end_of_footer - s;
+  size_t unparsed_bytes = len - footer_len;
+  if (len_out)
+    *len_out = orig_len - unparsed_bytes;
 
   goto done;
  err:
