@@ -1375,15 +1375,14 @@ consensus_diff_generate(const char *cons1, size_t len1,
  * consensus.  On success return a newly allocated string containing the new
  * consensus.  On failure, return NULL. */
 char *
-consensus_diff_apply(const char *consensus,
-                     const char *diff)
+consensus_diff_apply(const char *consensus, size_t clen,
+                     const char *diff, size_t dlen)
 {
   consensus_digest_t d1;
   smartlist_t *lines1 = NULL, *lines2 = NULL;
   int r1;
   char *result = NULL;
   memarea_t *area = memarea_new();
-  size_t clen = strlen(consensus), dlen = strlen(diff);
 
   r1 = consensus_compute_digest_as_signed(consensus, clen, &d1);
   if (BUG(r1 < 0))

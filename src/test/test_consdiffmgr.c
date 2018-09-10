@@ -182,7 +182,8 @@ lookup_apply_and_verify_diff(consensus_flavor_t flav,
   if (diff_string == NULL || r < 0)
     return -1;
 
-  char *applied = consensus_diff_apply(str1, diff_string);
+  char *applied = consensus_diff_apply(str1, strlen(str1),
+                                       diff_string, strlen(diff_string));
   tor_free(diff_string);
   if (applied == NULL)
     return -1;
@@ -347,7 +348,7 @@ test_consdiffmgr_make_diffs(void *arg)
   (void)arg;
   networkstatus_t *ns = NULL;
   char *ns_body = NULL, *md_ns_body = NULL, *md_ns_body_2 = NULL;
-  char *applied = NULL, *diff_text = NULL;
+  char *applied = NULL;
   time_t now = approx_time();
   int r;
   consensus_cache_entry_t *diff = NULL;
@@ -415,8 +416,8 @@ test_consdiffmgr_make_diffs(void *arg)
   size_t diff_size;
   r = consensus_cache_entry_get_body(diff, &diff_body, &diff_size);
   tt_int_op(r, OP_EQ, 0);
-  diff_text = tor_memdup_nulterm(diff_body, diff_size);
-  applied = consensus_diff_apply(md_ns_body, diff_text);
+  applied = consensus_diff_apply(md_ns_body, strlen(md_ns_body),
+                                 (const char*)diff_body, diff_size);
   tt_assert(applied);
   tt_str_op(applied, OP_EQ, md_ns_body_2);
 
@@ -427,7 +428,6 @@ test_consdiffmgr_make_diffs(void *arg)
  done:
   tor_free(md_ns_body);
   tor_free(md_ns_body_2);
-  tor_free(diff_text);
   tor_free(applied);
 }
 
