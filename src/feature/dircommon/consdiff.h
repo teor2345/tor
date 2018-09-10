@@ -78,7 +78,7 @@ STATIC int smartlist_slice_string_pos(const smartlist_slice_t *slice,
 STATIC void set_changed(bitarray_t *changed1, bitarray_t *changed2,
                         const smartlist_slice_t *slice1,
                         const smartlist_slice_t *slice2);
-STATIC int consensus_split_lines(smartlist_t *out, const char *s,
+STATIC int consensus_split_lines(smartlist_t *out, const char *s, size_t len,
                                  struct memarea_t *area);
 STATIC void smartlist_add_linecpy(smartlist_t *lst, struct memarea_t *area,
                                   const char *s);

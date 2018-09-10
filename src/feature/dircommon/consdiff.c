@@ -1284,12 +1284,12 @@ consdiff_apply_diff(const smartlist_t *cons1,
  * generated cdlines will become invalid.
  */
 STATIC int
-consensus_split_lines(smartlist_t *out, const char *s, memarea_t *area)
+consensus_split_lines(smartlist_t *out, const char *s, size_t len,
+                      memarea_t *area)
 {
-  const char *end_of_str = s + strlen(s);
-  tor_assert(*end_of_str == '\0');
+  const char *end_of_str = s + len;
 
-  while (*s) {
+  while (s != end_of_str) {
     const char *eol = memchr(s, '\n', end_of_str - s);
     if (!eol) {
       /* File doesn't end with newline. */
@@ -1342,18 +1342,19 @@ consensus_diff_generate(const char *cons1,
   smartlist_t *lines1 = NULL, *lines2 = NULL, *result_lines = NULL;
   int r1, r2;
   char *result = NULL;
+  size_t len1 = strlen(cons1), len2 = strlen(cons2);
 
-  r1 = consensus_compute_digest_as_signed(cons1, strlen(cons1), &d1);
-  r2 = consensus_compute_digest(cons2, strlen(cons2), &d2);
+  r1 = consensus_compute_digest_as_signed(cons1, len1, &d1);
+  r2 = consensus_compute_digest(cons2, len2, &d2);
   if (BUG(r1 < 0 || r2 < 0))
     return NULL; // LCOV_EXCL_LINE
 
   memarea_t *area = memarea_new();
   lines1 = smartlist_new();
   lines2 = smartlist_new();
-  if (consensus_split_lines(lines1, cons1, area) < 0)
+  if (consensus_split_lines(lines1, cons1, len1, area) < 0)
     goto done;
-  if (consensus_split_lines(lines2, cons2, area) < 0)
+  if (consensus_split_lines(lines2, cons2, len2, area) < 0)
     goto done;
 
   result_lines = consdiff_gen_diff(lines1, lines2, &d1, &d2, area);
@@ -1383,16 +1384,17 @@ consensus_diff_apply(const char *consensus,
   int r1;
   char *result = NULL;
   memarea_t *area = memarea_new();
+  size_t clen = strlen(consensus), dlen = strlen(diff);
 
-  r1 = consensus_compute_digest_as_signed(consensus, strlen(consensus), &d1);
+  r1 = consensus_compute_digest_as_signed(consensus, clen, &d1);
   if (BUG(r1 < 0))
     return NULL; // LCOV_EXCL_LINE
 
   lines1 = smartlist_new();
   lines2 = smartlist_new();
-  if (consensus_split_lines(lines1, consensus, area) < 0)
+  if (consensus_split_lines(lines1, consensus, clen, area) < 0)
     goto done;
-  if (consensus_split_lines(lines2, diff, area) < 0)
+  if (consensus_split_lines(lines2, diff, dlen, area) < 0)
     goto done;
 
   result = consdiff_apply_diff(lines1, lines2, &d1);
