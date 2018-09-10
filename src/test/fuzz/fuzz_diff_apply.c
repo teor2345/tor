@@ -10,9 +10,10 @@
 #include "test/fuzz/fuzzing.h"
 
 static int
-mock_consensus_compute_digest_(const char *c, consensus_digest_t *d)
+mock_consensus_compute_digest_(const char *c, size_t l, consensus_digest_t *d)
 {
   (void)c;
+  (void)l;
   memset(d->sha3_256, 3, sizeof(d->sha3_256));
   return 0;
 }

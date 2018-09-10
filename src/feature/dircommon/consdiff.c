@@ -101,11 +101,11 @@ smartlist_add_linecpy(smartlist_t *lst, memarea_t *area, const char *s)
 /* This is a separate, mockable function so that we can override it when
  * fuzzing. */
 MOCK_IMPL(STATIC int,
-consensus_compute_digest,(const char *cons,
+consensus_compute_digest,(const char *cons, size_t len,
                           consensus_digest_t *digest_out))
 {
   int r = crypto_digest256((char*)digest_out->sha3_256,
-                           cons, strlen(cons), DIGEST_SHA3_256);
+                           cons, len, DIGEST_SHA3_256);
   return r;
 }
 
@@ -114,11 +114,11 @@ consensus_compute_digest,(const char *cons,
 /* This is a separate, mockable function so that we can override it when
  * fuzzing. */
 MOCK_IMPL(STATIC int,
-consensus_compute_digest_as_signed,(const char *cons,
+consensus_compute_digest_as_signed,(const char *cons, size_t len,
                                     consensus_digest_t *digest_out))
 {
   return router_get_networkstatus_v3_sha3_as_signed(digest_out->sha3_256,
-                                                    cons, strlen(cons));
+                                                    cons, len);
 }
 
 /** Return true iff <b>d1</b> and <b>d2</b> contain the same digest */
@@ -1227,9 +1227,10 @@ consdiff_apply_diff(const smartlist_t *cons1,
   }
 
   cons2_str = consensus_join_lines(cons2);
+  size_t cons2_len = strlen(cons2_str);
 
   consensus_digest_t cons2_digests;
-  if (consensus_compute_digest(cons2_str, &cons2_digests) < 0) {
+  if (consensus_compute_digest(cons2_str, cons2_len, &cons2_digests) < 0) {
     /* LCOV_EXCL_START -- digest can't fail */
     log_warn(LD_CONSDIFF, "Could not compute digests of the consensus "
         "resulting from applying a consensus diff.");
@@ -1342,8 +1343,8 @@ consensus_diff_generate(const char *cons1,
   int r1, r2;
   char *result = NULL;
 
-  r1 = consensus_compute_digest_as_signed(cons1, &d1);
-  r2 = consensus_compute_digest(cons2, &d2);
+  r1 = consensus_compute_digest_as_signed(cons1, strlen(cons1), &d1);
+  r2 = consensus_compute_digest(cons2, strlen(cons2), &d2);
   if (BUG(r1 < 0 || r2 < 0))
     return NULL; // LCOV_EXCL_LINE
 
@@ -1383,7 +1384,7 @@ consensus_diff_apply(const char *consensus,
   char *result = NULL;
   memarea_t *area = memarea_new();
 
-  r1 = consensus_compute_digest_as_signed(consensus, &d1);
+  r1 = consensus_compute_digest_as_signed(consensus, strlen(consensus), &d1);
   if (BUG(r1 < 0))
     return NULL; // LCOV_EXCL_LINE
 

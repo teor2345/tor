@@ -910,17 +910,19 @@ test_consdiff_gen_diff(void *arg)
       "r name aaaaaaaaaaaaaaaaa etc\nbar\n"
       "directory-signature foo bar\nbar\n"
       );
+  size_t cons1_len = strlen(cons1_str);
   cons2_str = tor_strdup(
       "network-status-version foo\n"
       "r name aaaaaaaaaaaaaaaaa etc\nfoo\n"
       "r name ccccccccccccccccc etc\nbar\n"
       "directory-signature foo bar\nbar\n"
       );
+  size_t cons2_len = strlen(cons2_str);
 
   tt_int_op(0, OP_EQ,
-      consensus_compute_digest_as_signed(cons1_str, &digests1));
+      consensus_compute_digest_as_signed(cons1_str, cons1_len, &digests1));
   tt_int_op(0, OP_EQ,
-      consensus_compute_digest(cons2_str, &digests2));
+      consensus_compute_digest(cons2_str, cons2_len, &digests2));
 
   consensus_split_lines(cons1, cons1_str, area);
   consensus_split_lines(cons2, cons2_str, area);
@@ -937,7 +939,7 @@ test_consdiff_gen_diff(void *arg)
       "directory-signature foo bar\nbar\n"
       );
   tt_int_op(0, OP_EQ,
-      consensus_compute_digest_as_signed(cons1_str, &digests1));
+      consensus_compute_digest_as_signed(cons1_str, cons1_len, &digests1));
   smartlist_clear(cons1);
   consensus_split_lines(cons1, cons1_str, area);
   diff = consdiff_gen_diff(cons1, cons2, &digests1, &digests2, area);
@@ -991,7 +993,7 @@ test_consdiff_apply_diff(void *arg)
       "directory-signature foo bar\nbar\n"
       );
   tt_int_op(0, OP_EQ,
-      consensus_compute_digest(cons1_str, &digests1));
+      consensus_compute_digest(cons1_str, strlen(cons1_str), &digests1));
   consensus_split_lines(cons1, cons1_str, area);
 
   /* diff doesn't have enough lines. */
