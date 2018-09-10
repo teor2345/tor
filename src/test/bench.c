@@ -696,17 +696,19 @@ main(int argc, const char **argv)
 
   if (argc == 4 && !strcmp(argv[1], "diff")) {
     const int N = 200;
+    // XXX: mmap() files instead
     char *f1 = read_file_to_str(argv[2], RFTS_BIN, NULL);
     char *f2 = read_file_to_str(argv[3], RFTS_BIN, NULL);
+    size_t len1 = strlen(f1), len2 = strlen(f2);
     if (! f1 || ! f2) {
       perror("X");
       return 1;
     }
     for (i = 0; i < N; ++i) {
-      char *diff = consensus_diff_generate(f1, f2);
+      char *diff = consensus_diff_generate(f1, len1, f2, len2);
       tor_free(diff);
     }
-    char *diff = consensus_diff_generate(f1, f2);
+    char *diff = consensus_diff_generate(f1, len1, f2, len2);
     printf("%s", diff);
     tor_free(f1);
     tor_free(f2);
