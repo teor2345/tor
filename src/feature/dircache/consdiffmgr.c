@@ -1746,7 +1746,7 @@ consensus_compress_worker_threadfn(void *state_, void *work_)
                           (const uint8_t *)consensus, bodylen);
   {
     const char *start, *end;
-    if (router_get_networkstatus_v3_signed_boundaries(consensus,
+    if (router_get_networkstatus_v3_signed_boundaries(consensus, bodylen,
                                                         &start, &end) < 0) {
       start = consensus;
       end = consensus+bodylen;

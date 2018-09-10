@@ -118,7 +118,7 @@ consensus_compute_digest_as_signed,(const char *cons,
                                     consensus_digest_t *digest_out))
 {
   return router_get_networkstatus_v3_sha3_as_signed(digest_out->sha3_256,
-                                                    cons);
+                                                    cons, strlen(cons));
 }
 
 /** Return true iff <b>d1</b> and <b>d2</b> contain the same digest */

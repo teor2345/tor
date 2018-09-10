@@ -1023,11 +1023,11 @@ router_get_router_hash(const char *s, size_t s_len, char *digest)
  * final character of the signed document, and return 0.  On failure, return
  * -1. */
 int
-router_get_networkstatus_v3_signed_boundaries(const char *s,
+router_get_networkstatus_v3_signed_boundaries(const char *s, size_t len,
                                               const char **start_out,
                                               const char **end_out)
 {
-  return router_get_hash_impl_helper(s, strlen(s),
+  return router_get_hash_impl_helper(s, len,
                                      "network-status-version",
                                      "\ndirectory-signature",
                                      ' ', LOG_INFO,
@@ -1039,12 +1039,12 @@ router_get_networkstatus_v3_signed_boundaries(const char *s,
  * signed portion can be identified.  Return 0 on success, -1 on failure. */
 int
 router_get_networkstatus_v3_sha3_as_signed(uint8_t *digest_out,
-                                           const char *s)
+                                           const char *s, size_t len)
 {
   const char *start, *end;
-  if (router_get_networkstatus_v3_signed_boundaries(s, &start, &end) < 0) {
+  if (router_get_networkstatus_v3_signed_boundaries(s,len, &start, &end) < 0) {
     start = s;
-    end = s + strlen(s);
+    end = s + len;
   }
   tor_assert(start);
   tor_assert(end);
@@ -1055,9 +1055,10 @@ router_get_networkstatus_v3_sha3_as_signed(uint8_t *digest_out,
 /** Set <b>digests</b> to all the digests of the consensus document in
  * <b>s</b> */
 int
-router_get_networkstatus_v3_hashes(const char *s, common_digests_t *digests)
+router_get_networkstatus_v3_hashes(const char *s, size_t len,
+                                   common_digests_t *digests)
 {
-  return router_get_hashes_impl(s,strlen(s),digests,
+  return router_get_hashes_impl(s, len, digests,
                                 "network-status-version",
                                 "\ndirectory-signature",
                                 ' ');
@@ -3408,20 +3409,22 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   memarea_t *area = NULL, *rs_area = NULL;
   consensus_flavor_t flav = FLAV_NS;
   char *last_kwd=NULL;
+  size_t len;
 
   tor_assert(s);
 
   if (eos_out)
     *eos_out = NULL;
 
-  if (router_get_networkstatus_v3_hashes(s, &ns_digests) ||
-      router_get_networkstatus_v3_sha3_as_signed(sha3_as_signed, s)<0) {
+  len = strlen(s);
+  if (router_get_networkstatus_v3_hashes(s, len, &ns_digests) ||
+      router_get_networkstatus_v3_sha3_as_signed(sha3_as_signed, s, len)<0) {
     log_warn(LD_DIR, "Unable to compute digest of network-status");
     goto err;
   }
 
   area = memarea_new();
-  end_of_header = find_start_of_next_routerstatus(s, strlen(s));
+  end_of_header = find_start_of_next_routerstatus(s, len);
   if (tokenize_string(area, s, end_of_header, tokens,
                       (ns_type == NS_TYPE_CONSENSUS) ?
                       networkstatus_consensus_token_table :
