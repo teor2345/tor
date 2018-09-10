@@ -2492,13 +2492,13 @@ authority_cert_parse_from_string(const char *s, const char **end_of_string)
  * return the start of the directory footer, or the next directory signature.
  * If none is found, return the end of the string. */
 static inline const char *
-find_start_of_next_routerstatus(const char *s)
+find_start_of_next_routerstatus(const char *s, size_t len)
 {
   const char *eos, *footer, *sig;
-  if ((eos = strstr(s, "\nr ")))
+  if ((eos = tor_memstr(s, len, "\nr ")))
     ++eos;
   else
-    eos = s + strlen(s);
+    eos = s + len;
 
   footer = tor_memstr(s, eos-s, "\ndirectory-footer");
   sig = tor_memstr(s, eos-s, "\ndirectory-signature");
@@ -2649,7 +2649,7 @@ routerstatus_parse_entry_from_string(memarea_t *area,
     flav = FLAV_NS;
   tor_assert(flav == FLAV_NS || flav == FLAV_MICRODESC);
 
-  eos = find_start_of_next_routerstatus(*s);
+  eos = find_start_of_next_routerstatus(*s, strlen(*s));
 
   if (tokenize_string(area,*s, eos, tokens, rtrstatus_token_table,0)) {
     log_warn(LD_DIR, "Error tokenizing router status");
@@ -3421,7 +3421,7 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   }
 
   area = memarea_new();
-  end_of_header = find_start_of_next_routerstatus(s);
+  end_of_header = find_start_of_next_routerstatus(s, strlen(s));
   if (tokenize_string(area, s, end_of_header, tokens,
                       (ns_type == NS_TYPE_CONSENSUS) ?
                       networkstatus_consensus_token_table :
