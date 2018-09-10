@@ -9,8 +9,8 @@
 
 char *consensus_diff_generate(const char *cons1, size_t len1,
                               const char *cons2, size_t len2);
-char *consensus_diff_apply(const char *consensus,
-                           const char *diff);
+char *consensus_diff_apply(const char *consensus, size_t clen,
+                           const char *diff, size_t dlen);
 
 int looks_like_a_consensus_diff(const char *document, size_t len);
 
