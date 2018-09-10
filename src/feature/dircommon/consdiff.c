@@ -1335,14 +1335,13 @@ consensus_join_lines(const smartlist_t *inp)
  * success, retun a newly allocated string containing that diff.  On failure,
  * return NULL. */
 char *
-consensus_diff_generate(const char *cons1,
-                        const char *cons2)
+consensus_diff_generate(const char *cons1, size_t len1,
+                        const char *cons2, size_t len2)
 {
   consensus_digest_t d1, d2;
   smartlist_t *lines1 = NULL, *lines2 = NULL, *result_lines = NULL;
   int r1, r2;
   char *result = NULL;
-  size_t len1 = strlen(cons1), len2 = strlen(cons2);
 
   r1 = consensus_compute_digest_as_signed(cons1, len1, &d1);
   r2 = consensus_compute_digest(cons2, len2, &d2);

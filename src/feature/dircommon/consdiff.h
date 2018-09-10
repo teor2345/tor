@@ -7,8 +7,8 @@
 
 #include "core/or/or.h"
 
-char *consensus_diff_generate(const char *cons1,
-                              const char *cons2);
+char *consensus_diff_generate(const char *cons1, size_t len1,
+                              const char *cons2, size_t len2);
 char *consensus_diff_apply(const char *consensus,
                            const char *diff);
 
