@@ -188,7 +188,7 @@ static consdiff_cfg_t consdiff_cfg = {
 };
 
 static int consdiffmgr_ensure_space_for_files(int n);
-static int consensus_queue_compression_work(const char *consensus,
+static int consensus_queue_compression_work(const char *consensus, size_t len,
                                             const networkstatus_t *as_parsed);
 static int consensus_diff_queue_diff_work(consensus_cache_entry_t *diff_from,
                                           consensus_cache_entry_t *diff_to);
@@ -543,8 +543,9 @@ consdiffmgr_add_consensus(const char *consensus,
     return -1;
   }
 
+  size_t len = strlen(consensus);
   /* We don't have it. Add it to the cache. */
-  return consensus_queue_compression_work(consensus, as_parsed);
+  return consensus_queue_compression_work(consensus, len, as_parsed);
 }
 
 /**
@@ -1811,15 +1812,15 @@ static int background_compression = 0;
  * text in the cache.
  */
 static int
-consensus_queue_compression_work(const char *consensus,
+consensus_queue_compression_work(const char *consensus, size_t len,
                                  const networkstatus_t *as_parsed)
 {
   tor_assert(consensus);
   tor_assert(as_parsed);
 
   consensus_compress_worker_job_t *job = tor_malloc_zero(sizeof(*job));
-  job->consensus = tor_strdup(consensus);
-  job->consensus_len = strlen(consensus);
+  job->consensus = tor_strndup(consensus, len);
+  job->consensus_len = len;
   job->flavor = as_parsed->flavor;
 
   char va_str[ISO_TIME_LEN+1];
