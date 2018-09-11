@@ -1631,7 +1631,8 @@ test_dir_handle_get_status_vote_current_consensus_ns_not_enough_sigs(void* d)
   mock_ns_val->valid_until = time(NULL) - 60;
 
   #define NETWORK_STATUS "some network status string"
-  consdiffmgr_add_consensus(NETWORK_STATUS, mock_ns_val);
+  #define NETWORK_STATUS_LEN strlen(NETWORK_STATUS)
+  consdiffmgr_add_consensus(NETWORK_STATUS, NETWORK_STATUS_LEN, mock_ns_val);
 
   /* init mock */
   init_mock_options();
@@ -1726,7 +1727,8 @@ test_dir_handle_get_status_vote_current_consensus_too_old(void *data)
   mock_ns_val->valid_until = time(NULL) - (24 * 60 * 60 + 20);
 
   #define NETWORK_STATUS "some network status string"
-  consdiffmgr_add_consensus(NETWORK_STATUS, mock_ns_val);
+  #define NETWORK_STATUS_LEN strlen(NETWORK_STATUS)
+  consdiffmgr_add_consensus(NETWORK_STATUS, NETWORK_STATUS_LEN, mock_ns_val);
 
   init_mock_options();
 
@@ -1760,7 +1762,8 @@ test_dir_handle_get_status_vote_current_consensus_too_old(void *data)
   mock_ns_val->valid_until = time(NULL) - (24 * 60 * 60 + 20);
 
   #define NETWORK_STATUS "some network status string"
-  consdiffmgr_add_consensus(NETWORK_STATUS, mock_ns_val);
+  #define NETWORK_STATUS_LEN strlen(NETWORK_STATUS)
+  consdiffmgr_add_consensus(NETWORK_STATUS, NETWORK_STATUS_LEN, mock_ns_val);
 
   setup_capture_of_logs(LOG_WARN);
 
@@ -1817,7 +1820,7 @@ status_vote_current_consensus_ns_test(char **header, char **body,
   ns->valid_after = time(NULL) - 1800;
   ns->fresh_until = time(NULL) - 900;
   ns->valid_until = time(NULL) - 60;
-  consdiffmgr_add_consensus(NETWORK_STATUS, ns);
+  consdiffmgr_add_consensus(NETWORK_STATUS, strlen(NETWORK_STATUS), ns);
   networkstatus_vote_free(ns);
 
   MOCK(connection_write_to_buf_impl_, connection_write_to_buf_mock);

@@ -289,13 +289,13 @@ test_consdiffmgr_add(void *arg)
   consensus_cache_entry_t *ent = NULL;
   networkstatus_t *ns_tmp = fake_ns_new(FLAV_NS, now);
   const char *dummy = "foo";
-  int r = consdiffmgr_add_consensus(dummy, ns_tmp);
+  int r = consdiffmgr_add_consensus(dummy, strlen(dummy), ns_tmp);
   tt_int_op(r, OP_EQ, 0);
 
   /* If we add it again, it won't work */
   setup_capture_of_logs(LOG_INFO);
   dummy = "bar";
-  r = consdiffmgr_add_consensus(dummy, ns_tmp);
+  r = consdiffmgr_add_consensus(dummy, strlen(dummy), ns_tmp);
   tt_int_op(r, OP_EQ, -1);
   expect_single_log_msg_containing("We already have a copy of that "
                                    "consensus");
@@ -304,20 +304,20 @@ test_consdiffmgr_add(void *arg)
   /* But it will work fine if the flavor is different */
   dummy = "baz";
   ns_tmp->flavor = FLAV_MICRODESC;
-  r = consdiffmgr_add_consensus(dummy, ns_tmp);
+  r = consdiffmgr_add_consensus(dummy, strlen(dummy), ns_tmp);
   tt_int_op(r, OP_EQ, 0);
 
   /* And it will work fine if the time is different */
   dummy = "quux";
   ns_tmp->flavor = FLAV_NS;
   ns_tmp->valid_after = now - 60;
-  r = consdiffmgr_add_consensus(dummy, ns_tmp);
+  r = consdiffmgr_add_consensus(dummy, strlen(dummy), ns_tmp);
   tt_int_op(r, OP_EQ, 0);
 
   /* If we add one a long long time ago, it will fail. */
   dummy = "xyzzy";
   ns_tmp->valid_after = 86400 * 100; /* A few months into 1970 */
-  r = consdiffmgr_add_consensus(dummy, ns_tmp);
+  r = consdiffmgr_add_consensus(dummy, strlen(dummy), ns_tmp);
   tt_int_op(r, OP_EQ, -1);
   expect_log_msg_containing("it's too old.");
 
@@ -364,14 +364,14 @@ test_consdiffmgr_make_diffs(void *arg)
   // Make two consensuses, 1 hour sec ago.
   ns = fake_ns_new(FLAV_NS, now-3600);
   ns_body = fake_ns_body_new(FLAV_NS, now-3600);
-  r = consdiffmgr_add_consensus(ns_body, ns);
+  r = consdiffmgr_add_consensus(ns_body, strlen(ns_body), ns);
   networkstatus_vote_free(ns);
   tor_free(ns_body);
   tt_int_op(r, OP_EQ, 0);
 
   ns = fake_ns_new(FLAV_MICRODESC, now-3600);
   md_ns_body = fake_ns_body_new(FLAV_MICRODESC, now-3600);
-  r = consdiffmgr_add_consensus(md_ns_body, ns);
+  r = consdiffmgr_add_consensus(md_ns_body, strlen(md_ns_body), ns);
   router_get_networkstatus_v3_sha3_as_signed(md_ns_sha3, md_ns_body,
                                              strlen(md_ns_body));
   networkstatus_vote_free(ns);
@@ -385,7 +385,7 @@ test_consdiffmgr_make_diffs(void *arg)
   // worth of work to get queued.
   ns = fake_ns_new(FLAV_MICRODESC, now-45*60);
   md_ns_body_2 = fake_ns_body_new(FLAV_MICRODESC, now-45*60);
-  r = consdiffmgr_add_consensus(md_ns_body_2, ns);
+  r = consdiffmgr_add_consensus(md_ns_body_2, strlen(md_ns_body_2), ns);
   networkstatus_vote_free(ns);
   tt_int_op(r, OP_EQ, 0);
 
@@ -437,6 +437,7 @@ test_consdiffmgr_diff_rules(void *arg)
   (void)arg;
 #define N 6
   char *md_body[N], *ns_body[N];
+  size_t md_bodylen[N], ns_bodylen[N];
   networkstatus_t *md_ns[N], *ns_ns[N];
   int i;
 
@@ -447,17 +448,23 @@ test_consdiffmgr_diff_rules(void *arg)
   for (i = 0; i < N; ++i) {
     time_t when = start + i * 15;
     md_body[i] = fake_ns_body_new(FLAV_MICRODESC, when);
+    md_bodylen[i] = strlen(md_body[i]);
     ns_body[i] = fake_ns_body_new(FLAV_NS, when);
+    ns_bodylen[i] = strlen(ns_body[i]);
     md_ns[i] = fake_ns_new(FLAV_MICRODESC, when);
     ns_ns[i] = fake_ns_new(FLAV_NS, when);
   }
 
   /* For the MD consensuses: add 4 of them, and make sure that
    * diffs are created to one consensus (the most recent) only. */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_ns[1]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_ns[2]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[3], md_ns[3]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[4], md_ns[4]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_bodylen[1],
+                                                md_ns[1]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_bodylen[2],
+                                                md_ns[2]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[3], md_bodylen[3],
+                                                md_ns[3]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[4], md_bodylen[4],
+                                                md_ns[4]));
   consdiffmgr_rescan();
   tt_ptr_op(NULL, OP_NE, fake_cpuworker_queue);
   tt_int_op(3, OP_EQ, smartlist_len(fake_cpuworker_queue));
@@ -467,9 +474,12 @@ test_consdiffmgr_diff_rules(void *arg)
 
   /* For the NS consensuses: add 3, generate, and add one older one and
    * make sure that older one is the only one whose diff is generated */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[0], ns_ns[0]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[1], ns_ns[1]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[5], ns_ns[5]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[0], ns_bodylen[0],
+                                                ns_ns[0]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[1], ns_bodylen[1],
+                                                ns_ns[1]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[5], ns_bodylen[5],
+                                                ns_ns[5]));
   consdiffmgr_rescan();
   tt_ptr_op(NULL, OP_NE, fake_cpuworker_queue);
   tt_int_op(2, OP_EQ, smartlist_len(fake_cpuworker_queue));
@@ -505,7 +515,8 @@ test_consdiffmgr_diff_rules(void *arg)
 
   /* Now, an update: add number 2 and make sure it's the only one whose diff
    * is regenerated. */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[2], ns_ns[2]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(ns_body[2], ns_bodylen[2],
+                                                ns_ns[2]));
   consdiffmgr_rescan();
   tt_ptr_op(NULL, OP_NE, fake_cpuworker_queue);
   tt_int_op(1, OP_EQ, smartlist_len(fake_cpuworker_queue));
@@ -557,11 +568,11 @@ test_consdiffmgr_diff_failure(void *arg)
 
   ns1 = fake_ns_new(FLAV_NS, approx_time()-100);
   ns2 = fake_ns_new(FLAV_NS, approx_time()-50);
-  r = consdiffmgr_add_consensus("foo bar baz\n", ns1);
+  r = consdiffmgr_add_consensus("foo bar baz\n", 12, ns1);
   tt_int_op(r, OP_EQ, 0);
   // We refuse to compute a diff to or from a line holding only a single dot.
   // We can add it here, though.
-  r = consdiffmgr_add_consensus("foo bar baz\n.\n.\n", ns2);
+  r = consdiffmgr_add_consensus("foo bar baz\n.\n.\n", 16, ns2);
   tt_int_op(r, OP_EQ, 0);
 
   consdiffmgr_rescan();
@@ -593,19 +604,23 @@ test_consdiffmgr_diff_pending(void *arg)
 #define N 3
   (void)arg;
   char *md_body[N];
+  size_t md_bodylen[N];
   networkstatus_t *md_ns[N];
   time_t start = approx_time() - 120;
   int i;
   for (i = 0; i < N; ++i) {
     time_t when = start + i * 30;
     md_body[i] = fake_ns_body_new(FLAV_MICRODESC, when);
+    md_bodylen[i] = strlen(md_body[i]);
     md_ns[i] = fake_ns_new(FLAV_MICRODESC, when);
   }
 
   MOCK(cpuworker_queue_work, mock_cpuworker_queue_work);
 
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_ns[1]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_ns[2]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_bodylen[1],
+                                                md_ns[1]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_bodylen[2],
+                                                md_ns[2]));
   /* Make a diff */
   consdiffmgr_rescan();
   tt_int_op(1, OP_EQ, smartlist_len(fake_cpuworker_queue));
@@ -618,7 +633,8 @@ test_consdiffmgr_diff_pending(void *arg)
   tt_ptr_op(ent, OP_EQ, NULL);
 
   /* Add another old consensus.  only one new diff should launch! */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[0], md_ns[0]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[0], md_bodylen[0],
+                                                md_ns[0]));
   consdiffmgr_rescan();
   tt_int_op(2, OP_EQ, smartlist_len(fake_cpuworker_queue));
 
@@ -728,6 +744,7 @@ test_consdiffmgr_cleanup_old_diffs(void *arg)
   (void)arg;
 #define N 4
   char *md_body[N];
+  size_t md_bodylen[N];
   networkstatus_t *md_ns[N];
   int i;
   consensus_cache_entry_t *hold_ent = NULL, *ent;
@@ -742,13 +759,17 @@ test_consdiffmgr_cleanup_old_diffs(void *arg)
   for (i = 0; i < N; ++i) {
     time_t when = start + i * 15;
     md_body[i] = fake_ns_body_new(FLAV_MICRODESC, when);
+    md_bodylen[i] = strlen(md_body[i]);
     md_ns[i] = fake_ns_new(FLAV_MICRODESC, when);
   }
 
   /* add the first 3. */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[0], md_ns[0]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_ns[1]));
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_ns[2]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[0], md_bodylen[0],
+                                                md_ns[0]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[1], md_bodylen[1],
+                                                md_ns[1]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[2], md_bodylen[2],
+                                                md_ns[2]));
   /* Make diffs. */
   consdiffmgr_rescan();
   tt_ptr_op(NULL, OP_NE, fake_cpuworker_queue);
@@ -770,7 +791,8 @@ test_consdiffmgr_cleanup_old_diffs(void *arg)
 
   /* Now add an even-more-recent consensus; this should make all previous
    * diffs deletable, and make delete */
-  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[3], md_ns[3]));
+  tt_int_op(0, OP_EQ, consdiffmgr_add_consensus(md_body[3], md_bodylen[3],
+                                                md_ns[3]));
   tt_int_op(2 * n_diff_compression_methods() +
             (n_consensus_compression_methods() - 1) , OP_EQ,
             consdiffmgr_cleanup());
