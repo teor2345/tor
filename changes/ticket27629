@@ -1,0 +1,3 @@
+  o Code simplification and refactoring:
+    - Add explicit length parameters to functions that parse consensuses,
+      and to all functions that those functions call. Closes ticket 27629.
