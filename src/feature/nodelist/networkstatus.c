@@ -249,8 +249,11 @@ router_reload_consensus_networkstatus(void)
   for (flav = 0; flav < N_CONSENSUS_FLAVORS; ++flav) {
     const char *flavor = networkstatus_get_flavor_name(flav);
     char *s = networkstatus_read_cached_consensus_impl(flav, flavor, 0);
+    size_t len;
     if (s) {
-      if (networkstatus_set_current_consensus(s, flavor, flags, NULL) < -1) {
+      len = strlen(s);
+      if (networkstatus_set_current_consensus(s, len, flavor,
+                                              flags, NULL) < -1) {
         log_warn(LD_FS, "Couldn't load consensus %s networkstatus from cache",
                  flavor);
       }
@@ -259,7 +262,8 @@ router_reload_consensus_networkstatus(void)
 
     s = networkstatus_read_cached_consensus_impl(flav, flavor, 1);
     if (s) {
-      if (networkstatus_set_current_consensus(s, flavor,
+      len = strlen(s);
+      if (networkstatus_set_current_consensus(s, len, flavor,
                                      flags | NSSET_WAS_WAITING_FOR_CERTS,
                                      NULL)) {
         log_info(LD_FS, "Couldn't load unverified consensus %s networkstatus "
@@ -1832,7 +1836,7 @@ warn_early_consensus(const networkstatus_t *c, const char *flavor,
  * user, and -2 for more serious problems.
  */
 int
-networkstatus_set_current_consensus(const char *consensus,
+networkstatus_set_current_consensus(const char *consensus, size_t len,
                                     const char *flavor,
                                     unsigned flags,
                                     const char *source_dir)
@@ -1853,7 +1857,6 @@ networkstatus_set_current_consensus(const char *consensus,
   time_t current_valid_after = 0;
   int free_consensus = 1; /* Free 'c' at the end of the function */
   int checked_protocols_already = 0;
-  size_t len = strlen(consensus);
 
   if (flav < 0) {
     /* XXXX we don't handle unrecognized flavors yet. */
@@ -1955,11 +1958,11 @@ networkstatus_set_current_consensus(const char *consensus,
         tor_free(waiting->body);
         waiting->consensus = c;
         free_consensus = 0;
-        waiting->body = tor_strdup(consensus);
+        waiting->body = tor_strndup(consensus, len);
         waiting->set_at = now;
         waiting->dl_failed = 0;
         if (!from_cache) {
-          write_str_to_file(unverified_fname, consensus, 0);
+          write_bytes_to_file(unverified_fname, consensus, len, 0);
         }
         if (dl_certs)
           authority_certs_fetch_missing(c, now, source_dir);
@@ -2113,7 +2116,7 @@ networkstatus_set_current_consensus(const char *consensus,
   }
 
   if (!from_cache) {
-    write_str_to_file(consensus_fname, consensus, 0);
+    write_bytes_to_file(consensus_fname, consensus, len, 0);
   }
 
   warn_early_consensus(c, flavor, now);
@@ -2151,7 +2154,7 @@ networkstatus_note_certs_arrived(const char *source_dir)
     if (networkstatus_check_consensus_signature(waiting->consensus, 0)>=0) {
       char *waiting_body = waiting->body;
       if (!networkstatus_set_current_consensus(
-                                 waiting_body,
+                                 waiting_body, strlen(waiting_body),
                                  flavor_name,
                                  NSSET_WAS_WAITING_FOR_CERTS,
                                  source_dir)) {
