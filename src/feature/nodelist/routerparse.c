@@ -3462,7 +3462,7 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
     ++cert;
     size_t cert_len = len - (cert - s);
     ns->cert = authority_cert_parse_from_string(cert, cert_len, &cert_len);
-    if (!ns->cert || (cert + cert_len) > s + header_len)
+    if (!ns->cert || (cert + cert_len) > (s + header_len))
       goto err;
   }
 
