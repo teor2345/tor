@@ -3398,7 +3398,7 @@ extract_shared_random_srvs(networkstatus_t *ns, smartlist_t *tokens)
 /** Parse a v3 networkstatus vote, opinion, or consensus (depending on
  * ns_type), from <b>s</b>, and return the result.  Return NULL on failure. */
 networkstatus_t *
-networkstatus_parse_vote_from_string(const char *s, size_t len,
+networkstatus_parse_vote_from_string(const char *const s, const size_t len,
                                      size_t *len_out,
                                      networkstatus_type_t ns_type)
 {
@@ -3408,14 +3408,13 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   networkstatus_t *ns = NULL;
   common_digests_t ns_digests;
   uint8_t sha3_as_signed[DIGEST256_LEN];
-  const char *cert, *end_of_footer, *s_dup = s;
+  const char *cert, *s_dup = s;
   directory_token_t *tok;
   struct in_addr in;
   int i, inorder, n_signatures = 0;
   memarea_t *area = NULL, *rs_area = NULL;
   consensus_flavor_t flav = FLAV_NS;
   char *last_kwd=NULL;
-  const size_t orig_len = len;
   size_t header_len;
 
   tor_assert(s);
@@ -3770,13 +3769,13 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   rs_area = memarea_new();
   ns->routerstatus_list = smartlist_new();
 
-  len -= header_len;
-  s += header_len;
-  while (!fast_memcmpstart(s, len, "r ")) {
-    size_t bytes_parsed;
+  size_t j = header_len;
+  while (!fast_memcmpstart(&s[j], len - j, "r ")) {
+    const char *r = &s[j];
+    size_t rlen = len - j, bytes_parsed;
     if (ns->type != NS_TYPE_CONSENSUS) {
       vote_routerstatus_t *rs = tor_malloc_zero(sizeof(vote_routerstatus_t));
-      if (routerstatus_parse_entry_from_string(rs_area, s, len, &bytes_parsed,
+      if (routerstatus_parse_entry_from_string(rs_area, r, rlen, &bytes_parsed,
                                                rs_tokens, ns, rs, 0, 0)) {
         smartlist_add(ns->routerstatus_list, rs);
       } else {
@@ -3784,7 +3783,7 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
       }
     } else {
       routerstatus_t *rs;
-      if ((rs = routerstatus_parse_entry_from_string(rs_area, s, len,
+      if ((rs = routerstatus_parse_entry_from_string(rs_area, r, rlen,
                                                      &bytes_parsed, rs_tokens,
                                                      NULL, NULL,
                                                      ns->consensus_method,
@@ -3793,9 +3792,8 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
         smartlist_add(ns->routerstatus_list, rs);
       }
     }
-    tor_assert(bytes_parsed <= len);
-    s += bytes_parsed;
-    len -= bytes_parsed;
+    tor_assert(bytes_parsed <= rlen);
+    j += bytes_parsed;
   }
   for (i = 1; i < smartlist_len(ns->routerstatus_list); ++i) {
     routerstatus_t *rs1, *rs2;
@@ -3833,11 +3831,12 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
 
   /* Parse footer; check signature. */
   footer_tokens = smartlist_new();
-  if ((end_of_footer = tor_memstr(s, len, "\nnetwork-status-version ")))
+  const char *end_of_footer;
+  if ((end_of_footer = tor_memstr(&s[j], len-j, "\nnetwork-status-version ")))
     ++end_of_footer;
   else
     end_of_footer = s + len;
-  if (tokenize_string(area,s, end_of_footer, footer_tokens,
+  if (tokenize_string(area, &s[j], end_of_footer, footer_tokens,
                       networkstatus_vote_footer_token_table, 0)) {
     log_warn(LD_DIR, "Error tokenizing network-status vote footer.");
     goto err;
@@ -3994,10 +3993,8 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
     goto err;
   }
 
-  size_t footer_len = end_of_footer - s;
-  size_t unparsed_bytes = len - footer_len;
   if (len_out)
-    *len_out = orig_len - unparsed_bytes;
+    *len_out = end_of_footer - s;
 
   goto done;
  err:
