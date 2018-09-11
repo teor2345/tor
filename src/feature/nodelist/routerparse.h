@@ -91,8 +91,8 @@ smartlist_t *microdescs_parse_from_string(const char *s, const char *eos,
                                           saved_location_t where,
                                           smartlist_t *invalid_digests_out);
 
-authority_cert_t *authority_cert_parse_from_string(const char *s,
-                                                   const char **end_of_string);
+authority_cert_t *authority_cert_parse_from_string(const char *s, size_t len,
+                                                   size_t *len_out);
 int rend_parse_v2_service_descriptor(rend_service_descriptor_t **parsed_out,
                                      char *desc_id_out,
                                      char **intro_points_encrypted_out,

@@ -2303,10 +2303,11 @@ extrainfo_parse_entry_from_string(const char *s, const char *end,
   return extrainfo;
 }
 
-/** Parse a key certificate from <b>s</b>; point <b>end-of-string</b> to
- * the first character after the certificate. */
+/** Parse a key certificate from <b>s</b>; set *<b>len_out</b> to the length
+ * of the parsed certificate, including leading and trailing whitespace. */
 authority_cert_t *
-authority_cert_parse_from_string(const char *s, const char **end_of_string)
+authority_cert_parse_from_string(const char *s, size_t s_len,
+                                 size_t *len_out)
 {
   /** Reject any certificate at least this big; it is probably an overflow, an
    * attack, a bug, or some other nonsense. */
@@ -2317,27 +2318,27 @@ authority_cert_parse_from_string(const char *s, const char **end_of_string)
   char digest[DIGEST_LEN];
   directory_token_t *tok;
   char fp_declared[DIGEST_LEN];
-  char *eos;
+  const char *eoc, *const eos = s+s_len;
   size_t len;
   int found;
   memarea_t *area = NULL;
   const char *s_dup = s;
 
-  s = eat_whitespace(s);
-  eos = strstr(s, "\ndir-key-certification");
-  if (! eos) {
+  s = eat_whitespace_eos(s, eos);
+  eoc = tor_memstr(s, eos-s, "\ndir-key-certification");
+  if (! eoc) {
     log_warn(LD_DIR, "No signature found on key certificate");
     return NULL;
   }
-  eos = strstr(eos, "\n-----END SIGNATURE-----\n");
-  if (! eos) {
+  eoc = tor_memstr(eoc, eos-eoc, "\n-----END SIGNATURE-----\n");
+  if (! eoc) {
     log_warn(LD_DIR, "No end-of-signature found on key certificate");
     return NULL;
   }
-  eos = strchr(eos+2, '\n');
-  tor_assert(eos);
-  ++eos;
-  len = eos - s;
+  eoc = memchr(eoc+2, '\n', eos-eoc);
+  tor_assert(eoc);
+  ++eoc;
+  len = eoc - s;
 
   if (len > MAX_CERT_SIZE) {
     log_warn(LD_DIR, "Certificate is far too big (at %lu bytes long); "
@@ -2347,11 +2348,11 @@ authority_cert_parse_from_string(const char *s, const char **end_of_string)
 
   tokens = smartlist_new();
   area = memarea_new();
-  if (tokenize_string(area,s, eos, tokens, dir_key_certificate_table, 0) < 0) {
+  if (tokenize_string(area,s, eoc, tokens, dir_key_certificate_table, 0) < 0) {
     log_warn(LD_DIR, "Error tokenizing key certificate");
     goto err;
   }
-  if (router_get_hash_impl(s, strlen(s), digest, "dir-key-certificate-version",
+  if (router_get_hash_impl(s, s_len, digest, "dir-key-certificate-version",
                            "\ndir-key-certification", '\n', DIGEST_SHA1) < 0)
     goto err;
   tok = smartlist_get(tokens, 0);
@@ -2466,8 +2467,8 @@ authority_cert_parse_from_string(const char *s, const char **end_of_string)
   cert->cache_info.signed_descriptor_body[len] = 0;
   cert->cache_info.saved_location = SAVED_NOWHERE;
 
-  if (end_of_string) {
-    *end_of_string = eat_whitespace(eos);
+  if (len_out) {
+    *len_out = eat_whitespace_eos(eoc, eos) - s_dup;
   }
   SMARTLIST_FOREACH(tokens, directory_token_t *, t, token_clear(t));
   smartlist_free(tokens);
@@ -3458,12 +3459,12 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   }
 
   if (ns_type != NS_TYPE_CONSENSUS) {
-    const char *end_of_cert = NULL;
     if (!(cert = strstr(s, "\ndir-key-certificate-version")))
       goto err;
     ++cert;
-    ns->cert = authority_cert_parse_from_string(cert, &end_of_cert);
-    if (!ns->cert || !end_of_cert || end_of_cert > end_of_header)
+    size_t cert_len;
+    ns->cert = authority_cert_parse_from_string(cert, strlen(cert), &cert_len);
+    if (!ns->cert || (cert + cert_len) > end_of_header)
       goto err;
   }
 
