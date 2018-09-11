@@ -2108,7 +2108,7 @@ networkstatus_set_current_consensus(const char *consensus,
                                                  c->digest_sha3_as_signed,
                                                  c->valid_after);
 
-      consdiffmgr_add_consensus(consensus, c);
+      consdiffmgr_add_consensus(consensus, len, c);
     }
   }
 

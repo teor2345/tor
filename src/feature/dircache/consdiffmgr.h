@@ -21,7 +21,7 @@ typedef struct consdiff_cfg_t {
 
 struct consensus_cache_entry_t; // from conscache.h
 
-int consdiffmgr_add_consensus(const char *consensus,
+int consdiffmgr_add_consensus(const char *consensus, size_t len,
                               const networkstatus_t *as_parsed);
 
 consdiff_status_t consdiffmgr_find_consensus(

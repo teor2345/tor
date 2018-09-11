@@ -518,7 +518,7 @@ get_max_age_to_cache(void)
  * Return 0 on success and -1 on failure.
  */
 int
-consdiffmgr_add_consensus(const char *consensus,
+consdiffmgr_add_consensus(const char *consensus, size_t len,
                           const networkstatus_t *as_parsed)
 {
   if (BUG(consensus == NULL) || BUG(as_parsed == NULL))
@@ -543,7 +543,6 @@ consdiffmgr_add_consensus(const char *consensus,
     return -1;
   }
 
-  size_t len = strlen(consensus);
   /* We don't have it. Add it to the cache. */
   return consensus_queue_compression_work(consensus, len, as_parsed);
 }
