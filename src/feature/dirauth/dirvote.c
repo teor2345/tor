@@ -3213,6 +3213,7 @@ dirvote_add_vote(const char *vote_body, const char **msg_out, int *status_out)
           networkstatus_vote_free(v->vote);
           v->vote_body = new_cached_dir(tor_strndup(vote_body,
                                                     end_of_vote-vote_body),
+                                        end_of_vote-vote_body,
                                         vote->published);
           v->vote = vote;
           if (end_of_vote &&
@@ -3238,6 +3239,7 @@ dirvote_add_vote(const char *vote_body, const char **msg_out, int *status_out)
   pending_vote = tor_malloc_zero(sizeof(pending_vote_t));
   pending_vote->vote_body = new_cached_dir(tor_strndup(vote_body,
                                                        end_of_vote-vote_body),
+                                           end_of_vote-vote_body,
                                            vote->published);
   pending_vote->vote = vote;
   smartlist_add(pending_vote_list, pending_vote);

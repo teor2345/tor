@@ -194,12 +194,12 @@ cached_dir_decref(cached_dir_t *d)
 /** Allocate and return a new cached_dir_t containing the string <b>s</b>,
  * published at <b>published</b>. */
 cached_dir_t *
-new_cached_dir(char *s, time_t published)
+new_cached_dir(char *s, size_t len, time_t published)
 {
   cached_dir_t *d = tor_malloc_zero(sizeof(cached_dir_t));
   d->refcnt = 1;
   d->dir = s;
-  d->dir_len = strlen(s);
+  d->dir_len = len;
   d->published = published;
   if (tor_compress(&(d->dir_compressed), &(d->dir_compressed_len),
                    d->dir, d->dir_len, ZLIB_METHOD)) {
@@ -246,7 +246,7 @@ dirserv_set_cached_consensus_networkstatus(const char *networkstatus,
     cached_consensuses = strmap_new();
 
   char *networkstatus_copy = tor_strndup(networkstatus, len);
-  new_networkstatus = new_cached_dir(networkstatus_copy, published);
+  new_networkstatus = new_cached_dir(networkstatus_copy, len, published);
   memcpy(&new_networkstatus->digests, digests, sizeof(common_digests_t));
   memcpy(&new_networkstatus->digest_sha3_as_signed, sha3_as_signed,
          DIGEST256_LEN);

@@ -99,7 +99,7 @@ int dirserv_get_routerdescs(smartlist_t *descs_out, const char *key,
 
 void dirserv_free_all(void);
 void cached_dir_decref(cached_dir_t *d);
-cached_dir_t *new_cached_dir(char *s, time_t published);
+cached_dir_t *new_cached_dir(char *s, size_t len, time_t published);
 
 spooled_resource_t *spooled_resource_new(dir_spool_source_t source,
                                          const uint8_t *digest,
