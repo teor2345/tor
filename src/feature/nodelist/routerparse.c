@@ -2493,7 +2493,7 @@ authority_cert_parse_from_string(const char *s, size_t s_len,
  * object (starting with "r " at the start of a line).  If none is found,
  * return the start of the directory footer, or the next directory signature.
  * If none is found, return the end of the string. */
-static inline const char *
+static inline size_t
 find_start_of_next_routerstatus(const char *s, size_t len)
 {
   const char *eos, *footer, *sig;
@@ -2506,13 +2506,13 @@ find_start_of_next_routerstatus(const char *s, size_t len)
   sig = tor_memstr(s, eos-s, "\ndirectory-signature");
 
   if (footer && sig)
-    return MIN(footer, sig) + 1;
+    return MIN(footer, sig) + 1 - s;
   else if (footer)
-    return footer+1;
+    return footer+1 - s;
   else if (sig)
-    return sig+1;
+    return sig+1 - s;
   else
-    return eos;
+    return eos - s;
 }
 
 /** Parse the GuardFraction string from a consensus or vote.
@@ -2654,7 +2654,7 @@ routerstatus_parse_entry_from_string(memarea_t *area,
     flav = FLAV_NS;
   tor_assert(flav == FLAV_NS || flav == FLAV_MICRODESC);
 
-  eos = find_start_of_next_routerstatus(s, len);
+  eos = s + find_start_of_next_routerstatus(s, len);
 
   if (tokenize_string(area, s, eos, tokens, rtrstatus_token_table,0)) {
     log_warn(LD_DIR, "Error tokenizing router status");
@@ -3408,7 +3408,7 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   networkstatus_t *ns = NULL;
   common_digests_t ns_digests;
   uint8_t sha3_as_signed[DIGEST256_LEN];
-  const char *cert, *end_of_header, *end_of_footer, *s_dup = s;
+  const char *cert, *end_of_footer, *s_dup = s;
   directory_token_t *tok;
   struct in_addr in;
   int i, inorder, n_signatures = 0;
@@ -3416,6 +3416,7 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   consensus_flavor_t flav = FLAV_NS;
   char *last_kwd=NULL;
   const size_t orig_len = len;
+  size_t header_len;
 
   tor_assert(s);
 
@@ -3426,8 +3427,8 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   }
 
   area = memarea_new();
-  end_of_header = find_start_of_next_routerstatus(s, len);
-  if (tokenize_string(area, s, end_of_header, tokens,
+  header_len = find_start_of_next_routerstatus(s, len);
+  if (tokenize_string(area, s, &s[header_len], tokens,
                       (ns_type == NS_TYPE_CONSENSUS) ?
                       networkstatus_consensus_token_table :
                       networkstatus_token_table, 0)) {
@@ -3461,7 +3462,7 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
     ++cert;
     size_t cert_len = len - (cert - s);
     ns->cert = authority_cert_parse_from_string(cert, cert_len, &cert_len);
-    if (!ns->cert || (cert + cert_len) > end_of_header)
+    if (!ns->cert || (cert + cert_len) > s + header_len)
       goto err;
   }
 
@@ -3767,10 +3768,10 @@ networkstatus_parse_vote_from_string(const char *s, size_t len,
   /* Parse routerstatus lines. */
   rs_tokens = smartlist_new();
   rs_area = memarea_new();
-  len -= end_of_header - s;
-  s = end_of_header;
   ns->routerstatus_list = smartlist_new();
 
+  len -= header_len;
+  s += header_len;
   while (!fast_memcmpstart(s, len, "r ")) {
     size_t bytes_parsed;
     if (ns->type != NS_TYPE_CONSENSUS) {
