@@ -2186,6 +2186,7 @@ handle_response_fetch_consensus(dir_connection_t *conn,
   const time_t now = approx_time();
 
   const char *consensus;
+  size_t cons_len;
   char *new_consensus = NULL;
   const char *sourcename;
 
@@ -2234,20 +2235,22 @@ handle_response_fetch_consensus(dir_connection_t *conn,
       networkstatus_consensus_download_failed(0, flavname);
       return -1;
     }
+    cons_len = strlen(new_consensus);
     log_info(LD_DIR, "Applied consensus diff (size %d) from server "
              "'%s:%d', resulting in a new consensus document (size %d).",
              (int)body_len, conn->base_.address, conn->base_.port,
-             (int)strlen(new_consensus));
+             (int)cons_len);
     consensus = new_consensus;
     sourcename = "generated based on a diff";
   } else {
     log_info(LD_DIR,"Received consensus directory (body size %d) from server "
              "'%s:%d'", (int)body_len, conn->base_.address, conn->base_.port);
     consensus = body;
+    cons_len = body_len;
     sourcename = "downloaded";
   }
 
-  if ((r=networkstatus_set_current_consensus(consensus, flavname, 0,
+  if ((r=networkstatus_set_current_consensus(consensus, cons_len, flavname, 0,
                                              conn->identity_digest))<0) {
     log_fn(r<-1?LOG_WARN:LOG_INFO, LD_DIR,
            "Unable to load %s consensus directory %s from "

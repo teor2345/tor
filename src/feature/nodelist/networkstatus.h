@@ -104,7 +104,7 @@ int networkstatus_consensus_has_ipv6(const or_options_t* options);
 #define NSSET_DONT_DOWNLOAD_CERTS 4
 #define NSSET_ACCEPT_OBSOLETE 8
 #define NSSET_REQUIRE_FLAVOR 16
-int networkstatus_set_current_consensus(const char *consensus,
+int networkstatus_set_current_consensus(const char *consensus, size_t len,
                                         const char *flavor,
                                         unsigned flags,
                                         const char *source_dir);
