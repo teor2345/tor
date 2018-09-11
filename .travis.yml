@@ -8,7 +8,6 @@ sudo:
 
 dist:
   - trusty
-  - precise
 
 before_install:
   - sudo apt-cache policy gcc || true
