@@ -187,7 +187,7 @@ char *routerstatus_format_entry(
                               const vote_routerstatus_t *vrs);
 void dirserv_free_all(void);
 void cached_dir_decref(cached_dir_t *d);
-cached_dir_t *new_cached_dir(char *s, time_t published);
+cached_dir_t *new_cached_dir(char *s, size_t len, time_t published);
 struct config_line_t;
 char *format_recommended_version_list(const struct config_line_t *line,
                                       int warn);
