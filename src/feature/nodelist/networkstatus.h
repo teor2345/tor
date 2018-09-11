@@ -12,10 +12,12 @@
 #ifndef TOR_NETWORKSTATUS_H
 #define TOR_NETWORKSTATUS_H
 
+#include "lib/fs/mmap.h"
 #include "lib/testsupport/testsupport.h"
 
 void networkstatus_reset_warnings(void);
 void networkstatus_reset_download_failures(void);
+tor_mmap_t *networkstatus_mmap_cached_consensus(const char *flavorname);
 char *networkstatus_read_cached_consensus(const char *flavorname);
 int router_reload_consensus_networkstatus(void);
 void routerstatus_free_(routerstatus_t *rs);
