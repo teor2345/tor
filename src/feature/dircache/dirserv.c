@@ -234,6 +234,7 @@ free_cached_dir_(void *_d)
  * validation is performed. */
 void
 dirserv_set_cached_consensus_networkstatus(const char *networkstatus,
+                                           size_t len,
                                            const char *flavor_name,
                                            const common_digests_t *digests,
                                            const uint8_t *sha3_as_signed,
@@ -244,7 +245,8 @@ dirserv_set_cached_consensus_networkstatus(const char *networkstatus,
   if (!cached_consensuses)
     cached_consensuses = strmap_new();
 
-  new_networkstatus = new_cached_dir(tor_strdup(networkstatus), published);
+  char *networkstatus_copy = tor_strndup(networkstatus, len);
+  new_networkstatus = new_cached_dir(networkstatus_copy, published);
   memcpy(&new_networkstatus->digests, digests, sizeof(common_digests_t));
   memcpy(&new_networkstatus->digest_sha3_as_signed, sha3_as_signed,
          DIGEST256_LEN);

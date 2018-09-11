@@ -2113,7 +2113,7 @@ networkstatus_set_current_consensus(const char *consensus,
 
   if (we_want_to_fetch_flavor(options, flav)) {
     if (dir_server_mode(get_options())) {
-      dirserv_set_cached_consensus_networkstatus(consensus,
+      dirserv_set_cached_consensus_networkstatus(consensus, len,
                                                  flavor,
                                                  &c->digests,
                                                  c->digest_sha3_as_signed,
