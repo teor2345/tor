@@ -12,7 +12,7 @@
 #ifndef TOR_AUTHCERT_PARSE_H
 #define TOR_AUTHCERT_PARSE_H
 
-authority_cert_t *authority_cert_parse_from_string(const char *s,
-                                                   const char **end_of_string);
+authority_cert_t *authority_cert_parse_from_string(const char *s, size_t len,
+                                                   size_t *len_out);
 
 #endif /* !defined(TOR_AUTHCERT_PARSE_H) */

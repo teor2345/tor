@@ -1117,12 +1117,12 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
   }
 
   if (ns_type != NS_TYPE_CONSENSUS) {
-    const char *end_of_cert = NULL;
     if (!(cert = strstr(s, "\ndir-key-certificate-version")))
       goto err;
     ++cert;
-    ns->cert = authority_cert_parse_from_string(cert, &end_of_cert);
-    if (!ns->cert || !end_of_cert || end_of_cert > (s + header_len))
+    size_t cert_len;
+    ns->cert = authority_cert_parse_from_string(cert, strlen(cert), &cert_len);
+    if (!ns->cert || (cert + cert_len) > (s + header_len))
       goto err;
   }
 

@@ -378,9 +378,15 @@ trusted_dirs_load_certs_from_string(const char *contents, int source,
   int failure_code = 0;
   int from_store = (source == TRUSTED_DIRS_CERTS_SRC_FROM_STORE);
   int added_trusted_cert = 0;
+  size_t len = strlen(contents);
 
   for (s = contents; *s; s = eos) {
-    authority_cert_t *cert = authority_cert_parse_from_string(s, &eos);
+    size_t cert_len = 0;
+    authority_cert_t *cert = authority_cert_parse_from_string(s, len,
+                                                              &cert_len);
+    eos = s + cert_len;
+    len -= cert_len;
+
     cert_list_t *cl;
     if (!cert) {
       failure_code = -1;
