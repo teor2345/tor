@@ -105,8 +105,6 @@ STATIC networkstatus_t *current_md_consensus = NULL;
 typedef struct consensus_waiting_for_certs_t {
   /** The consensus itself. */
   networkstatus_t *consensus;
-  /** The encoded version of the consensus, nul-terminated. */
-  char *body;
   /** When did we set the current value of consensus_waiting_for_certs?  If
    * this is too recent, we shouldn't try to fetch a new consensus for a
    * little while, to give ourselves time to get certificates for this one. */
@@ -1969,10 +1967,8 @@ networkstatus_set_current_consensus(const char *consensus, size_t len,
           c->valid_after > current_valid_after) {
         waiting = &consensus_waiting_for_certs[flav];
         networkstatus_vote_free(waiting->consensus);
-        tor_free(waiting->body);
         waiting->consensus = c;
         free_consensus = 0;
-        waiting->body = tor_strndup(consensus, len);
         waiting->set_at = now;
         waiting->dl_failed = 0;
         if (!from_cache) {
@@ -2067,10 +2063,6 @@ networkstatus_set_current_consensus(const char *consensus, size_t len,
       waiting->consensus->valid_after <= c->valid_after) {
     networkstatus_vote_free(waiting->consensus);
     waiting->consensus = NULL;
-    if (consensus != waiting->body)
-      tor_free(waiting->body);
-    else
-      waiting->body = NULL;
     waiting->set_at = 0;
     waiting->dl_failed = 0;
     if (unlink(unverified_fname) != 0) {
@@ -2166,14 +2158,16 @@ networkstatus_note_certs_arrived(const char *source_dir)
     if (!waiting->consensus)
       continue;
     if (networkstatus_check_consensus_signature(waiting->consensus, 0)>=0) {
-      char *waiting_body = waiting->body;
-      if (!networkstatus_set_current_consensus(
-                                 waiting_body, strlen(waiting_body),
+      tor_mmap_t *m;
+      m = networkstatus_mmap_cached_consensus_impl(i, flavor_name, true);
+      if (!m)
+        continue;
+      networkstatus_set_current_consensus(
+                                 m->data, m->size,
                                  flavor_name,
                                  NSSET_WAS_WAITING_FOR_CERTS,
-                                 source_dir)) {
-        tor_free(waiting_body);
-      }
+                                 source_dir);
+      tor_munmap_file(m);
     }
   }
 }
@@ -2749,6 +2743,5 @@ networkstatus_free_all(void)
       networkstatus_vote_free(waiting->consensus);
       waiting->consensus = NULL;
     }
-    tor_free(waiting->body);
   }
 }
