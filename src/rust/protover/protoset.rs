@@ -517,9 +517,11 @@ mod test {
         test_protoset_contains_versions!(&[], "");
         test_protoset_contains_versions!(&[1], "1");
         test_protoset_contains_versions!(&[1, 2], "1,2");
+        test_protoset_contains_versions!(&[1, 2], "2,1");
         test_protoset_contains_versions!(&[1, 2, 3], "1-3");
         test_protoset_contains_versions!(&[1, 2, 5], "1-2,5");
         test_protoset_contains_versions!(&[1, 3, 4, 5], "1,3-5");
+        test_protoset_contains_versions!(&[2, 3, 4, 5], "4-5,2-3");
         test_protoset_contains_versions!(&[42, 55, 56, 57, 58], "42,55-58");
     }
 
