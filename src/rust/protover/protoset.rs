@@ -493,29 +493,29 @@ mod test {
         assert_eq!((true, 3, 2), find_range(&vec![1, 2, 3, 5]));
     }
 
-    macro_rules! assert_contains_each {
-        ($protoset:expr, $versions:expr) => (
-            for version in $versions {
-                assert!($protoset.contains(version));
-            }
-        )
+    macro_rules! assert_contains_exactly {
+        ($protoset:expr, $versions:expr) => {
+            assert!($protoset.expand().into_iter().eq($versions));
+        };
     }
 
     macro_rules! test_protoset_contains_versions {
-        ($list:expr, $str:expr) => (
-            let versions: &[Version] = $list;
+        ($list:expr, $str:expr) => {
+            let versions = $list.into_iter().cloned();
             let protoset: Result<ProtoSet, ProtoverError> = ProtoSet::from_str($str);
 
             assert!(protoset.is_ok());
             let p = protoset.unwrap();
-            assert_contains_each!(p, versions);
-        )
+            assert_contains_exactly!(p, versions);
+        };
     }
 
     #[test]
     fn test_versions_from_str() {
         test_protoset_contains_versions!(&[], "");
         test_protoset_contains_versions!(&[1], "1");
+        test_protoset_contains_versions!(&[1], "1-1");
+        test_protoset_contains_versions!(&[1], "1,1,1,1");
         test_protoset_contains_versions!(&[1, 2], "1,2");
         test_protoset_contains_versions!(&[1, 2], "2,1");
         test_protoset_contains_versions!(&[1, 2, 3], "1-3");
