@@ -4,6 +4,7 @@
 
 //! Sets for lazily storing ordered, non-overlapping ranges of integers.
 
+use std::cmp;
 use std::slice;
 use std::str::FromStr;
 use std::u32;
@@ -55,6 +56,26 @@ impl Default for ProtoSet {
 
         ProtoSet{ pairs }
     }
+}
+
+/// Sort and consolidate version ranges that are adjacent or overlapping.
+/// # Inputs
+///
+/// * `pairs`: an unsorted `Vec` of `Version` pairs.
+///
+/// # Returns
+///
+/// A sorted Vec of non-overlapping, non-adjacent `Version` pairs.
+fn unique_ranges(mut pairs: Vec<(Version, Version)>) -> Vec<(Version, Version)> {
+    pairs.sort_unstable();
+    for i in (1..pairs.len()).rev() {
+        let (left, right) = (pairs[i - 1], pairs[i]);
+        if left.0 <= left.1 && right.0 <= right.1 && left.1.saturating_add(1) >= right.0 {
+            pairs[i - 1].1 = cmp::max(left.1, right.1);
+            pairs.remove(i);
+        }
+    }
+    pairs
 }
 
 impl<'a> ProtoSet {
@@ -370,7 +391,9 @@ impl FromStr for ProtoSet {
             }
         }
 
-        ProtoSet::from_slice(&pairs[..])
+        pairs = unique_ranges(pairs);
+
+        ProtoSet { pairs }.is_ok()
     }
 }
 
@@ -591,7 +614,9 @@ mod test {
 
     #[test]
     fn test_versions_from_str_overlap() {
-        assert_eq!(Err(ProtoverError::Overlap), ProtoSet::from_str("1-3,2-4"));
+        assert!(ProtoSet::from_str("1-3,2-4").unwrap().iter().eq(&[(1, 4)]));
+        assert!(ProtoSet::from_str("1-2,2-4").unwrap().iter().eq(&[(1, 4)]));
+        assert!(ProtoSet::from_str("1-5,2-4").unwrap().iter().eq(&[(1, 5)]));
     }
 
     #[test]
@@ -677,6 +702,11 @@ mod test {
         assert_eq!("", &from_str("").to_string());
         assert_eq!("1", &from_str("1-1").to_string());
         assert_eq!("1-9", &from_str("1-9").to_string());
+        assert_eq!("1-2", &from_str("1,2").to_string());
+        assert_eq!("1-3", &from_str("1,2,3").to_string());
+        assert_eq!("1-9", &from_str("7-9,4-6,1-3").to_string());
+        assert_eq!("1-9", &from_str("1-3,4-6,7-9").to_string());
+        assert_eq!("1-9", &from_str("1-9,2-8").to_string());
     }
 }
 
