@@ -174,10 +174,10 @@ impl ProtoSet {
             if low == u32::MAX || high == u32::MAX {
                 return Err(ProtoverError::ExceedsMax);
             }
-            if low <= last_high {
-                return Err(ProtoverError::Overlap);
-            } else if low > high {
+            if low > high {
                 return Err(ProtoverError::LowGreaterThanHigh);
+            } else if low <= last_high {
+                return Err(ProtoverError::Overlap);
             }
             last_high = high;
         }
@@ -576,6 +576,8 @@ mod test {
         let err = Err(ProtoverError::LowGreaterThanHigh);
         assert_eq!(err, ProtoSet::from_str("2-3,2-1"));
         assert_eq!(err, ProtoSet::from_str("2-1,2-3"));
+        assert_eq!(err, ProtoSet::from_str("4-3,2-5"));
+        assert_eq!(err, ProtoSet::from_str("2-5,4-3"));
     }
 
     #[test]
@@ -583,6 +585,8 @@ mod test {
         let err = Err(ProtoverError::LowGreaterThanHigh);
         assert_eq!(err, ProtoSet::from_slice(&[(2, 3), (2, 1)]));
         assert_eq!(err, ProtoSet::from_slice(&[(2, 1), (2, 3)]));
+        assert_eq!(err, ProtoSet::from_slice(&[(4, 3), (2, 5)]));
+        assert_eq!(err, ProtoSet::from_slice(&[(2, 5), (4, 3)]));
     }
 
     #[test]
