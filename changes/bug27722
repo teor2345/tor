@@ -1,0 +1,3 @@
+  o Minor bugfixes (rust):
+    - Canonicalize version ranges when parsing a ProtoSet, and don't reject
+    overlapping ranges. Fixes bug 27722; bugfix on 0.3.3.5-rc.
