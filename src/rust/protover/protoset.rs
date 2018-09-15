@@ -572,6 +572,20 @@ mod test {
     }
 
     #[test]
+    fn test_versions_from_str_backwards() {
+        let err = Err(ProtoverError::LowGreaterThanHigh);
+        assert_eq!(err, ProtoSet::from_str("2-3,2-1"));
+        assert_eq!(err, ProtoSet::from_str("2-1,2-3"));
+    }
+
+    #[test]
+    fn test_versions_from_slice_backwards() {
+        let err = Err(ProtoverError::LowGreaterThanHigh);
+        assert_eq!(err, ProtoSet::from_slice(&[(2, 3), (2, 1)]));
+        assert_eq!(err, ProtoSet::from_slice(&[(2, 1), (2, 3)]));
+    }
+
+    #[test]
     fn test_versions_from_str_overlap() {
         assert_eq!(Err(ProtoverError::Overlap), ProtoSet::from_str("1-3,2-4"));
     }
