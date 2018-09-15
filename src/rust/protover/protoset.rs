@@ -601,7 +601,10 @@ mod test {
 
     #[test]
     fn test_versions_from_str_max() {
-        assert_eq!(Err(ProtoverError::ExceedsMax), ProtoSet::from_str("4294967295"));
+        let err = Err(ProtoverError::ExceedsMax);
+        assert_eq!(err, ProtoSet::from_str("4294967295"));
+        assert_eq!(err, ProtoSet::from_str("2-3,1-4294967295"));
+        assert_eq!(err, ProtoSet::from_str("1-2,2-4294967295"));
     }
 
     #[test]
