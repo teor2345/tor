@@ -667,6 +667,13 @@ mod test {
         assert!(v.contains(&9001));
         assert!(v.contains(&4294967294));
     }
+
+    #[test]
+    fn test_protoset_to_str() {
+        let from_str = |s: &str| ProtoSet::from_str(s).unwrap();
+        assert_eq!("", &from_str("").to_string());
+        assert_eq!("1-9", &from_str("1-9").to_string());
+    }
 }
 
 #[cfg(all(test, feature = "bench"))]
