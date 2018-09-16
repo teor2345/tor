@@ -236,7 +236,9 @@ impl ProtoEntry {
 /// * If a version string is malformed. See `impl FromStr for ProtoSet`.
 fn parse_protocol_and_version_str<'a>(
     protocol_entry: &'a str,
-) -> impl Iterator<Item = Result<(&'a str, ProtoSet), ProtoverError>> {
+) -> Result<impl Iterator<Item = (&'a str, ProtoSet)>, ProtoverError> {
+    let m = Ok(HashMap::new());
+
     let parse_subproto = |subproto: &'a str| {
         let mut parts = subproto.splitn(2, '=');
 
@@ -244,7 +246,17 @@ fn parse_protocol_and_version_str<'a>(
         let vers = parts.next().ok_or(ProtoverError::Unparseable)?;
         Ok((name, vers.parse()?))
     };
-    protocol_entry.split(' ').map(parse_subproto)
+    let fold = |m: Result<HashMap<_, ProtoSet>, _>, subproto: &'a str| {
+        m.and_then(|mut m| {
+            let (name, versions) = parse_subproto(subproto)?;
+            m.entry(name).or_insert(versions);
+            Ok(m)
+        })
+    };
+    protocol_entry
+        .split(' ')
+        .fold(m, fold)
+        .map(|m| m.into_iter())
 }
 
 impl FromStr for ProtoEntry {
@@ -266,7 +278,7 @@ impl FromStr for ProtoEntry {
     /// Otherwise, the `Err` value of this `Result` is a `ProtoverError`.
     fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
         let mut parsed = Self::default();
-        let parts = parse_protocol_and_version_str(protocol_entry);
+        let parts = parse_protocol_and_version_str(protocol_entry)?;
 
         let parse_parts = |(len, name, versions): (usize, &str, ProtoSet)| {
             let protocol: Protocol = name.parse()?;
@@ -278,9 +290,8 @@ impl FromStr for ProtoEntry {
             }
         };
 
-        let count_and_parse = |(i, r): (usize, Result<_, _>)| {
-            r.map(|(name, vers)| (i + 1, name, vers))
-                .and_then(parse_parts)
+        let count_and_parse = |(i, (n, v)): (usize, (&str, ProtoSet))| {
+            parse_parts((i + 1, n, v))
         };
         parsed.0 = try!(parts.enumerate().map(count_and_parse).collect());
         Ok(parsed)
@@ -514,14 +525,14 @@ impl FromStr for UnvalidatedProtoEntry {
     /// * If the version string is malformed. See `impl FromStr for ProtoSet`.
     fn from_str(protocol_entry: &str) -> Result<Self, Self::Err> {
         let mut parsed = Self::default();
-        let parts = parse_protocol_and_version_str(protocol_entry);
+        let parts = parse_protocol_and_version_str(protocol_entry)?;
 
         let parse_parts = |(name, versions): (&str, ProtoSet)| {
             let protocol = UnknownProtocol::from_str(name)?;
 
             Ok((protocol, versions))
         };
-        parsed.0 = try!(parts.map(|r| r.and_then(parse_parts)).collect());
+        parsed.0 = try!(parts.map(parse_parts).collect());
         Ok(parsed)
     }
 }
@@ -531,14 +542,14 @@ impl UnvalidatedProtoEntry {
     /// exceeds MAX_PROTOCOL_NAME_LENGTH.
     pub(crate) fn from_str_any_len(protocol_entry: &str) -> Result<Self, ProtoverError> {
         let mut parsed = Self::default();
-        let parts = parse_protocol_and_version_str(protocol_entry);
+        let parts = parse_protocol_and_version_str(protocol_entry)?;
 
         let parse_parts = |(name, versions): (&str, ProtoSet)| {
             let protocol = UnknownProtocol::from_str_any_len(name)?;
 
             Ok((protocol, versions))
         };
-        parsed.0 = try!(parts.map(|r| r.and_then(parse_parts)).collect());
+        parsed.0 = try!(parts.map(parse_parts).collect());
         Ok(parsed)
     }
 }
@@ -811,6 +822,17 @@ mod test {
     #[test]
     fn test_protoentry_from_str_multiple_protocols_multiple_versions() {
         assert_protoentry_is_parseable!("Cons=3-4 Link=1,3-5");
+    }
+
+    #[test]
+    fn test_protoentry_from_str_duplicates() {
+        let assert_eq = |a: &str, b: &str| {
+            let entry: ProtoEntry = a.parse().unwrap();
+            let uentry: UnvalidatedProtoEntry = a.parse().unwrap();
+            assert_eq!(b, &entry.to_string());
+            assert_eq!(b, &uentry.to_string());
+        };
+        assert_eq("Cons=1-2 Cons=1", "Cons=1-2");
     }
 
     #[test]
