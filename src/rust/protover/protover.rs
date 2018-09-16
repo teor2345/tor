@@ -249,7 +249,7 @@ fn parse_protocol_and_version_str<'a>(
     let fold = |m: Result<HashMap<_, ProtoSet>, _>, subproto: &'a str| {
         m.and_then(|mut m| {
             let (name, versions) = parse_subproto(subproto)?;
-            m.entry(name).or_insert(versions);
+            m.entry(name).or_insert(ProtoSet::default()).add(versions);
             Ok(m)
         })
     };
@@ -833,6 +833,7 @@ mod test {
             assert_eq!(b, &uentry.to_string());
         };
         assert_eq("Cons=1-2 Cons=1", "Cons=1-2");
+        assert_eq("Cons=1 Cons=2", "Cons=1-2");
     }
 
     #[test]

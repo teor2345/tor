@@ -1,0 +1,3 @@
+  o Minor bugfixes (rust):
+    - Merge duplicate entries when parsing a ProtoEntry, instead of ignoring
+    all but the latest entry. Fixes bug 27190; bugfix on 0.3.3.5-rc.

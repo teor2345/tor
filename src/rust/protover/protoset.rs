@@ -290,6 +290,33 @@ impl ProtoSet {
         expanded.retain(f);
         *self = expanded.into();
     }
+
+    /// Add all the `Version`s in the `other` `ProtoSet` to this one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use protover::errors::ProtoverError;
+    /// use protover::protoset::ProtoSet;
+    ///
+    /// # fn do_test() -> Result<bool, ProtoverError> {
+    /// let mut protoset: ProtoSet = "1-2".parse()?;
+    /// let set2: ProtoSet = "3".parse()?;
+    ///
+    /// protoset.add(set2);
+    ///
+    /// assert_eq!(&protoset.to_string(), "1-3");
+    /// #
+    /// # Ok(true)
+    /// # }
+    /// # fn main() { do_test(); }  // wrap the test so we can use the ? operator
+    /// ```
+    pub fn add(&mut self, other: Self)
+    {
+        let mut pairs = other.pairs;
+        pairs.append(&mut self.pairs);
+        self.pairs = unique_ranges(pairs);
+    }
 }
 
 impl FromStr for ProtoSet {
