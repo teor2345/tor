@@ -3,8 +3,6 @@ version: 1.0.{build}
 clone_depth: 50
 
 environment:
-  compiler: mingw
-
   matrix:
   - target: i686-w64-mingw32
     compiler_path: mingw32
@@ -32,7 +30,7 @@ install:
 
 build_script:
 - ps: >-
-    if ($env:compiler -eq "mingw") {
+    {
             $oldpath = ${env:Path} -split ';'
             $buildpath = @("C:\msys64\${env:compiler_path}\bin", "C:\msys64\usr\bin") + $oldpath
             $env:Path = @($buildpath) -join ';'
@@ -50,7 +48,7 @@ build_script:
 
 test_script:
 - ps: >-
-    if ($env:compiler -eq "mingw") {
+    {
             $oldpath = ${env:Path} -split ';'
             $buildpath = @("C:\msys64\${env:compiler_path}\bin") + $oldpath
             $env:Path = $buildpath -join ';'
@@ -60,7 +58,7 @@ test_script:
 
 on_failure:
 - ps: >-
-    if ($env:compiler -eq "mingw") {
+    {
             $oldpath = ${env:Path} -split ';'
             $buildpath = @("C:\msys64\usr\bin") + $oldpath
             $env:Path = @($buildpath) -join ';'
