@@ -10,8 +10,8 @@
 # dependencies and/or upgrading current dependencies to newer
 # versions.
 #
-# To use this script, first add your dependencies, exactly specifying
-# their versions, into the appropriate *crate-level* Cargo.toml in
+# To use this script, first add/update your dependencies
+# in the appropriate *crate-level* Cargo.toml in
 # src/rust/ (i.e. *not* /src/rust/Cargo.toml, but instead the one for
 # your crate).
 #
