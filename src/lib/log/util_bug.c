@@ -85,7 +85,7 @@ tor_assertion_failed_(const char *fname, unsigned int line,
 void
 tor_bug_occurred_(const char *fname, unsigned int line,
                   const char *func, const char *expr,
-                  int once)
+                  bool once)
 {
   char buf[256];
   const char *once_str = once ?

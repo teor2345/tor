@@ -136,7 +136,7 @@ typedef struct log_severity_list_t {
 /** Callback type used for add_callback_log. */
 typedef void (*log_callback)(int severity, uint32_t domain, const char *msg);
 
-void init_logging(int disable_startup_queue);
+void init_logging(bool disable_startup_queue);
 int parse_log_level(const char *level);
 const char *log_level_to_string(int level);
 int parse_log_severity_config(const char **cfg,
@@ -160,7 +160,7 @@ int add_android_log(const log_severity_list_t *severity,
 int add_callback_log(const log_severity_list_t *severity, log_callback cb);
 typedef void (*pending_callback_callback)(void);
 void logs_set_pending_callback_callback(pending_callback_callback cb);
-void logs_set_domain_logging(int enabled);
+void logs_set_domain_logging(bool enabled);
 int get_min_log_level(void);
 void switch_logs_debug(void);
 void logs_free_all(void);
@@ -195,7 +195,7 @@ void log_fn_ratelim_(struct ratelim_t *ratelim, int severity,
                      const char *format, ...)
   CHECK_PRINTF(5,6);
 
-int log_message_is_interesting(int severity, log_domain_mask_t domain);
+bool log_message_is_interesting(int severity, log_domain_mask_t domain);
 void tor_log_string(int severity, log_domain_mask_t domain,
                     const char *function, const char *string);
 

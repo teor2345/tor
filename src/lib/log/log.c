@@ -76,11 +76,11 @@ typedef struct logfile_t {
   struct logfile_t *next; /**< Next logfile_t in the linked list. */
   char *filename; /**< Filename to open. */
   int fd; /**< fd to receive log messages, or -1 for none. */
-  int seems_dead; /**< Boolean: true if the stream seems to be kaput. */
-  int needs_close; /**< Boolean: true if the stream gets closed on shutdown. */
-  int is_temporary; /**< Boolean: close after initializing logging subsystem.*/
-  int is_syslog; /**< Boolean: send messages to syslog. */
-  int is_android; /**< Boolean: send messages to Android's log subsystem. */
+  bool seems_dead; /**< true if the stream seems to be kaput. */
+  bool needs_close; /**< true if the stream gets closed on shutdown. */
+  bool is_temporary; /**< close after initializing logging subsystem. */
+  bool is_syslog; /**< send messages to syslog. */
+  bool is_android; /**< send messages to Android's log subsystem. */
   char *android_tag; /**< Identity Tag used in Android's log subsystem. */
   log_callback callback; /**< If not NULL, send messages to this function. */
   log_severity_list_t *severities; /**< Which severity of messages should we
@@ -158,12 +158,12 @@ severity_to_android_log_priority(int severity)
 /** A mutex to guard changes to logfiles and logging. */
 static tor_mutex_t log_mutex;
 /** True iff we have initialized log_mutex */
-static int log_mutex_initialized = 0;
+static bool log_mutex_initialized = false;
 
 /** Linked list of logfile_t. */
 static logfile_t *logfiles = NULL;
 /** Boolean: do we report logging domains? */
-static int log_domains_are_logged = 0;
+static bool log_domains_are_logged = false;
 
 #ifdef HAVE_SYSLOG_H
 /** The number of open syslog log handlers that we have.  When this reaches 0,
@@ -197,10 +197,10 @@ static size_t pending_startup_messages_len;
 
 /** True iff we should store messages while waiting for the logs to get
  * configured. */
-static int queue_startup_messages = 1;
+static bool queue_startup_messages = true;
 
 /** True iff __PRETTY_FUNCTION__ includes parenthesized arguments. */
-static int pretty_fn_has_parens = 0;
+static bool pretty_fn_has_parens = false;
 
 /** Don't store more than this many bytes of messages while waiting for the
  * logs to get configured. */
@@ -252,7 +252,7 @@ log_set_application_name(const char *name)
  * message of the given severity in the given domains. If this function
  * returns true, the log message might be ignored anyway, but if it returns
  * false, it is definitely_ safe not to log the message. */
-int
+bool
 log_message_is_interesting(int severity, log_domain_mask_t domain)
 {
   (void) domain;
@@ -323,11 +323,11 @@ log_prefix_(char *buf, size_t buf_len, int severity)
  * Return -1 if the log is broken and needs to be deleted, else return 0.
  */
 static int
-log_tor_version(logfile_t *lf, int reset)
+log_tor_version(logfile_t *lf, bool reset)
 {
   char buf[256];
   size_t n;
-  int is_new;
+  bool is_new;
 
   if (!lf->needs_close)
     /* If it doesn't get closed, it isn't really a file. */
@@ -560,7 +560,7 @@ logfile_deliver(logfile_t *lf, const char *buf, size_t msg_len,
     if (write_all_to_fd_minimal(lf->fd, buf, msg_len) < 0) { /* error */
       /* don't log the error! mark this log entry to be blown away, and
        * continue. */
-      lf->seems_dead = 1;
+      lf->seems_dead = true;
     }
   }
 }
@@ -644,7 +644,7 @@ tor_log(int severity, log_domain_mask_t domain, const char *format, ...)
 
 /** Helper function; return true iff the <b>n</b>-element array <b>array</b>
  * contains <b>item</b>. */
-static int
+static bool
 int_array_contains(const int *array, int n, int item)
 {
   int j;
@@ -897,21 +897,21 @@ add_stream_log(const log_severity_list_t *severity, const char *name, int fd)
 
 /** Initialize the global logging facility */
 void
-init_logging(int disable_startup_queue)
+init_logging(bool disable_startup_queue)
 {
   if (!log_mutex_initialized) {
     tor_mutex_init(&log_mutex);
-    log_mutex_initialized = 1;
+    log_mutex_initialized = true;
   }
 #ifdef __GNUC__
   if (strchr(__PRETTY_FUNCTION__, '(')) {
-    pretty_fn_has_parens = 1;
+    pretty_fn_has_parens = true;
   }
 #endif
   if (pending_cb_messages == NULL)
     pending_cb_messages = smartlist_new();
   if (disable_startup_queue)
-    queue_startup_messages = 0;
+    queue_startup_messages = false;
   if (pending_startup_messages == NULL && queue_startup_messages) {
     pending_startup_messages = smartlist_new();
   }
@@ -920,7 +920,7 @@ init_logging(int disable_startup_queue)
 /** Set whether we report logging domains as a part of our log messages.
  */
 void
-logs_set_domain_logging(int enabled)
+logs_set_domain_logging(bool enabled)
 {
   LOCK_LOGS();
   log_domains_are_logged = enabled;
@@ -938,7 +938,7 @@ add_temp_log(int min_severity)
   LOCK_LOGS();
   add_stream_log_impl(s, "<temp>", fileno(stdout));
   tor_free(s);
-  logfiles->is_temporary = 1;
+  logfiles->is_temporary = true;
   UNLOCK_LOGS();
 }
 
@@ -1051,7 +1051,7 @@ flush_log_messages_from_startup(void)
   logfile_t *lf;
 
   LOCK_LOGS();
-  queue_startup_messages = 0;
+  queue_startup_messages = false;
   pending_startup_messages_len = 0;
   if (! pending_startup_messages)
     goto out;
@@ -1125,7 +1125,7 @@ mark_logs_temp(void)
   logfile_t *lf;
   LOCK_LOGS();
   for (lf = logfiles; lf; lf = lf->next)
-    lf->is_temporary = 1;
+    lf->is_temporary = true;
   UNLOCK_LOGS();
 }
 
@@ -1150,7 +1150,7 @@ add_file_log(const log_severity_list_t *severity,
 
   LOCK_LOGS();
   add_stream_log_impl(severity, filename, fd);
-  logfiles->needs_close = 1;
+  logfiles->needs_close = true;
   lf = logfiles;
   log_global_min_severity_ = get_min_log_level();
 
@@ -1189,7 +1189,7 @@ add_syslog_log(const log_severity_list_t *severity,
   lf->fd = -1;
   lf->severities = tor_memdup(severity, sizeof(log_severity_list_t));
   lf->filename = tor_strdup("<syslog>");
-  lf->is_syslog = 1;
+  lf->is_syslog = true;
 
   LOCK_LOGS();
   lf->next = logfiles;
@@ -1214,7 +1214,7 @@ add_android_log(const log_severity_list_t *severity,
   lf->fd = -1;
   lf->severities = tor_memdup(severity, sizeof(log_severity_list_t));
   lf->filename = tor_strdup("<android>");
-  lf->is_android = 1;
+  lf->is_android = true;
 
   if (android_tag == NULL)
     lf->android_tag = tor_strdup("Tor");

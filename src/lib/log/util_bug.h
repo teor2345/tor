@@ -187,7 +187,7 @@ void tor_assertion_failed_(const char *fname, unsigned int line,
                            const char *func, const char *expr);
 void tor_bug_occurred_(const char *fname, unsigned int line,
                        const char *func, const char *expr,
-                       int once);
+                       bool once);
 
 #ifdef _WIN32
 #define SHORT_FILE__ (tor_fix_source_file(__FILE__))
