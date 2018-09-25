@@ -1866,7 +1866,7 @@ router_parse_entry_from_string(const char *s, const char *end,
       crypto_digest_free(d);
 
       ed25519_checkable_t check[3];
-      int check_ok[3];
+      bool check_ok[3];
       time_t expires = TIME_MAX;
       if (tor_cert_get_checkable_sig(&check[0], cert, NULL, &expires) < 0) {
         log_err(LD_BUG, "Couldn't create 'checkable' for cert.");
@@ -2229,7 +2229,7 @@ extrainfo_parse_entry_from_string(const char *s, const char *end,
       crypto_digest_free(d);
 
       ed25519_checkable_t check[2];
-      int check_ok[2];
+      bool check_ok[2];
       if (tor_cert_get_checkable_sig(&check[0], cert, NULL, NULL) < 0) {
         log_err(LD_BUG, "Couldn't create 'checkable' for cert.");
         goto err;

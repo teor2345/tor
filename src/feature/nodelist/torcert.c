@@ -244,7 +244,7 @@ tor_cert_checksig(tor_cert_t *cert,
                   const ed25519_public_key_t *pubkey, time_t now)
 {
   ed25519_checkable_t checkable;
-  int okay;
+  bool okay;
   time_t expires = TIME_MAX;
 
   if (tor_cert_get_checkable_sig(&checkable, cert, pubkey, &expires) < 0)

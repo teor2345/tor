@@ -202,7 +202,7 @@ ge25519_is_neutral_vartime(const ge25519 *p) {
 }
 
 int
-ED25519_FN(ed25519_sign_open_batch) (const unsigned char **m, size_t *mlen, const unsigned char **pk, const unsigned char **RS, size_t num, int *valid) {
+ED25519_FN(ed25519_sign_open_batch) (const unsigned char **m, size_t *mlen, const unsigned char **pk, const unsigned char **RS, size_t num, bool *valid) {
 	batch_heap ALIGN(16) batch;
 	ge25519 ALIGN(16) p;
 	bignum256modm *r_scalars;

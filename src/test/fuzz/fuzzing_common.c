@@ -57,7 +57,7 @@ mock_ed25519_checksig__nocheck(const ed25519_signature_t *signature,
 }
 
 static int
-mock_ed25519_checksig_batch__nocheck(int *okay_out,
+mock_ed25519_checksig_batch__nocheck(bool *okay_out,
                                      const ed25519_checkable_t *checkable,
                                      int n_checkable)
 {

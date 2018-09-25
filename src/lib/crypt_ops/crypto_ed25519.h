@@ -85,7 +85,7 @@ typedef struct {
   size_t len;
 } ed25519_checkable_t;
 
-MOCK_DECL(int, ed25519_checksig_batch,(int *okay_out,
+MOCK_DECL(int, ed25519_checksig_batch,(bool *okay_out,
                                        const ed25519_checkable_t *checkable,
                                        int n_checkable));
 

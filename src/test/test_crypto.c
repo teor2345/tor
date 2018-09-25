@@ -2385,7 +2385,7 @@ test_crypto_ed25519_simple(void *arg)
       { &kp2.pubkey, sig2, msg2, msg2_len }, /*bad*/
       { &kp2.pubkey, sig1, msg, msg_len }, /*ok*/
     };
-    int okay[4];
+    bool okay[4];
     tt_int_op(-2, OP_EQ, ed25519_checksig_batch(okay, ch, 4));
     tt_int_op(okay[0], OP_EQ, 1);
     tt_int_op(okay[1], OP_EQ, 0);
@@ -2400,7 +2400,7 @@ test_crypto_ed25519_simple(void *arg)
       { &pub1, sig2, msg, msg_len }, /*ok*/
       { &kp2.pubkey, sig1, msg, msg_len }, /*ok*/
     };
-    int okay[2];
+    bool okay[2];
     tt_int_op(0, OP_EQ, ed25519_checksig_batch(okay, ch, 2));
     tt_int_op(okay[0], OP_EQ, 1);
     tt_int_op(okay[1], OP_EQ, 1);

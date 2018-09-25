@@ -5,7 +5,7 @@
 
 typedef unsigned char curved25519_key[32];
 
-int ed25519_sign_open_batch_donna(const unsigned char **m, size_t *mlen, const unsigned char **pk, const unsigned char **RS, size_t num, int *valid);
+int ed25519_sign_open_batch_donna(const unsigned char **m, size_t *mlen, const unsigned char **pk, const unsigned char **RS, size_t num, bool *valid);
 void curved25519_scalarmult_basepoint_donna(curved25519_key pk, const curved25519_key e);
 
 /* Tor specific interface to match the `ref10` glue code. */

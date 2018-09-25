@@ -55,7 +55,7 @@ typedef struct {
   int (*sign)(unsigned char *, const unsigned char *, size_t,
               const unsigned char *, const unsigned char *);
   int (*open_batch)(const unsigned char **, size_t *, const unsigned char **,
-                    const unsigned char **, size_t, int *);
+                    const unsigned char **, size_t, bool *);
 
   int (*blind_secret_key)(unsigned char *, const unsigned char *,
                           const unsigned char *);
@@ -371,7 +371,7 @@ ed25519_checksig_prefixed(const ed25519_signature_t *signature,
  * signatures.
  */
 MOCK_IMPL(int,
-ed25519_checksig_batch,(int *okay_out,
+ed25519_checksig_batch,(bool *okay_out,
                         const ed25519_checkable_t *checkable,
                         int n_checkable))
 {
@@ -402,14 +402,14 @@ ed25519_checksig_batch,(int *okay_out,
     size_t *lens;
     const uint8_t **pks;
     const uint8_t **sigs;
-    int *oks;
+    bool *oks;
     int all_ok;
 
     ms = tor_calloc(n_checkable, sizeof(uint8_t*));
     lens = tor_calloc(n_checkable, sizeof(size_t));
     pks = tor_calloc(n_checkable, sizeof(uint8_t*));
     sigs = tor_calloc(n_checkable, sizeof(uint8_t*));
-    oks = okay_out ? okay_out : tor_calloc(n_checkable, sizeof(int));
+    oks = okay_out ? okay_out : tor_calloc(n_checkable, sizeof(bool));
 
     for (i = 0; i < n_checkable; ++i) {
       ms[i] = checkable[i].msg;
