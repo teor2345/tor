@@ -58,7 +58,7 @@ static atomic_counter_t total_compress_allocation;
 
 /** Return true if uncompressing an input of size <b>in_size</b> to an input of
  * size at least <b>size_out</b> looks like a compression bomb. */
-MOCK_IMPL(int,
+MOCK_IMPL(bool,
 tor_compress_is_compression_bomb,(size_t size_in, size_t size_out))
 {
   if (size_in == 0 || size_out < CHECK_FOR_COMPRESSION_BOMB_AFTER)
@@ -70,7 +70,7 @@ tor_compress_is_compression_bomb,(size_t size_in, size_t size_out))
 /** Guess the size that <b>in_len</b> will be after compression or
  * decompression. */
 static size_t
-guess_compress_size(int compress, compress_method_t method,
+guess_compress_size(bool compress, compress_method_t method,
                     compression_level_t compression_level,
                     size_t in_len)
 {
@@ -96,12 +96,12 @@ guess_compress_size(int compress, compress_method_t method,
  * whether <b>compress</b> is set.  All arguments are as for tor_compress or
  * tor_uncompress. */
 static int
-tor_compress_impl(int compress,
+tor_compress_impl(bool compress,
                   char **out, size_t *out_len,
                   const char *in, size_t in_len,
                   compress_method_t method,
                   compression_level_t compression_level,
-                  int complete_only,
+                  bool complete_only,
                   int protocol_warn_level)
 {
   tor_compress_state_t *stream;
@@ -125,7 +125,7 @@ tor_compress_impl(int compress,
     guess_compress_size(compress, method, compression_level, in_len);
   *out = outptr = tor_malloc(out_remaining);
 
-  const int finish = complete_only || compress;
+  const bool finish = complete_only || compress;
 
   while (1) {
     switch (tor_compress_process(stream,
@@ -266,7 +266,7 @@ int
 tor_uncompress(char **out, size_t *out_len,
                const char *in, size_t in_len,
                compress_method_t method,
-               int complete_only,
+               bool complete_only,
                int protocol_warn_level)
 {
   return tor_compress_impl(0, out, out_len, in, in_len, method,
@@ -297,8 +297,8 @@ detect_compression_method(const char *in, size_t in_len)
   }
 }
 
-/** Return 1 if a given <b>method</b> is supported; otherwise 0. */
-int
+/** Return true if a given <b>method</b> is supported; otherwise false. */
+bool
 tor_compress_supports_method(compress_method_t method)
 {
   switch (method) {
@@ -310,10 +310,10 @@ tor_compress_supports_method(compress_method_t method)
     case ZSTD_METHOD:
       return tor_zstd_method_supported();
     case NO_METHOD:
-      return 1;
+      return true;
     case UNKNOWN_METHOD:
     default:
-      return 0;
+      return false;
   }
 }
 
@@ -476,7 +476,7 @@ struct tor_compress_state_t {
 /** Construct and return a tor_compress_state_t object using <b>method</b>.  If
  * <b>compress</b>, it's for compression; otherwise it's for decompression. */
 tor_compress_state_t *
-tor_compress_new(int compress, compress_method_t method,
+tor_compress_new(bool compress, compress_method_t method,
                  compression_level_t compression_level)
 {
   tor_compress_state_t *state;
@@ -547,7 +547,7 @@ tor_compress_output_t
 tor_compress_process(tor_compress_state_t *state,
                      char **out, size_t *out_len,
                      const char **in, size_t *in_len,
-                     int finish)
+                     bool finish)
 {
   tor_assert(state != NULL);
   const size_t in_len_orig = *in_len;

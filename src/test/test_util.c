@@ -2637,12 +2637,12 @@ test_util_decompress_junk(void *arg)
 
 /* mock replacement for tor_compress_is_compression_bomb that doesn't
  * believe in compression bombs. */
-static int
+static bool
 mock_is_never_compression_bomb(size_t in, size_t out)
 {
   (void)in;
   (void) out;
-  return 0;
+  return false;
 }
 
 static void

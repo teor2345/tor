@@ -79,14 +79,14 @@ lzma_error_str(lzma_ret error)
 }
 #endif /* defined(HAVE_LZMA) */
 
-/** Return 1 if LZMA compression is supported; otherwise 0. */
-int
+/** Return true if LZMA compression is supported; otherwise false. */
+bool
 tor_lzma_method_supported(void)
 {
 #ifdef HAVE_LZMA
-  return 1;
+  return true;
 #else
-  return 0;
+  return false;
 #endif
 }
 
@@ -121,8 +121,6 @@ struct tor_lzma_compress_state_t {
   lzma_stream stream; /**< The LZMA stream. */
 #endif
 
-  int compress; /**< True if we are compressing; false if we are inflating */
-
   /** Number of bytes read so far.  Used to detect compression bombs. */
   size_t input_so_far;
   /** Number of bytes written so far.  Used to detect compression bombs. */
@@ -130,13 +128,15 @@ struct tor_lzma_compress_state_t {
 
   /** Approximate number of bytes allocated for this object. */
   size_t allocation;
+
+  bool compress; /**< True if we are compressing; false if we are inflating */
 };
 
 #ifdef HAVE_LZMA
 /** Return an approximate number of bytes stored in memory to hold the LZMA
  * encoder/decoder state. */
 static size_t
-tor_lzma_state_size_precalc(int compress, compression_level_t level)
+tor_lzma_state_size_precalc(bool compress, compression_level_t level)
 {
   uint64_t memory_usage;
 
@@ -171,7 +171,7 @@ tor_lzma_state_size_precalc(int compress, compression_level_t level)
  * <b>method</b>. If <b>compress</b>, it's for compression; otherwise it's for
  * decompression. */
 tor_lzma_compress_state_t *
-tor_lzma_compress_new(int compress,
+tor_lzma_compress_new(bool compress,
                       compress_method_t method,
                       compression_level_t level)
 {
@@ -245,7 +245,7 @@ tor_compress_output_t
 tor_lzma_compress_process(tor_lzma_compress_state_t *state,
                           char **out, size_t *out_len,
                           const char **in, size_t *in_len,
-                          int finish)
+                          bool finish)
 {
 #ifdef HAVE_LZMA
   lzma_ret retval;

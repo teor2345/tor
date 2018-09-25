@@ -14,7 +14,7 @@
 tor_compress_output_t
 tor_cnone_compress_process(char **out, size_t *out_len,
                            const char **in, size_t *in_len,
-                           int finish);
+                           bool finish);
 
 #endif /* !defined(TOR_COMPRESS_NONE_H) */
 

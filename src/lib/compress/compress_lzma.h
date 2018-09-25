@@ -11,7 +11,9 @@
 #ifndef TOR_COMPRESS_LZMA_H
 #define TOR_COMPRESS_LZMA_H
 
-int tor_lzma_method_supported(void);
+#include <stdbool.h>
+
+bool tor_lzma_method_supported(void);
 
 const char *tor_lzma_get_version_str(void);
 
@@ -21,7 +23,7 @@ const char *tor_lzma_get_header_version_str(void);
 typedef struct tor_lzma_compress_state_t tor_lzma_compress_state_t;
 
 tor_lzma_compress_state_t *
-tor_lzma_compress_new(int compress,
+tor_lzma_compress_new(bool compress,
                       compress_method_t method,
                       compression_level_t compression_level);
 
@@ -29,7 +31,7 @@ tor_compress_output_t
 tor_lzma_compress_process(tor_lzma_compress_state_t *state,
                           char **out, size_t *out_len,
                           const char **in, size_t *in_len,
-                          int finish);
+                          bool finish);
 
 void tor_lzma_compress_free_(tor_lzma_compress_state_t *state);
 #define tor_lzma_compress_free(st)                      \

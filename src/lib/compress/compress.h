@@ -11,6 +11,7 @@
 #ifndef TOR_COMPRESS_H
 #define TOR_COMPRESS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "lib/testsupport/testsupport.h"
 
@@ -43,15 +44,15 @@ int tor_compress(char **out, size_t *out_len,
 int tor_uncompress(char **out, size_t *out_len,
                    const char *in, size_t in_len,
                    compress_method_t method,
-                   int complete_only,
+                   bool complete_only,
                    int protocol_warn_level);
 
 compress_method_t detect_compression_method(const char *in, size_t in_len);
 
-MOCK_DECL(int,tor_compress_is_compression_bomb,(size_t size_in,
-                                                size_t size_out));
+MOCK_DECL(bool,tor_compress_is_compression_bomb,(size_t size_in,
+                                                 size_t size_out));
 
-int tor_compress_supports_method(compress_method_t method);
+bool tor_compress_supports_method(compress_method_t method);
 unsigned tor_compress_get_supported_method_bitmask(void);
 const char *compression_method_get_name(compress_method_t method);
 const char *compression_method_get_human_name(compress_method_t method);
@@ -75,14 +76,14 @@ typedef enum {
 /** Internal state for an incremental compression/decompression. */
 typedef struct tor_compress_state_t tor_compress_state_t;
 
-tor_compress_state_t *tor_compress_new(int compress,
+tor_compress_state_t *tor_compress_new(bool compress,
                                        compress_method_t method,
                                        compression_level_t level);
 
 tor_compress_output_t tor_compress_process(tor_compress_state_t *state,
                                            char **out, size_t *out_len,
                                            const char **in, size_t *in_len,
-                                           int finish);
+                                           bool finish);
 void tor_compress_free_(tor_compress_state_t *state);
 #define tor_compress_free(st) \
   FREE_AND_NULL(tor_compress_state_t, tor_compress_free_, (st))
@@ -94,6 +95,6 @@ void tor_compress_log_init_warnings(void);
 
 struct buf_t;
 int buf_add_compress(struct buf_t *buf, struct tor_compress_state_t *state,
-                     const char *data, size_t data_len, int done);
+                     const char *data, size_t data_len, bool done);
 
 #endif /* !defined(TOR_COMPRESS_H) */

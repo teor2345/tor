@@ -45,7 +45,7 @@
 #error "We require zlib version 1.2 or later."
 #endif
 
-static size_t tor_zlib_state_size_precalc(int inflate,
+static size_t tor_zlib_state_size_precalc(bool inflate,
                                           int windowbits, int memlevel);
 
 /** Total number of bytes allocated for zlib state */
@@ -79,14 +79,14 @@ method_bits(compress_method_t method, compression_level_t level)
   }
 }
 
-/** Return 1 if zlib/gzip compression is supported; otherwise 0. */
-int
+/** Return true if zlib/gzip compression is supported; otherwise false. */
+bool
 tor_zlib_method_supported(void)
 {
   /* We currently always support zlib/gzip, but we keep this function around in
    * case we some day decide to deprecate zlib/gzip support.
    */
-  return 1;
+  return true;
 }
 
 /** Return a string representation of the version of the currently running
@@ -109,8 +109,6 @@ tor_zlib_get_header_version_str(void)
  * The body of this struct is not exposed. */
 struct tor_zlib_compress_state_t {
   struct z_stream_s stream; /**< The zlib stream */
-  int compress; /**< True if we are compressing; false if we are inflating */
-
   /** Number of bytes read so far.  Used to detect zlib bombs. */
   size_t input_so_far;
   /** Number of bytes written so far.  Used to detect zlib bombs. */
@@ -118,12 +116,14 @@ struct tor_zlib_compress_state_t {
 
   /** Approximate number of bytes allocated for this object. */
   size_t allocation;
+
+  bool compress; /**< True if we are compressing; false if we are inflating */
 };
 
 /** Return an approximate number of bytes used in RAM to hold a state with
  * window bits <b>windowBits</b> and compression level 'memlevel' */
 static size_t
-tor_zlib_state_size_precalc(int inflate_, int windowbits, int memlevel)
+tor_zlib_state_size_precalc(bool inflate_, int windowbits, int memlevel)
 {
   windowbits &= 15;
 
@@ -155,7 +155,7 @@ tor_zlib_state_size_precalc(int inflate_, int windowbits, int memlevel)
  * <b>method</b>. If <b>compress</b>, it's for compression; otherwise it's for
  * decompression. */
 tor_zlib_compress_state_t *
-tor_zlib_compress_new(int compress_,
+tor_zlib_compress_new(bool compress_,
                       compress_method_t method,
                       compression_level_t compression_level)
 {
@@ -210,7 +210,7 @@ tor_compress_output_t
 tor_zlib_compress_process(tor_zlib_compress_state_t *state,
                           char **out, size_t *out_len,
                           const char **in, size_t *in_len,
-                          int finish)
+                          bool finish)
 {
   int err;
   tor_assert(state != NULL);

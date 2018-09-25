@@ -30,11 +30,11 @@
 int
 buf_add_compress(buf_t *buf, tor_compress_state_t *state,
                  const char *data, size_t data_len,
-                 const int done)
+                 const bool done)
 {
   char *next;
   size_t old_avail, avail;
-  int over = 0;
+  bool over = false;
 
   do {
     int need_new_chunk = 0;

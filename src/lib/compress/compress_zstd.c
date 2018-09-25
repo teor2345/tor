@@ -55,14 +55,14 @@ memory_level(compression_level_t level)
 }
 #endif /* defined(HAVE_ZSTD) */
 
-/** Return 1 if Zstandard compression is supported; otherwise 0. */
-int
+/** Return true if Zstandard compression is supported; otherwise false. */
+bool
 tor_zstd_method_supported(void)
 {
 #ifdef HAVE_ZSTD
-  return 1;
+  return true;
 #else
-  return 0;
+  return false;
 #endif
 }
 
@@ -111,22 +111,22 @@ tor_zstd_get_header_version_str(void)
 }
 
 #ifdef TOR_UNIT_TESTS
-static int static_apis_disable_for_testing = 0;
+static bool static_apis_disable_for_testing = false;
 #endif
 
 /** Return true iff we can use the "static-only" APIs. */
-int
+bool
 tor_zstd_can_use_static_apis(void)
 {
 #if defined(ZSTD_STATIC_LINKING_ONLY) && defined(HAVE_ZSTD)
 #ifdef TOR_UNIT_TESTS
   if (static_apis_disable_for_testing) {
-    return 0;
+    return false;
   }
 #endif
   return (ZSTD_VERSION_NUMBER == ZSTD_versionNumber());
 #else
-  return 0;
+  return false;
 #endif
 }
 
@@ -142,10 +142,6 @@ struct tor_zstd_compress_state_t {
   } u; /**< Zstandard stream objects. */
 #endif /* defined(HAVE_ZSTD) */
 
-  int compress; /**< True if we are compressing; false if we are inflating */
-  int have_called_end; /**< True if we are compressing and we've called
-                        * ZSTD_endStream */
-
   /** Number of bytes read so far.  Used to detect compression bombs. */
   size_t input_so_far;
   /** Number of bytes written so far.  Used to detect compression bombs. */
@@ -153,6 +149,10 @@ struct tor_zstd_compress_state_t {
 
   /** Approximate number of bytes allocated for this object. */
   size_t allocation;
+
+  bool compress; /**< True if we are compressing; false if we are inflating */
+  bool have_called_end; /**< True if we are compressing and we've called
+                         * ZSTD_endStream */
 };
 
 #ifdef HAVE_ZSTD
@@ -161,7 +161,7 @@ struct tor_zstd_compress_state_t {
  * based on inspecting the zstd source: tor_zstd_state_size_precalc() is
  * more accurate when it's allowed to use "static-only" functions */
 static size_t
-tor_zstd_state_size_precalc_fake(int compress, int preset)
+tor_zstd_state_size_precalc_fake(bool compress, int preset)
 {
   tor_assert(preset > 0);
 
@@ -222,7 +222,7 @@ tor_zstd_state_size_precalc_fake(int compress, int preset)
 /** Return an approximate number of bytes stored in memory to hold the
  * Zstandard compression/decompression state. */
 static size_t
-tor_zstd_state_size_precalc(int compress, int preset)
+tor_zstd_state_size_precalc(bool compress, int preset)
 {
 #ifdef ZSTD_STATIC_LINKING_ONLY
   if (tor_zstd_can_use_static_apis()) {
@@ -246,7 +246,7 @@ tor_zstd_state_size_precalc(int compress, int preset)
  * <b>method</b>. If <b>compress</b>, it's for compression; otherwise it's for
  * decompression. */
 tor_zstd_compress_state_t *
-tor_zstd_compress_new(int compress,
+tor_zstd_compress_new(bool compress,
                       compress_method_t method,
                       compression_level_t level)
 {
@@ -341,7 +341,7 @@ tor_compress_output_t
 tor_zstd_compress_process(tor_zstd_compress_state_t *state,
                           char **out, size_t *out_len,
                           const char **in, size_t *in_len,
-                          int finish)
+                          bool finish)
 {
 #ifdef HAVE_ZSTD
   size_t retval;
@@ -353,8 +353,8 @@ tor_zstd_compress_process(tor_zstd_compress_state_t *state,
   ZSTD_inBuffer input = { *in, *in_len, 0 };
   ZSTD_outBuffer output = { *out, *out_len, 0 };
 
-  if (BUG(finish == 0 && state->have_called_end)) {
-    finish = 1;
+  if (BUG(finish == false && state->have_called_end)) {
+    finish = true;
   }
 
   if (state->compress) {
@@ -534,7 +534,7 @@ tor_zstd_warn_if_version_mismatched(void)
 /** Testing only: disable usage of static-only APIs, so we can make sure that
  * we still work without them. */
 void
-tor_zstd_set_static_apis_disabled_for_testing(int disabled)
+tor_zstd_set_static_apis_disabled_for_testing(bool disabled)
 {
   static_apis_disable_for_testing = disabled;
 }
