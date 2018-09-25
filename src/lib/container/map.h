@@ -25,13 +25,13 @@
   void* prefix##get(const maptype *map, keytype key);                   \
   void* prefix##remove(maptype *map, keytype key);                      \
   MOCK_DECL(void, prefix##free_, (maptype *map, void (*free_val)(void*))); \
-  int prefix##isempty(const maptype *map);                              \
+  bool prefix##isempty(const maptype *map);                             \
   int prefix##size(const maptype *map);                                 \
   prefix##iter_t *prefix##iter_init(maptype *map);                      \
   prefix##iter_t *prefix##iter_next(maptype *map, prefix##iter_t *iter); \
   prefix##iter_t *prefix##iter_next_rmv(maptype *map, prefix##iter_t *iter); \
   void prefix##iter_get(prefix##iter_t *iter, keytype *keyp, void **valp); \
-  int prefix##iter_done(prefix##iter_t *iter);                          \
+  bool prefix##iter_done(prefix##iter_t *iter);                         \
   void prefix##assert_ok(const maptype *map)
 
 /* Map from const char * to void *. Implemented with a hash table. */

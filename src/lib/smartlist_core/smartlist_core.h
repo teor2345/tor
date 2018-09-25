@@ -48,7 +48,7 @@ void smartlist_remove(smartlist_t *sl, const void *element);
 void smartlist_remove_keeporder(smartlist_t *sl, const void *element);
 void *smartlist_pop_last(smartlist_t *sl);
 
-int smartlist_contains(const smartlist_t *sl, const void *element);
+bool smartlist_contains(const smartlist_t *sl, const void *element);
 
 /* smartlist_choose() is defined in crypto.[ch] */
 #ifdef DEBUG_SMARTLIST

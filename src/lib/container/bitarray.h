@@ -75,9 +75,8 @@ bitarray_clear(bitarray_t *b, int bit)
 {
   b[bit >> BITARRAY_SHIFT] &= ~ (1u << (bit & BITARRAY_MASK));
 }
-/** Return true iff <b>bit</b>th bit in <b>b</b> is nonzero.  NOTE: does
- * not necessarily return 1 on true. */
-static inline unsigned int
+/** Return true iff <b>bit</b>th bit in <b>b</b> is nonzero. */
+static inline bool
 bitarray_is_set(bitarray_t *b, int bit)
 {
   return b[bit >> BITARRAY_SHIFT] & (1u << (bit & BITARRAY_MASK));

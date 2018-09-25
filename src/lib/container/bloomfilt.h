@@ -30,7 +30,7 @@ typedef uint64_t (*bloomfilt_hash_fn)(const struct sipkey *key,
                                       const void *item);
 
 void bloomfilt_add(bloomfilt_t *set, const void *item);
-int bloomfilt_probably_contains(const bloomfilt_t *set, const void *item);
+bool bloomfilt_probably_contains(const bloomfilt_t *set, const void *item);
 
 bloomfilt_t *bloomfilt_new(int max_elements,
                            bloomfilt_hash_fn hashfn,

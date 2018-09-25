@@ -263,7 +263,7 @@ digest256map_assign_key(digest256map_entry_t *ent, const uint8_t *key)
   }                                                                     \
                                                                         \
   /** Return true iff <b>map</b> has no entries. */                     \
-  int                                                                   \
+  bool                                                                  \
   prefix##_isempty(const maptype *map)                                  \
   {                                                                     \
     return HT_EMPTY(&map->head);                                        \
@@ -364,7 +364,7 @@ digest256map_assign_key(digest256map_entry_t *ent, const uint8_t *key)
   }                                                                     \
   /** Return true iff <b>iter</b> has advanced past the last entry of   \
    * <b>map</b>. */                                                     \
-  int                                                                   \
+  bool                                                                  \
   prefix##_iter_done(prefix##_iter_t *iter)                             \
   {                                                                     \
     return iter == NULL;                                                \

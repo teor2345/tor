@@ -48,9 +48,9 @@ bloomfilt_add(bloomfilt_t *set,
   }
 }
 
-/** If <b>item</b> is in <b>set</b>, return nonzero.  Otherwise,
- * <em>probably</em> return zero. */
-int
+/** If <b>item</b> is in <b>set</b>, return true.  Otherwise,
+ * <em>probably</em> return false. */
+bool
 bloomfilt_probably_contains(const bloomfilt_t *set,
                             const void *item)
 {

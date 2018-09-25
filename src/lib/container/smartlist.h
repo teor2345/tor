@@ -25,20 +25,19 @@ void smartlist_add_vasprintf(struct smartlist_t *sl, const char *pattern,
   CHECK_PRINTF(2, 0);
 void smartlist_reverse(smartlist_t *sl);
 void smartlist_string_remove(smartlist_t *sl, const char *element);
-int smartlist_contains_string(const smartlist_t *sl, const char *element);
+bool smartlist_contains_string(const smartlist_t *sl, const char *element);
 int smartlist_pos(const smartlist_t *sl, const void *element);
 int smartlist_string_pos(const smartlist_t *, const char *elt);
-int smartlist_contains_string_case(const smartlist_t *sl, const char *element);
-int smartlist_contains_int_as_string(const smartlist_t *sl, int num);
-int smartlist_strings_eq(const smartlist_t *sl1, const smartlist_t *sl2);
-int smartlist_contains_digest(const smartlist_t *sl, const char *element);
-int smartlist_ints_eq(const smartlist_t *sl1, const smartlist_t *sl2);
-int smartlist_overlap(const smartlist_t *sl1, const smartlist_t *sl2);
+bool smartlist_contains_string_case(const smartlist_t *sl, const char *elem);
+bool smartlist_contains_int_as_string(const smartlist_t *sl, int num);
+bool smartlist_strings_eq(const smartlist_t *sl1, const smartlist_t *sl2);
+bool smartlist_contains_digest(const smartlist_t *sl, const char *element);
+bool smartlist_ints_eq(const smartlist_t *sl1, const smartlist_t *sl2);
+bool smartlist_overlap(const smartlist_t *sl1, const smartlist_t *sl2);
 void smartlist_intersect(smartlist_t *sl1, const smartlist_t *sl2);
 void smartlist_subtract(smartlist_t *sl1, const smartlist_t *sl2);
 
-int smartlist_ptrs_eq(const smartlist_t *s1,
-                      const smartlist_t *s2);
+bool smartlist_ptrs_eq(const smartlist_t *s1, const smartlist_t *s2);
 
 void smartlist_sort(smartlist_t *sl,
                     int (*compare)(const void **a, const void **b));
@@ -85,10 +84,10 @@ void smartlist_pqueue_assert_ok(smartlist_t *sl,
                                 int (*compare)(const void *a, const void *b),
                                 int idx_field_offset);
 
-char *smartlist_join_strings(smartlist_t *sl, const char *join, int terminate,
+char *smartlist_join_strings(smartlist_t *sl, const char *join, bool terminate,
                              size_t *len_out) ATTR_MALLOC;
 char *smartlist_join_strings2(smartlist_t *sl, const char *join,
-                              size_t join_len, int terminate, size_t *len_out)
+                              size_t join_len, bool terminate, size_t *len_out)
   ATTR_MALLOC;
 
 /* Helper: Given two lists of items, possibly of different types, such that

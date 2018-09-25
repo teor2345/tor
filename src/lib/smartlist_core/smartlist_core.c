@@ -171,14 +171,14 @@ smartlist_pop_last(smartlist_t *sl)
 
 /** Return true iff some element E of sl has E==element.
  */
-int
+bool
 smartlist_contains(const smartlist_t *sl, const void *element)
 {
   int i;
   for (i=0; i < sl->num_used; i++)
     if (sl->list[i] == element)
-      return 1;
-  return 0;
+      return true;
+  return false;
 }
 
 /** Remove the <b>idx</b>th element of sl; if idx is not the last

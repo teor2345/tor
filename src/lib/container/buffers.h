@@ -50,7 +50,7 @@ int buf_get_bytes(buf_t *buf, char *string, size_t string_len);
 int buf_get_line(buf_t *buf, char *data_out, size_t *data_len);
 
 #define PEEK_BUF_STARTSWITH_MAX 16
-int buf_peek_startswith(const buf_t *buf, const char *cmd);
+bool buf_peek_startswith(const buf_t *buf, const char *cmd);
 
 int buf_set_to_copy(buf_t **output,
                     const buf_t *input);
@@ -96,7 +96,7 @@ struct buf_t {
   chunk_t *tail; /**< Last chunk in the list, or NULL for none. */
 };
 
-chunk_t *buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, int capped);
+chunk_t *buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, bool capped);
 /** If a read onto the end of a chunk would be smaller than this number, then
  * just start a new chunk. */
 #define MIN_READ_LEN 8

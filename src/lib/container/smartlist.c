@@ -89,15 +89,15 @@ smartlist_string_remove(smartlist_t *sl, const char *element)
 /** Return true iff <b>sl</b> has some element E such that
  * !strcmp(E,<b>element</b>)
  */
-int
+bool
 smartlist_contains_string(const smartlist_t *sl, const char *element)
 {
   int i;
-  if (!sl) return 0;
+  if (!sl) return false;
   for (i=0; i < sl->num_used; i++)
     if (strcmp((const char*)sl->list[i],element)==0)
-      return 1;
-  return 0;
+      return true;
+  return false;
 }
 
 /** If <b>element</b> is equal to an element of <b>sl</b>, return that
@@ -129,21 +129,21 @@ smartlist_pos(const smartlist_t *sl, const void *element)
 /** Return true iff <b>sl</b> has some element E such that
  * !strcasecmp(E,<b>element</b>)
  */
-int
+bool
 smartlist_contains_string_case(const smartlist_t *sl, const char *element)
 {
   int i;
-  if (!sl) return 0;
+  if (!sl) return false;
   for (i=0; i < sl->num_used; i++)
     if (strcasecmp((const char*)sl->list[i],element)==0)
-      return 1;
-  return 0;
+      return true;
+  return false;
 }
 
 /** Return true iff <b>sl</b> has some element E such that E is equal
  * to the decimal encoding of <b>num</b>.
  */
-int
+bool
 smartlist_contains_int_as_string(const smartlist_t *sl, int num)
 {
   char buf[32]; /* long enough for 64-bit int, and then some. */
@@ -153,40 +153,40 @@ smartlist_contains_int_as_string(const smartlist_t *sl, int num)
 
 /** Return true iff the two lists contain the same strings in the same
  * order, or if they are both NULL. */
-int
+bool
 smartlist_strings_eq(const smartlist_t *sl1, const smartlist_t *sl2)
 {
   if (sl1 == NULL)
     return sl2 == NULL;
   if (sl2 == NULL)
-    return 0;
+    return false;
   if (smartlist_len(sl1) != smartlist_len(sl2))
-    return 0;
+    return false;
   SMARTLIST_FOREACH(sl1, const char *, cp1, {
       const char *cp2 = smartlist_get(sl2, cp1_sl_idx);
       if (strcmp(cp1, cp2))
-        return 0;
+        return false;
     });
-  return 1;
+  return true;
 }
 
 /** Return true iff the two lists contain the same int pointer values in
  * the same order, or if they are both NULL. */
-int
+bool
 smartlist_ints_eq(const smartlist_t *sl1, const smartlist_t *sl2)
 {
   if (sl1 == NULL)
     return sl2 == NULL;
   if (sl2 == NULL)
-    return 0;
+    return false;
   if (smartlist_len(sl1) != smartlist_len(sl2))
-    return 0;
+    return false;
   SMARTLIST_FOREACH(sl1, int *, cp1, {
       int *cp2 = smartlist_get(sl2, cp1_sl_idx);
       if (*cp1 != *cp2)
-        return 0;
+        return false;
     });
-  return 1;
+  return true;
 }
 
 /**
@@ -194,52 +194,52 @@ smartlist_ints_eq(const smartlist_t *sl1, const smartlist_t *sl2)
  * i.e. all indices correspond to exactly same object (pointer
  * values are matching). Otherwise, return false.
  */
-int
+bool
 smartlist_ptrs_eq(const smartlist_t *s1, const smartlist_t *s2)
 {
   if (s1 == s2)
-    return 1;
+    return true;
 
   // Note: pointers cannot both be NULL at this point, because
   // above check.
   if (s1 == NULL || s2 == NULL)
-    return 0;
+    return false;
 
   if (smartlist_len(s1) != smartlist_len(s2))
-    return 0;
+    return false;
 
   for (int i = 0; i < smartlist_len(s1); i++) {
     if (smartlist_get(s1, i) != smartlist_get(s2, i))
-      return 0;
+      return false;
   }
 
-  return 1;
+  return true;
 }
 
 /** Return true iff <b>sl</b> has some element E such that
  * tor_memeq(E,<b>element</b>,DIGEST_LEN)
  */
-int
+bool
 smartlist_contains_digest(const smartlist_t *sl, const char *element)
 {
   int i;
-  if (!sl) return 0;
+  if (!sl) return false;
   for (i=0; i < sl->num_used; i++)
     if (tor_memeq((const char*)sl->list[i],element,DIGEST_LEN))
-      return 1;
-  return 0;
+      return true;
+  return false;
 }
 
 /** Return true iff some element E of sl2 has smartlist_contains(sl1,E).
  */
-int
+bool
 smartlist_overlap(const smartlist_t *sl1, const smartlist_t *sl2)
 {
   int i;
   for (i=0; i < sl2->num_used; i++)
     if (smartlist_contains(sl1, sl2->list[i]))
-      return 1;
-  return 0;
+      return true;
+  return false;
 }
 
 /** Remove every element E of sl1 such that !smartlist_contains(sl2,E).
@@ -277,7 +277,7 @@ smartlist_subtract(smartlist_t *sl1, const smartlist_t *sl2)
  */
 char *
 smartlist_join_strings(smartlist_t *sl, const char *join,
-                       int terminate, size_t *len_out)
+                       bool terminate, size_t *len_out)
 {
   return smartlist_join_strings2(sl,join,strlen(join),terminate,len_out);
 }
@@ -289,7 +289,7 @@ smartlist_join_strings(smartlist_t *sl, const char *join,
  */
 char *
 smartlist_join_strings2(smartlist_t *sl, const char *join,
-                        size_t join_len, int terminate, size_t *len_out)
+                        size_t join_len, bool terminate, size_t *len_out)
 {
   int i;
   size_t n = 0;

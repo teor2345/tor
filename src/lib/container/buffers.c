@@ -470,7 +470,7 @@ buf_copy(const buf_t *buf)
  * the tail of <b>buf</b>.  If <b>capped</b>, don't allocate a chunk bigger
  * than MAX_CHUNK_ALLOC. */
 chunk_t *
-buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, int capped)
+buf_add_chunk_with_capacity(buf_t *buf, size_t capacity, bool capped)
 {
   chunk_t *chunk;
 
@@ -812,19 +812,19 @@ buf_find_string_offset(const buf_t *buf, const char *s, size_t n)
   return -1;
 }
 
-/** Return 1 iff <b>buf</b> starts with <b>cmd</b>. <b>cmd</b> must be a null
+/** Return true iff <b>buf</b> starts with <b>cmd</b>. <b>cmd</b> must be a NUL
  * terminated string, of no more than PEEK_BUF_STARTSWITH_MAX bytes. */
-int
+bool
 buf_peek_startswith(const buf_t *buf, const char *cmd)
 {
   char tmp[PEEK_BUF_STARTSWITH_MAX];
   size_t clen = strlen(cmd);
   if (clen == 0)
-    return 1;
+    return true;
   if (BUG(clen > sizeof(tmp)))
-    return 0;
+    return false;
   if (buf->datalen < clen)
-    return 0;
+    return false;
   buf_peek(buf, tmp, clen);
   return fast_memeq(tmp, cmd, clen);
 }
