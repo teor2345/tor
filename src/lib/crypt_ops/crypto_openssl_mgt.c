@@ -332,10 +332,10 @@ crypto_openssl_init_engines(const char *accelName,
 
 /** Perform late (post-init) initialization tasks for OpenSSL */
 int
-crypto_openssl_late_init(int useAccel, const char *accelName,
+crypto_openssl_late_init(bool useAccel, const char *accelName,
                          const char *accelDir)
 {
-  if (useAccel > 0) {
+  if (useAccel) {
     crypto_openssl_init_engines(accelName, accelDir);
   } else {
     log_info(LD_CRYPTO, "NOT using OpenSSL engine support.");

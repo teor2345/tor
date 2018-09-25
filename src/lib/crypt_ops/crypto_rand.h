@@ -44,8 +44,8 @@ int crypto_force_rand_ssleay(void);
 STATIC int crypto_strongest_rand_raw(uint8_t *out, size_t out_len);
 
 #ifdef TOR_UNIT_TESTS
-extern int break_strongest_rng_syscall;
-extern int break_strongest_rng_fallback;
+extern bool break_strongest_rng_syscall;
+extern bool break_strongest_rng_fallback;
 #endif
 #endif /* defined(CRYPTO_RAND_PRIVATE) */
 

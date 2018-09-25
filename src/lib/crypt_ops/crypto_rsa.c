@@ -62,7 +62,7 @@ crypto_get_rsa_padding(int padding)
  *
  *  Note that this may leak information about the keys through timing.
  */
-int
+bool
 crypto_pk_eq_keys(const crypto_pk_t *a, const crypto_pk_t *b)
 {
   return (crypto_pk_cmp_keys(a, b) == 0);
@@ -90,7 +90,7 @@ crypto_pk_obsolete_public_hybrid_encrypt(crypto_pk_t *env,
                                 char *to, size_t tolen,
                                 const char *from,
                                 size_t fromlen,
-                                int padding, int force)
+                                int padding, bool force)
 {
   int overhead, outlen, r;
   size_t pkeylen, symlen;
@@ -160,7 +160,7 @@ crypto_pk_obsolete_private_hybrid_decrypt(crypto_pk_t *env,
                                  size_t tolen,
                                  const char *from,
                                  size_t fromlen,
-                                 int padding, int warnOnFailure)
+                                 int padding, bool warnOnFailure)
 {
   int outlen, r;
   size_t pkeylen;
@@ -221,7 +221,7 @@ crypto_pk_obsolete_private_hybrid_decrypt(crypto_pk_t *env,
  * If <b>add_space</b> is false, omit the spaces.
  */
 int
-crypto_pk_get_fingerprint(crypto_pk_t *pk, char *fp_out, int add_space)
+crypto_pk_get_fingerprint(crypto_pk_t *pk, char *fp_out, bool add_space)
 {
   char digest[DIGEST_LEN];
   char hexdigest[HEX_DIGEST_LEN+1];

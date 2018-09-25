@@ -15,10 +15,11 @@
 
 #include "orconfig.h"
 #include "lib/cc/compat_compiler.h"
+#include <stdbool.h>
 
 int crypto_init_siphash_key(void);
 int crypto_early_init(void) ATTR_WUR;
-int crypto_global_init(int hardwareAccel,
+int crypto_global_init(bool hardwareAccel,
                        const char *accelName,
                        const char *accelPath) ATTR_WUR;
 

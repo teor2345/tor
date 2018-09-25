@@ -114,8 +114,8 @@ crypto_seed_weak_rng(tor_weak_rng_t *rng)
 }
 
 #ifdef TOR_UNIT_TESTS
-int break_strongest_rng_syscall = 0;
-int break_strongest_rng_fallback = 0;
+bool break_strongest_rng_syscall = false;
+bool break_strongest_rng_fallback = false;
 #endif
 
 /**
@@ -140,7 +140,7 @@ crypto_strongest_rand_syscall(uint8_t *out, size_t out_len)
 #endif
 
 #if defined(_WIN32)
-  static int provider_set = 0;
+  static bool provider_set = false;
   static HCRYPTPROV provider;
 
   if (!provider_set) {
@@ -149,7 +149,7 @@ crypto_strongest_rand_syscall(uint8_t *out, size_t out_len)
       log_notice(LD_CRYPTO, "Unable to set Windows CryptoAPI provider [1].");
       return -1;
     }
-    provider_set = 1;
+    provider_set = true;
   }
   if (!CryptGenRandom(provider, out_len, out)) {
     log_notice(LD_CRYPTO, "Unable get entropy from the Windows CryptoAPI.");
@@ -158,7 +158,7 @@ crypto_strongest_rand_syscall(uint8_t *out, size_t out_len)
 
   return 0;
 #elif defined(__linux__) && defined(SYS_getrandom)
-  static int getrandom_works = 1; /* Be optimistic about our chances... */
+  static bool getrandom_works = true; /* Be optimistic about our chances... */
 
   /* getrandom() isn't as straightforward as getentropy(), and has
    * no glibc wrapper.
@@ -205,7 +205,7 @@ crypto_strongest_rand_syscall(uint8_t *out, size_t out_len)
                    strerror(errno));
       }
 
-      getrandom_works = 0; /* Don't bother trying again. */
+      getrandom_works = false; /* Don't bother trying again. */
       return -1;
       /* LCOV_EXCL_STOP */
     }
@@ -386,7 +386,8 @@ crypto_strongest_rand,(uint8_t *out, size_t out_len))
 static int
 crypto_seed_openssl_rng(void)
 {
-  int rand_poll_ok = 0, load_entropy_ok = 0;
+  int rand_poll_ok;
+  bool load_entropy_ok;
   uint8_t buf[ADD_ENTROPY];
 
   /* OpenSSL has a RAND_poll function that knows about more kinds of
@@ -420,10 +421,10 @@ crypto_seed_nss_rng(void)
 {
   uint8_t buf[ADD_ENTROPY];
 
-  int load_entropy_ok = !crypto_strongest_rand_raw(buf, sizeof(buf));
+  bool load_entropy_ok = !crypto_strongest_rand_raw(buf, sizeof(buf));
   if (load_entropy_ok) {
     if (PK11_RandomUpdate(buf, sizeof(buf)) != SECSuccess) {
-      load_entropy_ok = 0;
+      load_entropy_ok = false;
     }
   }
 

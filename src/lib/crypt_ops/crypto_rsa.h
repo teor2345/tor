@@ -64,28 +64,28 @@ int crypto_pk_read_private_key_from_string(crypto_pk_t *env,
 int crypto_pk_write_private_key_to_filename(crypto_pk_t *env,
                                             const char *fname);
 
-int crypto_pk_is_valid_private_key(const crypto_pk_t *env);
+bool crypto_pk_is_valid_private_key(const crypto_pk_t *env);
 int crypto_pk_cmp_keys(const crypto_pk_t *a, const crypto_pk_t *b);
-int crypto_pk_eq_keys(const crypto_pk_t *a, const crypto_pk_t *b);
+bool crypto_pk_eq_keys(const crypto_pk_t *a, const crypto_pk_t *b);
 size_t crypto_pk_keysize(const crypto_pk_t *env);
 int crypto_pk_num_bits(crypto_pk_t *env);
 crypto_pk_t *crypto_pk_dup_key(crypto_pk_t *orig);
 crypto_pk_t *crypto_pk_copy_full(crypto_pk_t *orig);
-int crypto_pk_key_is_private(const crypto_pk_t *key);
-int crypto_pk_public_exponent_ok(const crypto_pk_t *env);
+bool crypto_pk_key_is_private(const crypto_pk_t *key);
+bool crypto_pk_public_exponent_ok(const crypto_pk_t *env);
 int crypto_pk_obsolete_public_hybrid_encrypt(crypto_pk_t *env, char *to,
                                     size_t tolen,
                                     const char *from, size_t fromlen,
-                                    int padding, int force);
+                                    int padding, bool force);
 int crypto_pk_obsolete_private_hybrid_decrypt(crypto_pk_t *env, char *to,
                                      size_t tolen,
                                      const char *from, size_t fromlen,
-                                     int padding, int warnOnFailure);
+                                     int padding, bool warnOnFailure);
 int crypto_pk_public_encrypt(crypto_pk_t *env, char *to, size_t tolen,
                              const char *from, size_t fromlen, int padding);
 int crypto_pk_private_decrypt(crypto_pk_t *env, char *to, size_t tolen,
                               const char *from, size_t fromlen,
-                              int padding, int warnOnFailure);
+                              int padding, bool warnOnFailure);
 MOCK_DECL(int, crypto_pk_public_checksig,(const crypto_pk_t *env,
                                           char *to, size_t tolen,
                                           const char *from, size_t fromlen));
@@ -96,7 +96,7 @@ crypto_pk_t *crypto_pk_asn1_decode(const char *str, size_t len);
 int crypto_pk_asn1_encode_private(const crypto_pk_t *pk,
                                   char *dest, size_t dest_len);
 crypto_pk_t *crypto_pk_asn1_decode_private(const char *str, size_t len);
-int crypto_pk_get_fingerprint(crypto_pk_t *pk, char *fp_out,int add_space);
+int crypto_pk_get_fingerprint(crypto_pk_t *pk, char *fp_out, bool add_space);
 int crypto_pk_get_hashed_fingerprint(crypto_pk_t *pk, char *fp_out);
 void crypto_add_spaces_to_fp(char *out, size_t outlen, const char *in);
 
@@ -118,7 +118,7 @@ struct evp_pkey_st;
 struct rsa_st *crypto_pk_get_openssl_rsa_(crypto_pk_t *env);
 crypto_pk_t *crypto_new_pk_from_openssl_rsa_(struct rsa_st *rsa);
 MOCK_DECL(struct evp_pkey_st *, crypto_pk_get_openssl_evp_pkey_,(
-                                 crypto_pk_t *env,int private));
+                                 crypto_pk_t *env,bool include_private));
 #endif
 
 #ifdef ENABLE_NSS

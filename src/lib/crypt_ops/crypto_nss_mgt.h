@@ -14,6 +14,7 @@
 #define TOR_CRYPTO_NSS_MGT_H
 
 #include "orconfig.h"
+#include <stdbool.h>
 
 #ifdef ENABLE_NSS
 /* global nss state */
@@ -22,7 +23,7 @@ const char *crypto_nss_get_header_version_str(void);
 
 void crypto_nss_log_errors(int severity, const char *doing);
 
-void crypto_nss_early_init(int nss_only);
+void crypto_nss_early_init(bool nss_only);
 int crypto_nss_late_init(void);
 
 void crypto_nss_global_cleanup(void);

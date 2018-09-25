@@ -68,7 +68,7 @@ ed25519_checksig_prefixed(const ed25519_signature_t *signature,
                           const char *prefix_str,
                           const ed25519_public_key_t *pubkey);
 
-int ed25519_public_key_is_zero(const ed25519_public_key_t *pubkey);
+bool ed25519_public_key_is_zero(const ed25519_public_key_t *pubkey);
 
 /**
  * A collection of information necessary to check an Ed25519 signature. Used
@@ -122,12 +122,12 @@ void ed25519_keypair_free_(ed25519_keypair_t *kp);
 #define ed25519_keypair_free(kp) \
   FREE_AND_NULL(ed25519_keypair_t, ed25519_keypair_free_, (kp))
 
-int ed25519_pubkey_eq(const ed25519_public_key_t *key1,
-                      const ed25519_public_key_t *key2);
+bool ed25519_pubkey_eq(const ed25519_public_key_t *key1,
+                       const ed25519_public_key_t *key2);
 void ed25519_pubkey_copy(ed25519_public_key_t *dest,
                          const ed25519_public_key_t *src);
 
-void ed25519_set_impl_params(int use_donna);
+void ed25519_set_impl_params(bool use_donna);
 void ed25519_init(void);
 
 int ed25519_validate_pubkey(const ed25519_public_key_t *pubkey);

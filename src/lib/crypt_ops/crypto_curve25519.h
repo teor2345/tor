@@ -44,14 +44,14 @@ typedef struct curve25519_keypair_t {
  * store them, and move them around.
  */
 
-int curve25519_public_key_is_ok(const curve25519_public_key_t *);
+bool curve25519_public_key_is_ok(const curve25519_public_key_t *);
 
 int curve25519_secret_key_generate(curve25519_secret_key_t *key_out,
-                                   int extra_strong);
+                                   bool extra_strong);
 void curve25519_public_key_generate(curve25519_public_key_t *key_out,
                                     const curve25519_secret_key_t *seckey);
 int curve25519_keypair_generate(curve25519_keypair_t *keypair_out,
-                                int extra_strong);
+                                bool extra_strong);
 
 void curve25519_handshake(uint8_t *output,
                           const curve25519_secret_key_t *,
@@ -65,7 +65,7 @@ int curve25519_keypair_read_from_file(curve25519_keypair_t *keypair_out,
                                       char **tag_out,
                                       const char *fname);
 
-int curve25519_rand_seckey_bytes(uint8_t *out, int extra_strong);
+int curve25519_rand_seckey_bytes(uint8_t *out, bool extra_strong);
 
 #ifdef CRYPTO_CURVE25519_PRIVATE
 STATIC int curve25519_impl(uint8_t *output, const uint8_t *secret,
@@ -79,7 +79,7 @@ int curve25519_public_from_base64(curve25519_public_key_t *pkey,
 int curve25519_public_to_base64(char *output,
                                 const curve25519_public_key_t *pkey);
 
-void curve25519_set_impl_params(int use_ed);
+void curve25519_set_impl_params(bool use_ed);
 void curve25519_init(void);
 
 #endif /* !defined(TOR_CRYPTO_CURVE25519_H) */

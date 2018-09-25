@@ -191,7 +191,7 @@ struct aes_cnt_cipher {
 
 /** True iff we should prefer the EVP implementation for AES, either because
  * we're testing it or because we have hardware acceleration configured */
-static int should_use_EVP = 0;
+static bool should_use_EVP = false;
 
 /** Check whether we should use the EVP interface for AES. If <b>force_val</b>
  * is nonnegative, we use use EVP iff it is true.  Otherwise, we use EVP
@@ -206,17 +206,17 @@ evaluate_evp_for_aes(int force_val)
     return 0;
   }
 #ifdef DISABLE_ENGINES
-  should_use_EVP = 0;
+  should_use_EVP = false;
 #else
   e = ENGINE_get_cipher_engine(NID_aes_128_ecb);
 
   if (e) {
     log_info(LD_CRYPTO, "AES engine \"%s\" found; using EVP_* functions.",
                ENGINE_get_name(e));
-    should_use_EVP = 1;
+    should_use_EVP = true;
   } else {
     log_info(LD_CRYPTO, "No AES engine found; using AES_* functions.");
-    should_use_EVP = 0;
+    should_use_EVP = false;
   }
 #endif /* defined(DISABLE_ENGINES) */
 

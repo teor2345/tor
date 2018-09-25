@@ -43,12 +43,12 @@ struct crypto_pk_t
 
 /** Return true iff <b>key</b> contains the private-key portion of the RSA
  * key. */
-int
+bool
 crypto_pk_key_is_private(const crypto_pk_t *k)
 {
 #ifdef OPENSSL_1_1_API
   if (!k || !k->key)
-    return 0;
+    return false;
 
   const BIGNUM *p, *q;
   RSA_get0_factors(k->key, &p, &q);
@@ -83,7 +83,7 @@ crypto_pk_get_openssl_rsa_(crypto_pk_t *env)
  * private is set, include the private-key portion of the key. Return a valid
  * pointer on success, and NULL on failure. */
 MOCK_IMPL(EVP_PKEY *,
-crypto_pk_get_openssl_evp_pkey_,(crypto_pk_t *env, int private))
+crypto_pk_get_openssl_evp_pkey_,(crypto_pk_t *env, bool private))
 {
   RSA *key = NULL;
   EVP_PKEY *pkey = NULL;
@@ -185,7 +185,7 @@ crypto_pk_generate_key_with_bits,(crypto_pk_t *env, int bits))
 
 /** Return true if <b>env</b> has a valid key; false otherwise.
  */
-int
+bool
 crypto_pk_is_valid_private_key(const crypto_pk_t *env)
 {
   int r;
@@ -194,16 +194,16 @@ crypto_pk_is_valid_private_key(const crypto_pk_t *env)
   r = RSA_check_key(env->key);
   if (r <= 0) {
     crypto_openssl_log_errors(LOG_WARN,"checking RSA key");
-    return 0;
+    return false;
   } else {
-    return 1;
+    return true;
   }
 }
 
 /** Return true iff <b>env</b> contains a public key whose public exponent
  * equals TOR_RSA_EXPONENT.
  */
-int
+bool
 crypto_pk_public_exponent_ok(const crypto_pk_t *env)
 {
   tor_assert(env);
@@ -230,9 +230,9 @@ int
 crypto_pk_cmp_keys(const crypto_pk_t *a, const crypto_pk_t *b)
 {
   int result;
-  char a_is_non_null = (a != NULL) && (a->key != NULL);
-  char b_is_non_null = (b != NULL) && (b->key != NULL);
-  char an_argument_is_null = !a_is_non_null | !b_is_non_null;
+  bool a_is_non_null = (a != NULL) && (a->key != NULL);
+  bool b_is_non_null = (b != NULL) && (b->key != NULL);
+  bool an_argument_is_null = !a_is_non_null | !b_is_non_null;
 
   result = tor_memcmp(&a_is_non_null, &b_is_non_null, sizeof(a_is_non_null));
   if (an_argument_is_null)
@@ -406,7 +406,7 @@ int
 crypto_pk_private_decrypt(crypto_pk_t *env, char *to,
                           size_t tolen,
                           const char *from, size_t fromlen,
-                          int padding, int warnOnFailure)
+                          int padding, bool warnOnFailure)
 {
   int r;
   tor_assert(env);

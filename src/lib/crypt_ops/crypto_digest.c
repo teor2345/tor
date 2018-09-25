@@ -696,7 +696,7 @@ crypto_hmac_sha256(char *hmac_out,
   PK11SymKey *symKey = NULL;
   PK11Context *hmac = NULL;
 
-  int ok = 0;
+  bool ok = false;
   SECStatus s;
   SECItem keyItem, paramItem;
   keyItem.data = (unsigned char *)key;
@@ -727,7 +727,7 @@ crypto_hmac_sha256(char *hmac_out,
   s = PK11_DigestFinal(hmac, (unsigned char *)hmac_out, &len, DIGEST256_LEN);
   if (s != SECSuccess || len != DIGEST256_LEN)
     goto done;
-  ok = 1;
+  ok = true;
 
  done:
   if (hmac)

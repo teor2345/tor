@@ -50,7 +50,7 @@ nss_password_func_always_fail(PK11SlotInfo *slot,
 }
 
 void
-crypto_nss_early_init(int nss_only)
+crypto_nss_early_init(bool nss_only)
 {
   if (! nss_only) {
     PR_Init(PR_USER_THREAD, PR_PRIORITY_NORMAL, 0);

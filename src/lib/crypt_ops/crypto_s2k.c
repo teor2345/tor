@@ -110,12 +110,12 @@ secret_to_key_key_len(uint8_t type)
  * <b>spec_and_key_len</b>, along with its prefix algorithm ID byte, and along
  * with a key if <b>key_included</b> is true, check whether the whole
  * specifier-and-key is of valid length, and return the algorithm type if it
- * is.  Set *<b>legacy_out</b> to 1 iff this is a legacy password hash or
+ * is.  Set *<b>legacy_out</b> to true iff this is a legacy password hash or
  * legacy specifier.  Return an error code on failure.
  */
 static int
 secret_to_key_get_type(const uint8_t *spec_and_key, size_t spec_and_key_len,
-                       int key_included, int *legacy_out)
+                       int key_included, bool *legacy_out)
 {
   size_t legacy_len = S2K_RFC2440_SPECIFIER_LEN;
   uint8_t type;
@@ -125,11 +125,11 @@ secret_to_key_get_type(const uint8_t *spec_and_key, size_t spec_and_key_len,
     legacy_len += DIGEST_LEN;
 
   if (spec_and_key_len == legacy_len) {
-    *legacy_out = 1;
+    *legacy_out = true;
     return S2K_TYPE_RFC2440;
   }
 
-  *legacy_out = 0;
+  *legacy_out = false;
   if (spec_and_key_len == 0)
     return S2K_BAD_LEN;
 
@@ -371,7 +371,7 @@ secret_to_key_derivekey(uint8_t *key_out, size_t key_out_len,
                         const uint8_t *spec, size_t spec_len,
                         const char *secret, size_t secret_len)
 {
-  int legacy_format = 0;
+  bool legacy_format = false;
   int type = secret_to_key_get_type(spec, spec_len, 0, &legacy_format);
   int r;
 
@@ -486,7 +486,7 @@ int
 secret_to_key_check(const uint8_t *spec_and_key, size_t spec_and_key_len,
                     const char *secret, size_t secret_len)
 {
-  int is_legacy = 0;
+  bool is_legacy = false;
   int type = secret_to_key_get_type(spec_and_key, spec_and_key_len,
                                     1, &is_legacy);
   uint8_t buf[32];

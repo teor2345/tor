@@ -223,7 +223,7 @@ ed25519_keypair_generate(ed25519_keypair_t *keypair_out, int extra_strong)
 
 /** Return true iff 'pubkey' is set to zero (eg to indicate that it is not
  * set). */
-int
+bool
 ed25519_public_key_is_zero(const ed25519_public_key_t *pubkey)
 {
   return tor_mem_is_zero((char*)pubkey->pubkey, ED25519_PUBKEY_LEN);
@@ -638,7 +638,7 @@ ed25519_keypair_free_(ed25519_keypair_t *kp)
 }
 
 /** Return true iff <b>key1</b> and <b>key2</b> are the same public key. */
-int
+bool
 ed25519_pubkey_eq(const ed25519_public_key_t *key1,
                   const ed25519_public_key_t *key2)
 {
@@ -743,7 +743,7 @@ ed25519_impl_spot_check,(void))
  * the output.  Used for testing.
  */
 void
-ed25519_set_impl_params(int use_donna)
+ed25519_set_impl_params(bool use_donna)
 {
   if (use_donna)
     ed25519_impl = &impl_donna;
@@ -777,7 +777,7 @@ ed25519_init(void)
 }
 
 /* Return true if <b>point</b> is the identity element of the ed25519 group. */
-static int
+static bool
 ed25519_point_is_identity_element(const uint8_t *point)
 {
   /* The identity element in ed25159 is the point with coordinates (0,1). */

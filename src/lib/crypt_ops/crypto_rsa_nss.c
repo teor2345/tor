@@ -41,7 +41,7 @@ struct crypto_pk_t
 
 /** Return true iff <b>key</b> contains the private-key portion of the RSA
  * key. */
-int
+bool
 crypto_pk_key_is_private(const crypto_pk_t *key)
 {
   return key && key->seckey;
@@ -121,7 +121,7 @@ crypto_pk_get_openssl_rsa_(crypto_pk_t *pk)
  * private is set, include the private-key portion of the key. Return a valid
  * pointer on success, and NULL on failure. */
 MOCK_IMPL(struct evp_pkey_st *,
-crypto_pk_get_openssl_evp_pkey_,(crypto_pk_t *pk, int private))
+crypto_pk_get_openssl_evp_pkey_,(crypto_pk_t *pk, bool private))
 {
   size_t buflen = crypto_pk_keysize(pk)*16;
   unsigned char *buf = tor_malloc_zero(buflen);
@@ -246,7 +246,7 @@ crypto_pk_generate_key_with_bits,(crypto_pk_t *key, int bits))
 
 /** Return true iff <b>env</b> is a valid private key.
  */
-int
+bool
 crypto_pk_is_valid_private_key(const crypto_pk_t *key)
 {
   /* We don't need to do validation here, since unlike OpenSSL, NSS won't let
@@ -257,7 +257,7 @@ crypto_pk_is_valid_private_key(const crypto_pk_t *key)
 /** Return true iff <b>env</b> contains a public key whose public exponent
  * equals 65537.
  */
-int
+bool
 crypto_pk_public_exponent_ok(const crypto_pk_t *key)
 {
   return key &&
@@ -302,9 +302,9 @@ int
 crypto_pk_cmp_keys(const crypto_pk_t *a, const crypto_pk_t *b)
 {
   int result;
-  char a_is_non_null = (a != NULL) && (a->pubkey != NULL);
-  char b_is_non_null = (b != NULL) && (b->pubkey != NULL);
-  char an_argument_is_null = !a_is_non_null | !b_is_non_null;
+  bool a_is_non_null = (a != NULL) && (a->pubkey != NULL);
+  bool b_is_non_null = (b != NULL) && (b->pubkey != NULL);
+  bool an_argument_is_null = !a_is_non_null | !b_is_non_null;
 
   result = tor_memcmp(&a_is_non_null, &b_is_non_null, sizeof(a_is_non_null));
   if (an_argument_is_null)
@@ -470,7 +470,7 @@ int
 crypto_pk_private_decrypt(crypto_pk_t *key, char *to,
                           size_t tolen,
                           const char *from, size_t fromlen,
-                          int padding, int warnOnFailure)
+                          int padding, bool warnOnFailure)
 {
   tor_assert(key);
   tor_assert(to);

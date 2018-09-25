@@ -115,7 +115,7 @@ curve25519_basepoint_impl(uint8_t *output, const uint8_t *secret)
  * multiply function.  Used for testing.
  */
 void
-curve25519_set_impl_params(int use_ed)
+curve25519_set_impl_params(bool use_ed)
 {
   curve25519_use_ed = use_ed;
 }
@@ -128,7 +128,7 @@ curve25519_set_impl_params(int use_ed)
  * Return true iff a curve25519_public_key_t seems valid. (It's not necessary
  * to see if the point is on the curve, since the twist is also secure, but we
  * do need to make sure that it isn't the point at infinity.) */
-int
+bool
 curve25519_public_key_is_ok(const curve25519_public_key_t *key)
 {
   return !safe_mem_is_zero(key->public_key, CURVE25519_PUBKEY_LEN);
@@ -144,7 +144,7 @@ curve25519_public_key_is_ok(const curve25519_public_key_t *key)
  * will need to clear or set the appropriate bits to make curve25519 work.
  */
 int
-curve25519_rand_seckey_bytes(uint8_t *out, int extra_strong)
+curve25519_rand_seckey_bytes(uint8_t *out, bool extra_strong)
 {
   if (extra_strong)
     crypto_strongest_rand(out, CURVE25519_SECKEY_LEN);
@@ -159,7 +159,7 @@ curve25519_rand_seckey_bytes(uint8_t *out, int extra_strong)
  * use a better-than-usual RNG. Return 0 on success, -1 on failure. */
 int
 curve25519_secret_key_generate(curve25519_secret_key_t *key_out,
-                               int extra_strong)
+                               bool extra_strong)
 {
   if (curve25519_rand_seckey_bytes(key_out->secret_key, extra_strong) < 0)
     return -1;
@@ -188,7 +188,7 @@ curve25519_public_key_generate(curve25519_public_key_t *key_out,
  * use a better-than-usual RNG. Return 0 on success, -1 on failure. */
 int
 curve25519_keypair_generate(curve25519_keypair_t *keypair_out,
-                            int extra_strong)
+                            bool extra_strong)
 {
   if (curve25519_secret_key_generate(&keypair_out->seckey, extra_strong) < 0)
     return -1;

@@ -24,12 +24,12 @@
 #include "siphash.h"
 
 /** Boolean: has our crypto library been initialized? (early phase) */
-static int crypto_early_initialized_ = 0;
+static bool crypto_early_initialized_ = false;
 
 /** Boolean: has our crypto library been initialized? (late phase) */
-static int crypto_global_initialized_ = 0;
+static bool crypto_global_initialized_ = false;
 
-static int have_seeded_siphash = 0;
+static bool have_seeded_siphash = false;
 
 /** Set up the siphash key if we haven't already done so. */
 int
@@ -41,7 +41,7 @@ crypto_init_siphash_key(void)
 
   crypto_rand((char*) &key, sizeof(key));
   siphash_set_global_key(&key);
-  have_seeded_siphash = 1;
+  have_seeded_siphash = true;
   return 0;
 }
 
@@ -52,7 +52,7 @@ crypto_early_init(void)
 {
   if (!crypto_early_initialized_) {
 
-    crypto_early_initialized_ = 1;
+    crypto_early_initialized_ = true;
 
 #ifdef ENABLE_OPENSSL
     crypto_openssl_early_init();
@@ -75,13 +75,13 @@ crypto_early_init(void)
 /** Initialize the crypto library.  Return 0 on success, -1 on failure.
  */
 int
-crypto_global_init(int useAccel, const char *accelName, const char *accelDir)
+crypto_global_init(bool useAccel, const char *accelName, const char *accelDir)
 {
   if (!crypto_global_initialized_) {
     if (crypto_early_init() < 0)
       return -1;
 
-    crypto_global_initialized_ = 1;
+    crypto_global_initialized_ = true;
 
     crypto_dh_init();
 
@@ -126,9 +126,9 @@ crypto_global_cleanup(void)
   crypto_nss_global_cleanup();
 #endif
 
-  crypto_early_initialized_ = 0;
-  crypto_global_initialized_ = 0;
-  have_seeded_siphash = 0;
+  crypto_early_initialized_ = false;
+  crypto_global_initialized_ = false;
+  have_seeded_siphash = false;
   siphash_unset_global_key();
 
   return 0;
