@@ -2078,7 +2078,7 @@ static int fixed_crypto_pk_get_evp_pkey_result_index = 0;
 static EVP_PKEY *fixed_crypto_pk_get_evp_pkey_result[5];
 
 static EVP_PKEY *
-fixed_crypto_pk_get_evp_pkey_(crypto_pk_t *env, int private)
+fixed_crypto_pk_get_evp_pkey_(crypto_pk_t *env, bool private)
 {
   (void) env;
   (void) private;

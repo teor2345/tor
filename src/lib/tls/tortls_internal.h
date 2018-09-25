@@ -17,12 +17,12 @@ MOCK_DECL(void, try_to_extract_certs_from_tls,
            tor_x509_cert_impl_t **id_cert_out));
 
 tor_tls_context_t *tor_tls_context_new(crypto_pk_t *identity,
-                   unsigned int key_lifetime, unsigned flags, int is_client);
+                   unsigned int key_lifetime, unsigned flags, bool is_client);
 int tor_tls_context_init_one(tor_tls_context_t **ppcontext,
                              crypto_pk_t *identity,
                              unsigned int key_lifetime,
                              unsigned int flags,
-                             int is_client);
+                             bool is_client);
 int tor_tls_context_init_certificates(tor_tls_context_t *result,
                                       crypto_pk_t *identity,
                                       unsigned key_lifetime,

@@ -298,14 +298,14 @@ tor_tls_cert_get_key(tor_x509_cert_t *cert)
   return crypto_pk_new_from_nss_pubkey(pub);
 }
 
-int
+bool
 tor_tls_cert_is_valid(int severity,
                       const tor_x509_cert_t *cert,
                       const tor_x509_cert_t *signing_cert,
                       time_t now,
-                      int check_rsa_1024)
+                      bool check_rsa_1024)
 {
-  int result = 0;
+  bool result = false;
 
   tor_assert(cert);
   tor_assert(signing_cert);
@@ -349,7 +349,7 @@ tor_tls_cert_is_valid(int severity,
   }
 
   /* The certificate is valid. */
-  result = 1;
+  result = true;
 
  fail:
   if (pk)

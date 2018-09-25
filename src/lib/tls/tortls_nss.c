@@ -154,7 +154,7 @@ we_like_auth_type(SSLAuthType at)
 
 tor_tls_context_t *
 tor_tls_context_new(crypto_pk_t *identity,
-                    unsigned int key_lifetime, unsigned flags, int is_client)
+                    unsigned int key_lifetime, unsigned flags, bool is_client)
 {
   SECStatus s;
   tor_assert(identity);
@@ -361,7 +361,7 @@ tls_log_errors(tor_tls_t *tls, int severity, int domain,
 }
 
 tor_tls_t *
-tor_tls_new(tor_socket_t sock, int is_server)
+tor_tls_new(tor_socket_t sock, bool is_server)
 {
   (void)sock;
   tor_tls_context_t *ctx = tor_tls_context_get(is_server);
@@ -473,11 +473,11 @@ tor_tls_impl_free_(tor_tls_impl_t *tls)
   PR_Close(tls);
 }
 
-int
+bool
 tor_tls_peer_has_cert(tor_tls_t *tls)
 {
   CERTCertificate *cert = SSL_PeerCertificate(tls->ssl);
-  int result = (cert != NULL);
+  bool result = (cert != NULL);
   CERT_DestroyCertificate(cert);
   return result;
 }
@@ -661,16 +661,16 @@ tls_get_write_overhead_ratio, (void))
   return 0.95;
 }
 
-int
+bool
 tor_tls_used_v1_handshake(tor_tls_t *tls)
 {
   tor_assert(tls);
   /* We don't support or allow the V1 handshake with NSS.
    */
-  return 0;
+  return false;
 }
 
-int
+bool
 tor_tls_server_got_renegotiate(tor_tls_t *tls)
 {
   tor_assert(tls);
@@ -761,7 +761,7 @@ tor_tls_get_ciphersuite_name(tor_tls_t *tls)
 /** The group we should use for ecdhe when none was selected. */
 #define SEC_OID_TOR_DEFAULT_ECDHE_GROUP SEC_OID_ANSIX962_EC_PRIME256V1
 
-int
+bool
 evaluate_ecgroup_for_tls(const char *ecgroup)
 {
   SECOidTag tag;

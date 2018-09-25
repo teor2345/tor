@@ -66,10 +66,10 @@ const common_digests_t *tor_x509_cert_get_cert_digests(
 
 crypto_pk_t *tor_tls_cert_get_key(tor_x509_cert_t *cert);
 
-int tor_tls_cert_is_valid(int severity,
+bool tor_tls_cert_is_valid(int severity,
                           const tor_x509_cert_t *cert,
                           const tor_x509_cert_t *signing_cert,
                           time_t now,
-                          int check_rsa_1024);
+                          bool check_rsa_1024);
 
 #endif

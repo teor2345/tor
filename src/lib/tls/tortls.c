@@ -35,7 +35,7 @@ STATIC tor_tls_context_t *client_tls_context = NULL;
  * Return the appropriate TLS context.
  */
 tor_tls_context_t *
-tor_tls_context_get(int is_server)
+tor_tls_context_get(bool is_server)
 {
   return is_server ? server_tls_context : client_tls_context;
 }
@@ -173,7 +173,7 @@ tor_tls_context_init(unsigned flags,
 {
   int rv1 = 0;
   int rv2 = 0;
-  const int is_public_server = flags & TOR_TLS_CTX_IS_PUBLIC_SERVER;
+  const bool is_public_server = flags & TOR_TLS_CTX_IS_PUBLIC_SERVER;
   check_no_tls_errors();
 
   if (is_public_server) {
@@ -242,7 +242,7 @@ tor_tls_context_init_one(tor_tls_context_t **ppcontext,
                          crypto_pk_t *identity,
                          unsigned int key_lifetime,
                          unsigned int flags,
-                         int is_client)
+                         bool is_client)
 {
   tor_tls_context_t *new_ctx = tor_tls_context_new(identity,
                                                    key_lifetime,
@@ -362,7 +362,7 @@ tor_tls_set_logged_address(tor_tls_t *tls, const char *address)
 
 /** Return whether this tls initiated the connect (client) or
  * received it (server). */
-int
+bool
 tor_tls_is_server(tor_tls_t *tls)
 {
   tor_assert(tls);

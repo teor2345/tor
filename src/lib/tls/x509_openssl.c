@@ -292,18 +292,19 @@ tor_tls_cert_get_key(tor_x509_cert_t *cert)
 /** Check whether <b>cert</b> is well-formed, currently live, and correctly
  * signed by the public key in <b>signing_cert</b>.  If <b>check_rsa_1024</b>,
  * make sure that it has an RSA key with 1024 bits; otherwise, just check that
- * the key is long enough. Return 1 if the cert is good, and 0 if it's bad or
- * we couldn't check it. */
-int
+ * the key is long enough. Return true if the cert is good, and false if it's
+ * bad or we couldn't check it. */
+bool
 tor_tls_cert_is_valid(int severity,
                       const tor_x509_cert_t *cert,
                       const tor_x509_cert_t *signing_cert,
                       time_t now,
-                      int check_rsa_1024)
+                      bool check_rsa_1024)
 {
   check_no_tls_errors();
   EVP_PKEY *cert_key;
-  int r, key_ok = 0;
+  int r;
+  bool key_ok = false;
 
   if (!signing_cert || !cert)
     goto bad;
@@ -353,10 +354,10 @@ tor_tls_cert_is_valid(int severity,
 
   /* XXXX compare DNs or anything? */
 
-  return 1;
+  return true;
  bad:
   tls_log_errors(NULL, LOG_INFO, LD_CRYPTO, "checking a certificate");
-  return 0;
+  return false;
 }
 
 /** Warn that a certificate lifetime extends through a certain range. */

@@ -144,7 +144,7 @@ tor_tls_get_by_ssl(const SSL *ssl)
 }
 
 /** True iff tor_tls_init() has been called. */
-static int tls_library_is_initialized = 0;
+static bool tls_library_is_initialized = false;
 
 /* Module-internal error codes. */
 #define TOR_TLS_SYSCALL_    (MIN_TOR_TLS_ERROR_VAL_ - 2)
@@ -335,7 +335,7 @@ tor_tls_init(void)
       EC_KEY *key = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
       const EC_GROUP *g = key ? EC_KEY_get0_group(key) : NULL;
       const EC_METHOD *m = g ? EC_GROUP_method_of(g) : NULL;
-      const int warn = (m == EC_GFp_simple_method() ||
+      const bool warn = (m == EC_GFp_simple_method() ||
                         m == EC_GFp_mont_method() ||
                         m == EC_GFp_nist_method());
       EC_KEY_free(key);
@@ -353,7 +353,7 @@ tor_tls_init(void)
 
     tor_tls_allocate_tor_tls_object_ex_data_index();
 
-    tls_library_is_initialized = 1;
+    tls_library_is_initialized = true;
   }
 }
 
@@ -514,7 +514,7 @@ tor_tls_context_impl_free_(struct ssl_ctx_st *ctx)
  */
 tor_tls_context_t *
 tor_tls_context_new(crypto_pk_t *identity, unsigned int key_lifetime,
-                    unsigned flags, int is_client)
+                    unsigned flags, bool is_client)
 {
   EVP_PKEY *pkey = NULL;
   tor_tls_context_t *result = NULL;
@@ -722,7 +722,7 @@ STATIC uint16_t v2_cipher_list[] = {
   0
 };
 /** Have we removed the unrecognized ciphers from v2_cipher_list yet? */
-static int v2_cipher_list_pruned = 0;
+static bool v2_cipher_list_pruned = false;
 
 /** Return 0 if <b>m</b> does not support the cipher with ID <b>cipher</b>;
  * return 1 if it does support it, or if we have no way to tell. */
@@ -805,7 +805,7 @@ prune_v2_cipher_list(const SSL *ssl)
   }
   *outp = 0;
 
-  v2_cipher_list_pruned = 1;
+  v2_cipher_list_pruned = true;
 }
 
 /** Examine the client cipher list in <b>ssl</b>, and determine what kind of
@@ -1013,7 +1013,7 @@ tor_tls_setup_session_secret_cb(tor_tls_t *tls)
  * determine whether it is functioning as a server.
  */
 tor_tls_t *
-tor_tls_new(tor_socket_t sock, int isServer)
+tor_tls_new(tor_socket_t sock, bool isServer)
 {
   BIO *bio = NULL;
   tor_tls_t *result = tor_malloc_zero(sizeof(tor_tls_t));
@@ -1359,16 +1359,16 @@ tor_tls_finish_handshake(tor_tls_t *tls)
 
 /** Return true iff this TLS connection is authenticated.
  */
-int
+bool
 tor_tls_peer_has_cert(tor_tls_t *tls)
 {
   X509 *cert;
   cert = SSL_get_peer_certificate(tls->ssl);
   tls_log_errors(tls, LOG_WARN, LD_HANDSHAKE, "getting peer certificate");
   if (!cert)
-    return 0;
+    return false;
   X509_free(cert);
-  return 1;
+  return true;
 }
 
 /** Return a newly allocated copy of the peer certificate, or NULL if there
@@ -1531,7 +1531,7 @@ check_no_tls_errors_(const char *fname, int line)
 
 /** Return true iff the initial TLS connection at <b>tls</b> did not use a v2
  * TLS handshake. Output is undefined if the handshake isn't finished. */
-int
+bool
 tor_tls_used_v1_handshake(tor_tls_t *tls)
 {
   return ! tls->wasV2Handshake;
@@ -1539,7 +1539,7 @@ tor_tls_used_v1_handshake(tor_tls_t *tls)
 
 /** Return true iff the server TLS connection <b>tls</b> got the renegotiation
  * request it was waiting for. */
-int
+bool
 tor_tls_server_got_renegotiate(tor_tls_t *tls)
 {
   return tls->got_renegotiate;
@@ -1710,7 +1710,7 @@ tor_tls_get_buffer_sizes(tor_tls_t *tls,
 /** Check whether the ECC group requested is supported by the current OpenSSL
  * library instance.  Return 1 if the group is supported, and 0 if not.
  */
-int
+bool
 evaluate_ecgroup_for_tls(const char *ecgroup)
 {
   EC_KEY *ec_key;
