@@ -239,7 +239,7 @@ tor_open_socket_nonblocking(int domain, int type, int protocol)
  * if the corresponding extension should be used.*/
 tor_socket_t
 tor_open_socket_with_extensions(int domain, int type, int protocol,
-                                int cloexec, int nonblock)
+                                bool cloexec, bool nonblock)
 {
   tor_socket_t s;
 
@@ -347,7 +347,7 @@ tor_accept_socket_nonblocking(tor_socket_t sockfd, struct sockaddr *addr,
  * if the corresponding extension should be used.*/
 tor_socket_t
 tor_accept_socket_with_extensions(tor_socket_t sockfd, struct sockaddr *addr,
-                                 socklen_t *len, int cloexec, int nonblock)
+                                 socklen_t *len, bool cloexec, bool nonblock)
 {
   tor_socket_t s;
 

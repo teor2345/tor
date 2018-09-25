@@ -240,8 +240,8 @@ tor_addr_make_null(tor_addr_t *a, sa_family_t family)
  * in RFC1918 or RFC4193 or RFC4291. (fec0::/10, deprecated by RFC3879, is
  * also treated as internal for now.)
  */
-int
-tor_addr_is_internal_(const tor_addr_t *addr, int for_listening,
+bool
+tor_addr_is_internal_(const tor_addr_t *addr, bool for_listening,
                       const char *filename, int lineno)
 {
   uint32_t iph4 = 0;
@@ -312,7 +312,7 @@ tor_addr_is_internal_(const tor_addr_t *addr, int for_listening,
  *  brackets.
  */
 const char *
-tor_addr_to_str(char *dest, const tor_addr_t *addr, size_t len, int decorate)
+tor_addr_to_str(char *dest, const tor_addr_t *addr, size_t len, bool decorate)
 {
   const char *ptr;
   tor_assert(addr && dest);
@@ -364,7 +364,7 @@ tor_addr_to_str(char *dest, const tor_addr_t *addr, size_t len, int decorate)
  */
 int
 tor_addr_parse_PTR_name(tor_addr_t *result, const char *address,
-                                   int family, int accept_regular)
+                                   int family, bool accept_regular)
 {
   if (!strcasecmpend(address, ".in-addr.arpa")) {
     /* We have an in-addr.arpa address. */
@@ -731,7 +731,7 @@ tor_addr_parse_mask_ports(const char *s,
  * reject IPv4-mapped addresses received on the wire (and won't use them
  * on the wire either).
  */
-int
+bool
 tor_addr_is_v4(const tor_addr_t *addr)
 {
   tor_assert(addr);
@@ -752,7 +752,7 @@ tor_addr_is_v4(const tor_addr_t *addr)
 /** Determine whether an address <b>addr</b> is null, either all zeroes or
  *  belonging to family AF_UNSPEC.
  */
-int
+bool
 tor_addr_is_null(const tor_addr_t *addr)
 {
   tor_assert(addr);
@@ -777,7 +777,7 @@ tor_addr_is_null(const tor_addr_t *addr)
 }
 
 /** Return true iff <b>addr</b> is a loopback address */
-int
+bool
 tor_addr_is_loopback(const tor_addr_t *addr)
 {
   tor_assert(addr);
@@ -805,8 +805,8 @@ tor_addr_is_loopback(const tor_addr_t *addr)
  * Checks that addr is non-NULL and not tor_addr_is_null().
  * If for_listening is true, IPv4 addr 0.0.0.0 is allowed.
  * It means "bind to all addresses on the local machine". */
-int
-tor_addr_is_valid(const tor_addr_t *addr, int for_listening)
+bool
+tor_addr_is_valid(const tor_addr_t *addr, bool for_listening)
 {
   /* NULL addresses are invalid regardless of for_listening */
   if (addr == NULL) {
@@ -826,8 +826,8 @@ tor_addr_is_valid(const tor_addr_t *addr, int for_listening)
 /* Is the network-order IPv4 address v4n_addr valid?
  * Checks that addr is not zero.
  * Except if for_listening is true, where IPv4 addr 0.0.0.0 is allowed. */
-int
-tor_addr_is_valid_ipv4n(uint32_t v4n_addr, int for_listening)
+bool
+tor_addr_is_valid_ipv4n(uint32_t v4n_addr, bool for_listening)
 {
   /* Any IPv4 address is valid with for_listening. */
   if (for_listening) {
@@ -842,12 +842,12 @@ tor_addr_is_valid_ipv4n(uint32_t v4n_addr, int for_listening)
  * Checks that port is not 0.
  * Except if for_listening is true, where port 0 is allowed.
  * It means "OS chooses a port". */
-int
-tor_port_is_valid(uint16_t port, int for_listening)
+bool
+tor_port_is_valid(uint16_t port, bool for_listening)
 {
   /* Any port value is valid with for_listening. */
   if (for_listening) {
-    return 1;
+    return true;
   }
 
   /* Otherwise, zero ports are invalid. */
@@ -1137,7 +1137,7 @@ tor_addr_to_str_dup(const tor_addr_t *addr)
  * <b>fmt_addr()</b> and <b>fmt_and_decorate_addr()</b>.
  */
 const char *
-fmt_addr_impl(const tor_addr_t *addr, int decorate)
+fmt_addr_impl(const tor_addr_t *addr, bool decorate)
 {
   static char buf[TOR_ADDR_BUF_LEN];
   if (!addr) return "<null>";
@@ -1474,7 +1474,7 @@ get_interface_addresses_raw,(int severity, sa_family_t family))
 }
 
 /** Return true iff <b>a</b> is a multicast address.  */
-int
+bool
 tor_addr_is_multicast(const tor_addr_t *a)
 {
   sa_family_t family = tor_addr_family(a);
@@ -1624,7 +1624,7 @@ interface_address6_list_free_(smartlist_t *addrs)
 MOCK_IMPL(smartlist_t *,
 get_interface_address6_list,(int severity,
                              sa_family_t family,
-                             int include_internal))
+                             bool include_internal))
 {
   smartlist_t *addrs;
   tor_addr_t addr;
@@ -1902,7 +1902,7 @@ get_interface_address,(int severity, uint32_t *addr))
 /** Return true if we can tell that <b>name</b> is a canonical name for the
  * loopback address.  Return true also for *.local hostnames, which are
  * multicast DNS names for hosts on the local network. */
-int
+bool
 tor_addr_hostname_is_local(const char *name)
 {
   return !strcasecmp(name, "localhost") ||
@@ -1923,7 +1923,7 @@ tor_addr_port_new(const tor_addr_t *addr, uint16_t port)
 }
 
 /** Return true iff <a>a</b> and <b>b</b> are the same address and port */
-int
+bool
 tor_addr_port_eq(const tor_addr_port_t *a,
                  const tor_addr_port_t *b)
 {
@@ -1933,7 +1933,7 @@ tor_addr_port_eq(const tor_addr_port_t *a,
 /** Return true if <b>string</b> represents a valid IPv4 adddress in
  * 'a.b.c.d' form.
  */
-int
+bool
 string_is_valid_ipv4_address(const char *string)
 {
   struct in_addr addr;
@@ -1944,7 +1944,7 @@ string_is_valid_ipv4_address(const char *string)
 /** Return true if <b>string</b> represents a valid IPv6 address in
  * a form that inet_pton() can parse.
  */
-int
+bool
 string_is_valid_ipv6_address(const char *string)
 {
   struct in6_addr addr;
@@ -1955,7 +1955,7 @@ string_is_valid_ipv6_address(const char *string)
 /** Return true iff <b>string</b> is a valid destination address,
  * i.e. either a DNS hostname or IPv4/IPv6 address string.
  */
-int
+bool
 string_is_valid_dest(const char *string)
 {
   char *tmp = NULL;
@@ -1988,7 +1988,7 @@ string_is_valid_dest(const char *string)
  * Note: This allows certain technically invalid characters ('_') to cope
  * with misconfigured zones that have been encountered in the wild.
  */
-int
+bool
 string_is_valid_nonrfc_hostname(const char *string)
 {
   int result = 1;

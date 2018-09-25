@@ -237,7 +237,7 @@ tor_addr_port_lookup(const char *s, tor_addr_t *addr_out, uint16_t *port_out)
 
 #ifdef USE_SANDBOX_GETADDRINFO
 /** True if we should only return cached values */
-static int sandbox_getaddrinfo_is_active = 0;
+static bool sandbox_getaddrinfo_is_active = false;
 
 /** Cache entry for getaddrinfo results; used when sandboxing is implemented
  * so that we can consult the cache when the sandbox prevents us from doing
@@ -297,7 +297,7 @@ HT_GENERATE2(getaddrinfo_cache, cached_getaddrinfo_item_t, node,
              0.6, tor_reallocarray_, tor_free_)
 
 /** If true, don't try to cache getaddrinfo results. */
-static int sandbox_getaddrinfo_cache_disabled = 0;
+static bool sandbox_getaddrinfo_cache_disabled = false;
 
 /** Tell the sandbox layer not to try to cache getaddrinfo results. Used as in
  * tor-resolve, when we have no intention of initializing crypto or of
@@ -305,7 +305,7 @@ static int sandbox_getaddrinfo_cache_disabled = 0;
 void
 sandbox_disable_getaddrinfo_cache(void)
 {
-  sandbox_getaddrinfo_cache_disabled = 1;
+  sandbox_getaddrinfo_cache_disabled = true;
 }
 
 void
@@ -419,6 +419,6 @@ tor_free_getaddrinfo_cache(void)
 void
 tor_make_getaddrinfo_cache_active(void)
 {
-  sandbox_getaddrinfo_is_active = 1;
+  sandbox_getaddrinfo_is_active = true;
 }
 #endif

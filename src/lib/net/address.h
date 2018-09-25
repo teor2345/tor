@@ -212,7 +212,7 @@ char *tor_addr_to_str_dup(const tor_addr_t *addr) ATTR_MALLOC;
 /** Wrapper function of fmt_addr_impl(). It decorates IPv6
  *  addresses. */
 #define fmt_and_decorate_addr(a) fmt_addr_impl((a), 1)
-const char *fmt_addr_impl(const tor_addr_t *addr, int decorate);
+const char *fmt_addr_impl(const tor_addr_t *addr, bool decorate);
 const char *fmt_addrport(const tor_addr_t *addr, uint16_t port);
 const char * fmt_addr32(uint32_t addr);
 
@@ -224,7 +224,7 @@ void interface_address6_list_free_(struct smartlist_t * addrs);// XXXX
   FREE_AND_NULL(struct smartlist_t, interface_address6_list_free_, (addrs))
 MOCK_DECL(struct smartlist_t *,get_interface_address6_list,(int severity,
                                                      sa_family_t family,
-                                                     int include_internal));
+                                                     bool include_internal));
 
 /** Flag to specify how to do a comparison between addresses.  In an "exact"
  * comparison, addresses are equivalent only if they are in the same family
@@ -246,12 +246,12 @@ int tor_addr_compare_masked(const tor_addr_t *addr1, const tor_addr_t *addr2,
 uint64_t tor_addr_hash(const tor_addr_t *addr);
 struct sipkey;
 uint64_t tor_addr_keyed_hash(const struct sipkey *key, const tor_addr_t *addr);
-int tor_addr_is_v4(const tor_addr_t *addr);
-int tor_addr_is_internal_(const tor_addr_t *ip, int for_listening,
-                          const char *filename, int lineno);
+bool tor_addr_is_v4(const tor_addr_t *addr);
+bool tor_addr_is_internal_(const tor_addr_t *ip, bool for_listening,
+                           const char *filename, int lineno);
 #define tor_addr_is_internal(addr, for_listening) \
   tor_addr_is_internal_((addr), (for_listening), SHORT_FILE__, __LINE__)
-int tor_addr_is_multicast(const tor_addr_t *a);
+bool tor_addr_is_multicast(const tor_addr_t *a);
 
 /** Longest length that can be required for a reverse lookup name. */
 /* 32 nybbles, 32 dots, 8 characters of "ip6.arpa", 1 NUL: 73 characters. */
@@ -259,7 +259,7 @@ int tor_addr_is_multicast(const tor_addr_t *a);
 int tor_addr_to_PTR_name(char *out, size_t outlen,
                                     const tor_addr_t *addr);
 int tor_addr_parse_PTR_name(tor_addr_t *result, const char *address,
-                                       int family, int accept_regular);
+                                       int family, bool accept_regular);
 
 /* Does the address * yield an AF_UNSPEC wildcard address (1),
  * which expands to corresponding wildcard IPv4 and IPv6 rules, and do we
@@ -277,7 +277,7 @@ int tor_addr_parse_mask_ports(const char *s, unsigned flags,
                               tor_addr_t *addr_out, maskbits_t *mask_out,
                               uint16_t *port_min_out, uint16_t *port_max_out);
 const char * tor_addr_to_str(char *dest, const tor_addr_t *addr, size_t len,
-                             int decorate);
+                             bool decorate);
 int tor_addr_parse(tor_addr_t *addr, const char *src);
 void tor_addr_copy(tor_addr_t *dest, const tor_addr_t *src);
 void tor_addr_copy_tight(tor_addr_t *dest, const tor_addr_t *src);
@@ -291,14 +291,14 @@ void tor_addr_from_ipv6_bytes(tor_addr_t *dest, const char *bytes);
 #define tor_addr_from_in(dest, in) \
   tor_addr_from_ipv4n((dest), (in)->s_addr);
 void tor_addr_from_in6(tor_addr_t *dest, const struct in6_addr *in6);
-int tor_addr_is_null(const tor_addr_t *addr);
-int tor_addr_is_loopback(const tor_addr_t *addr);
+bool tor_addr_is_null(const tor_addr_t *addr);
+bool tor_addr_is_loopback(const tor_addr_t *addr);
 
-int tor_addr_is_valid(const tor_addr_t *addr, int for_listening);
-int tor_addr_is_valid_ipv4n(uint32_t v4n_addr, int for_listening);
+bool tor_addr_is_valid(const tor_addr_t *addr, bool for_listening);
+bool tor_addr_is_valid_ipv4n(uint32_t v4n_addr, bool for_listening);
 #define tor_addr_is_valid_ipv4h(v4h_addr, for_listening) \
         tor_addr_is_valid_ipv4n(htonl(v4h_addr), (for_listening))
-int tor_port_is_valid(uint16_t port, int for_listening);
+bool tor_port_is_valid(uint16_t port, bool for_listening);
 /* Are addr and port both valid? */
 #define tor_addr_port_is_valid(addr, port, for_listening) \
         (tor_addr_is_valid((addr), (for_listening)) &&    \
@@ -322,7 +322,7 @@ int tor_addr_port_parse(int severity, const char *addrport,
                         tor_addr_t *address_out, uint16_t *port_out,
                         int default_port);
 
-int tor_addr_hostname_is_local(const char *name);
+bool tor_addr_hostname_is_local(const char *name);
 
 /* IPv4 helpers */
 int parse_port_range(const char *port, uint16_t *port_min_out,
@@ -341,19 +341,19 @@ MOCK_DECL(int,get_interface_address,(int severity, uint32_t *addr));
  * Use free_interface_address_list to free the returned list.
  */
 static inline struct smartlist_t *
-get_interface_address_list(int severity, int include_internal)
+get_interface_address_list(int severity, bool include_internal)
 {
   return get_interface_address6_list(severity, AF_INET, include_internal);
 }
 
 tor_addr_port_t *tor_addr_port_new(const tor_addr_t *addr, uint16_t port);
-int tor_addr_port_eq(const tor_addr_port_t *a,
-                     const tor_addr_port_t *b);
+bool tor_addr_port_eq(const tor_addr_port_t *a,
+                      const tor_addr_port_t *b);
 
-int string_is_valid_dest(const char *string);
-int string_is_valid_nonrfc_hostname(const char *string);
-int string_is_valid_ipv4_address(const char *string);
-int string_is_valid_ipv6_address(const char *string);
+bool string_is_valid_dest(const char *string);
+bool string_is_valid_nonrfc_hostname(const char *string);
+bool string_is_valid_ipv4_address(const char *string);
+bool string_is_valid_ipv6_address(const char *string);
 
 #ifdef ADDRESS_PRIVATE
 MOCK_DECL(struct smartlist_t *,get_interface_addresses_raw,(int severity,

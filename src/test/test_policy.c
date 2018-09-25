@@ -1298,7 +1298,7 @@ static smartlist_t *mock_ipv6_addrs = NULL;
 static smartlist_t *
 mock_get_interface_address6_list(int severity,
                             sa_family_t family,
-                            int include_internal)
+                            bool include_internal)
 {
   (void)severity;
   (void)include_internal;

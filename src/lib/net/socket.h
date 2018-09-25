@@ -26,7 +26,7 @@ void tor_take_socket_ownership(tor_socket_t s);
 void tor_release_socket_ownership(tor_socket_t s);
 tor_socket_t tor_open_socket_with_extensions(
                                            int domain, int type, int protocol,
-                                           int cloexec, int nonblock);
+                                           bool cloexec, bool nonblock);
 MOCK_DECL(tor_socket_t,tor_open_socket,(int domain, int type, int protocol));
 tor_socket_t tor_open_socket_nonblocking(int domain, int type, int protocol);
 tor_socket_t tor_accept_socket(tor_socket_t sockfd, struct sockaddr *addr,
@@ -37,7 +37,7 @@ tor_socket_t tor_accept_socket_nonblocking(tor_socket_t sockfd,
 tor_socket_t tor_accept_socket_with_extensions(tor_socket_t sockfd,
                                                struct sockaddr *addr,
                                                socklen_t *len,
-                                               int cloexec, int nonblock);
+                                               bool cloexec, bool nonblock);
 MOCK_DECL(tor_socket_t, tor_connect_socket,(tor_socket_t socket,
                                             const struct sockaddr *address,
                                             socklen_t address_len));
