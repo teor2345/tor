@@ -88,8 +88,8 @@ config_line_find(const config_line_t *lines,
  * Returns the a pointer to the last element of the <b>result</b> in
  * <b>last</b>. */
 int
-config_get_lines_aux(const char *string, config_line_t **result, int extended,
-                     int allow_include, int *has_include,
+config_get_lines_aux(const char *string, config_line_t **result, bool extended,
+                     bool allow_include, bool *has_include,
                      struct smartlist_t *opened_lst, int recursion_level,
                      config_line_t **last,
                      include_handler_fn handle_include)
@@ -97,7 +97,7 @@ config_get_lines_aux(const char *string, config_line_t **result, int extended,
   config_line_t *list = NULL, **next, *list_last = NULL;
   char *k, *v;
   const char *parse_err;
-  int include_used = 0;
+  bool include_used = false;
 
   if (recursion_level > MAX_INCLUDE_RECURSION_LEVEL) {
     log_warn(LD_CONFIG, "Error while parsing configuration: more than %d "
@@ -137,7 +137,7 @@ config_get_lines_aux(const char *string, config_line_t **result, int extended,
 
       if (allow_include && !strcmp(k, "%include") && handle_include) {
         tor_free(k);
-        include_used = 1;
+        include_used = true;
 
         config_line_t *include_list;
         if (handle_include(v, recursion_level, extended, &include_list,
@@ -185,7 +185,7 @@ config_get_lines_aux(const char *string, config_line_t **result, int extended,
 
 /** Same as config_get_lines_include but does not allow %include */
 int
-config_get_lines(const char *string, config_line_t **result, int extended)
+config_get_lines(const char *string, config_line_t **result, bool extended)
 {
   return config_get_lines_aux(string, result, extended, 0, NULL, NULL, 1,
                               NULL, NULL);

@@ -5013,7 +5013,7 @@ test_config_include_empty_file_folder(void *data)
                "%%include %s\n",
                folder_path, file_path);
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0,&include_used,
             NULL), OP_EQ, 0);
   tt_ptr_op(result, OP_EQ, NULL);
@@ -5051,7 +5051,7 @@ test_config_include_no_permission(void *data)
                "%%include %s\n",
                folder_path);
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0,
                                      &include_used, NULL),
             OP_EQ, -1);
@@ -5108,7 +5108,7 @@ test_config_include_recursion_before_after(void *data)
     }
   }
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(file_contents, &result, 0, &include_used,
             NULL), OP_EQ, 0);
   tt_ptr_op(result, OP_NE, NULL);
@@ -5173,7 +5173,7 @@ test_config_include_recursion_after_only(void *data)
     }
   }
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(file_contents, &result, 0, &include_used,
             NULL), OP_EQ, 0);
   tt_ptr_op(result, OP_NE, NULL);
@@ -5262,7 +5262,7 @@ test_config_include_folder_order(void *data)
                "%%include %s\n",
                torrcd);
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0, &include_used,
             NULL), OP_EQ, 0);
   tt_ptr_op(result, OP_NE, NULL);
@@ -5316,7 +5316,7 @@ test_config_include_path_syntax(void *data)
                dir, PATH_SEPARATOR,
                esc_dir_with_pathsep);
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0,&include_used,
             NULL), OP_EQ, 0);
   tt_ptr_op(result, OP_EQ, NULL);
@@ -5370,7 +5370,7 @@ test_config_include_has_include(void *data)
 #endif
 
   char torrc_contents[1000] = "Test 1\n";
-  int include_used;
+  bool include_used;
 
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0,&include_used,
             NULL), OP_EQ, 0);
@@ -5650,7 +5650,7 @@ test_config_include_opened_file_list(void *data)
                "%%include %s\n",
                torrcd);
 
-  int include_used;
+  bool include_used;
   tt_int_op(config_get_lines_include(torrc_contents, &result, 0, &include_used,
             opened_files), OP_EQ, 0);
   tt_ptr_op(result, OP_NE, NULL);

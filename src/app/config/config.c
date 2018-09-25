@@ -5348,7 +5348,7 @@ options_init_from_string(const char *cf_defaults, const char *cf,
   config_line_t *cl;
   int retval;
   setopt_err_t err = SETOPT_ERR_MISC;
-  int cf_has_include = 0;
+  bool cf_has_include = false;
   tor_assert(msg);
 
   oldoptions = global_options; /* get_options unfortunately asserts if
@@ -5367,7 +5367,7 @@ options_init_from_string(const char *cf_defaults, const char *cf,
       continue;
 
     /* get config lines, assign them */
-    retval = config_get_lines_include(body, &cl, 1,
+    retval = config_get_lines_include(body, &cl, true,
                                       body == cf ? &cf_has_include : NULL,
                                       opened_files);
     if (retval < 0) {

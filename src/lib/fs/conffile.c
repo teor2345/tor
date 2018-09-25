@@ -24,11 +24,11 @@
 static smartlist_t *config_get_file_list(const char *path,
                                          smartlist_t *opened_files);
 static int config_get_included_config(const char *path, int recursion_level,
-                                      int extended, config_line_t **config,
+                                      bool extended, config_line_t **config,
                                       config_line_t **config_last,
                                       smartlist_t *opened_lst);
 static int config_process_include(const char *path, int recursion_level,
-                                  int extended, config_line_t **list,
+                                  bool extended, config_line_t **list,
                                   config_line_t **list_last,
                                   smartlist_t *opened_lst);
 
@@ -43,7 +43,7 @@ static int config_process_include(const char *path, int recursion_level,
  * indicating "clear" and "append" respectively. */
 int
 config_get_lines_include(const char *string, config_line_t **result,
-                         int extended, int *has_include,
+                         bool extended, bool *has_include,
                          smartlist_t *opened_lst)
 {
   return config_get_lines_aux(string, result, extended, 1, has_include,
@@ -113,7 +113,7 @@ config_get_file_list(const char *path, smartlist_t *opened_files)
  * <b>config</b>. <b>opened_lst</b> will have a list of opened files if
  * provided. Return 0 on success, -1 on failure. */
 static int
-config_get_included_config(const char *path, int recursion_level, int extended,
+config_get_included_config(const char *path, int recursion_level,bool extended,
                            config_line_t **config, config_line_t **config_last,
                            smartlist_t *opened_lst)
 {
@@ -138,7 +138,7 @@ config_get_included_config(const char *path, int recursion_level, int extended,
  * element of the same list. <b>opened_lst</b> will have a list of opened
  * files if provided. Return 0 on success, -1 on failure. */
 static int
-config_process_include(const char *path, int recursion_level, int extended,
+config_process_include(const char *path, int recursion_level, bool extended,
                        config_line_t **list, config_line_t **list_last,
                        smartlist_t *opened_lst)
 {

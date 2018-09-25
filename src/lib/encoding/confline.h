@@ -61,16 +61,16 @@ const char *parse_config_line_from_str_verbose(const char *line,
                                        const char **err_out);
 
 int config_get_lines(const char *string, struct config_line_t **result,
-                     int extended);
+                     bool extended);
 
-typedef int (*include_handler_fn)(const char *, int, int,
+typedef int (*include_handler_fn)(const char *, int, bool,
                                   struct config_line_t **,
                                   struct config_line_t **,
                                   struct smartlist_t *);
 
 int config_get_lines_aux(const char *string, struct config_line_t **result,
-                         int extended,
-                         int allow_include, int *has_include,
+                         bool extended,
+                         bool allow_include, bool *has_include,
                          struct smartlist_t *opened_lst, int recursion_level,
                          config_line_t **last,
                          include_handler_fn handle_include);
