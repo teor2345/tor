@@ -242,18 +242,18 @@ config_lines_dup_and_filter(const config_line_t *inp,
 
 /** Return true iff a and b contain identical keys and values in identical
  * order. */
-int
+bool
 config_lines_eq(config_line_t *a, config_line_t *b)
 {
   while (a && b) {
     if (strcasecmp(a->key, b->key) || strcmp(a->value, b->value))
-      return 0;
+      return false;
     a = a->next;
     b = b->next;
   }
   if (a || b)
-    return 0;
-  return 1;
+    return false;
+  return true;
 }
 
 /** Return the number of lines in <b>a</b> whose key is <b>key</b>. */

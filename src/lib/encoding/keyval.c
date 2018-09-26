@@ -21,7 +21,7 @@
 /** Return true if <b>string</b> is a valid 'key=[value]' string.
  *  "value" is optional, to indicate the empty string. Log at logging
  *  <b>severity</b> if something ugly happens. */
-int
+bool
 string_is_key_value(int severity, const char *string)
 {
   /* position of equal sign in string */
@@ -32,21 +32,21 @@ string_is_key_value(int severity, const char *string)
   if (strlen(string) < 2) { /* "x=" is shortest args string */
     tor_log(severity, LD_GENERAL, "'%s' is too short to be a k=v value.",
             escaped(string));
-    return 0;
+    return false;
   }
 
   equal_sign_pos = strchr(string, '=');
   if (!equal_sign_pos) {
     tor_log(severity, LD_GENERAL, "'%s' is not a k=v value.", escaped(string));
-    return 0;
+    return false;
   }
 
   /* validate that the '=' is not in the beginning of the string. */
   if (equal_sign_pos == string) {
     tor_log(severity, LD_GENERAL, "'%s' is not a valid k=v value.",
             escaped(string));
-    return 0;
+    return false;
   }
 
-  return 1;
+  return true;
 }

@@ -14,6 +14,7 @@
 #define TOR_TIME_FMT_H
 
 #include "orconfig.h"
+#include <stdbool.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -35,7 +36,7 @@ void format_iso_time(char *buf, time_t t);
 void format_local_iso_time_nospace(char *buf, time_t t);
 void format_iso_time_nospace(char *buf, time_t t);
 void format_iso_time_nospace_usec(char *buf, const struct timeval *tv);
-int parse_iso_time_(const char *cp, time_t *t, int strict, int nospace);
+int parse_iso_time_(const char *cp, time_t *t, bool strict, bool nospace);
 int parse_iso_time(const char *buf, time_t *t);
 int parse_iso_time_nospace(const char *cp, time_t *t);
 int parse_http_time(const char *buf, struct tm *tm);

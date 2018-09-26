@@ -325,7 +325,7 @@ format_iso_time_nospace_usec(char *buf, const struct timeval *tv)
  * string, unless <b>strict</b> is set. If <b>nospace</b> is set,
  * expect the YYYY-MM-DDTHH:MM:SS format. */
 int
-parse_iso_time_(const char *cp, time_t *t, int strict, int nospace)
+parse_iso_time_(const char *cp, time_t *t, bool strict, bool nospace)
 {
   struct tm st_tm;
   unsigned int year=0, month=0, day=0, hour=0, minute=0, second=0;

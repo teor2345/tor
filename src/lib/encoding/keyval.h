@@ -12,6 +12,8 @@
 #ifndef TOR_KEYVAL_H
 #define TOR_KEYVAL_H
 
-int string_is_key_value(int severity, const char *string);
+#include <stdbool.h>
+
+bool string_is_key_value(int severity, const char *string);
 
 #endif
