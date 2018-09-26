@@ -145,6 +145,6 @@ int sandbox_cfg_allow_stat_filename(sandbox_cfg_t **cfg, char *file);
 int sandbox_init(sandbox_cfg_t* cfg);
 
 /** Return true iff the sandbox is turned on. */
-int sandbox_is_active(void);
+bool sandbox_is_active(void);
 
 #endif /* !defined(SANDBOX_H_) */

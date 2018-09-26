@@ -119,7 +119,7 @@
 #endif /* defined(__i386__) || ... */
 
 /**Determines if at least one sandbox is active.*/
-static int sandbox_active = 0;
+static bool sandbox_active = false;
 /** Holds the parameter list configuration for the sandbox.*/
 static sandbox_cfg_t *filter_dynamic = NULL;
 
@@ -425,33 +425,33 @@ sb_mmap2(scmp_filter_ctx ctx, sandbox_cfg_t *filter)
 
 /* Return true if we think we're running with a libc that always uses
  * openat on linux. */
-static int
+static bool
 libc_uses_openat_for_everything(void)
 {
 #ifdef CHECK_LIBC_VERSION
   const char *version = gnu_get_libc_version();
   if (version == NULL)
-    return 0;
+    return false;
 
   int major = -1;
   int minor = -1;
 
   tor_sscanf(version, "%d.%d", &major, &minor);
   if (major >= 3)
-    return 1;
+    return true;
   else if (major == 2 && minor >= 26)
-    return 1;
+    return true;
   else
-    return 0;
+    return false;
 #else /* !(defined(CHECK_LIBC_VERSION)) */
-  return 0;
+  return false;
 #endif /* defined(CHECK_LIBC_VERSION) */
 }
 
 /** Allow a single file to be opened.  If <b>use_openat</b> is true,
  * we're using a libc that remaps all the opens into openats. */
 static int
-allow_file_open(scmp_filter_ctx ctx, int use_openat, const char *file)
+allow_file_open(scmp_filter_ctx ctx, bool use_openat, const char *file)
 {
   if (use_openat) {
     return seccomp_rule_add_2(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat),
@@ -473,7 +473,7 @@ sb_open(scmp_filter_ctx ctx, sandbox_cfg_t *filter)
   int rc;
   sandbox_cfg_t *elem = NULL;
 
-  int use_openat = libc_uses_openat_for_everything();
+  bool use_openat = libc_uses_openat_for_everything();
 
   // for each dynamic parameter filters
   for (elem = filter; elem != NULL; elem = elem->next) {
@@ -1551,7 +1551,7 @@ install_syscall_filter(sandbox_cfg_t* cfg)
   }
 
   // marking the sandbox as active
-  sandbox_active = 1;
+  sandbox_active = true;
   tor_make_getaddrinfo_cache_active();
 
  end:
@@ -1714,10 +1714,10 @@ initialise_libseccomp_sandbox(sandbox_cfg_t* cfg)
   return 0;
 }
 
-int
+bool
 sandbox_is_active(void)
 {
-  return sandbox_active != 0;
+  return sandbox_active;
 }
 #endif /* defined(USE_LIBSECCOMP) */
 
@@ -1793,10 +1793,10 @@ sandbox_cfg_allow_rename(sandbox_cfg_t **cfg, char *file1, char *file2)
   return 0;
 }
 
-int
+bool
 sandbox_is_active(void)
 {
-  return 0;
+  return false;
 }
 
 void
