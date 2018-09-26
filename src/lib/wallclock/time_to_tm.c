@@ -33,7 +33,7 @@
  * as its input. If we need to store new results, store them in
  * <b>resultbuf</b>. */
 static struct tm *
-correct_tm(int islocal, const time_t *timep, struct tm *resultbuf,
+correct_tm(bool islocal, const time_t *timep, struct tm *resultbuf,
            struct tm *r, char **err_out)
 {
   const char *outcome;

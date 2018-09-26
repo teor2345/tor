@@ -189,16 +189,16 @@ memarea_clear(memarea_t *area)
 
 /** Return true iff <b>p</b> is in a range that has been returned by an
  * allocation from <b>area</b>. */
-int
+bool
 memarea_owns_ptr(const memarea_t *area, const void *p)
 {
   memarea_chunk_t *chunk;
   const char *ptr = p;
   for (chunk = area->first; chunk; chunk = chunk->next_chunk) {
     if (ptr >= chunk->U_MEM && ptr < chunk->next_mem)
-      return 1;
+      return true;
   }
-  return 0;
+  return false;
 }
 
 /** Return a pointer to a chunk of memory in <b>area</b> of at least <b>sz</b>

@@ -70,7 +70,7 @@ tor_memstr(const void *haystack, size_t hlen, const char *needle)
 }
 
 /** Return true iff the 'len' bytes at 'mem' are all zero. */
-int
+bool
 tor_mem_is_zero(const char *mem, size_t len)
 {
   static const char ZERO[] = {
@@ -80,7 +80,7 @@ tor_mem_is_zero(const char *mem, size_t len)
     /* It's safe to use fast_memcmp here, since the very worst thing an
      * attacker could learn is how many initial bytes of a secret were zero */
     if (fast_memcmp(mem, ZERO, sizeof(ZERO)))
-      return 0;
+      return false;
     len -= sizeof(ZERO);
     mem += sizeof(ZERO);
   }
@@ -88,11 +88,11 @@ tor_mem_is_zero(const char *mem, size_t len)
   if (len)
     return fast_memeq(mem, ZERO, len);
 
-  return 1;
+  return true;
 }
 
 /** Return true iff the DIGEST_LEN bytes in digest are all zero. */
-int
+bool
 tor_digest_is_zero(const char *digest)
 {
   static const uint8_t ZERO_DIGEST[] = {
@@ -102,7 +102,7 @@ tor_digest_is_zero(const char *digest)
 }
 
 /** Return true iff the DIGEST256_LEN bytes in digest are all zero. */
-int
+bool
 tor_digest256_is_zero(const char *digest)
 {
   return tor_mem_is_zero(digest, DIGEST256_LEN);

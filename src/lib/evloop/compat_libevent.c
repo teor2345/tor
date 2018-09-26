@@ -354,7 +354,7 @@ mainloop_event_postloop_cb(evutil_socket_t fd, short what, void *arg)
  * Helper for mainloop_event_new() and mainloop_event_postloop_new().
  */
 static mainloop_event_t *
-mainloop_event_new_impl(int postloop,
+mainloop_event_new_impl(bool postloop,
                         void (*cb)(mainloop_event_t *, void *),
                         void *userdata)
 {
@@ -500,7 +500,7 @@ tor_libevent_free_all(void)
  * This isn't reentrant or multithreaded.
  */
 int
-tor_libevent_run_event_loop(struct event_base *base, int once)
+tor_libevent_run_event_loop(struct event_base *base, bool once)
 {
   const int flags = once ? EVLOOP_ONCE : 0;
   return event_base_loop(base, flags);

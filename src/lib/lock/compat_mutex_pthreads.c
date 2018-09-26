@@ -17,7 +17,7 @@
  * "recursive" mutexes (i.e., once we can re-lock if we're already holding
  * them.) */
 static pthread_mutexattr_t attr_recursive;
-static int attr_initialized = 0;
+static bool attr_initialized = false;
 
 void
 tor_locking_init(void)
@@ -25,7 +25,7 @@ tor_locking_init(void)
   if (!attr_initialized) {
     pthread_mutexattr_init(&attr_recursive);
     pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
-    attr_initialized = 1;
+    attr_initialized = true;
   }
 }
 

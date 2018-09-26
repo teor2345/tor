@@ -20,12 +20,13 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <stdbool.h>
 #include <string.h>
 
 /** Hold the result of our call to <b>uname</b>. */
 static char uname_result[256];
 /** True iff uname_result is set. */
-static int uname_result_is_set = 0;
+static bool uname_result_is_set = false;
 
 /** Return a pointer to a description of our platform.
  */
@@ -68,7 +69,7 @@ get_uname,(void))
         if (! GetVersionEx((LPOSVERSIONINFO)&info)) {
           strlcpy(uname_result, "Bizarre version of Windows where GetVersionEx"
                   " doesn't work.", sizeof(uname_result));
-          uname_result_is_set = 1;
+          uname_result_is_set = true;
           return uname_result;
         }
         if (info.dwMajorVersion == 4 && info.dwMinorVersion == 0) {
@@ -110,7 +111,7 @@ get_uname,(void))
         /* LCOV_EXCL_STOP */
 #endif /* defined(_WIN32) */
       }
-    uname_result_is_set = 1;
+    uname_result_is_set = true;
   }
   return uname_result;
 }

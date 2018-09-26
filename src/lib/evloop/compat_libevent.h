@@ -81,7 +81,7 @@ int tor_init_libevent_rng(void);
 void tor_libevent_postfork(void);
 #endif
 
-int tor_libevent_run_event_loop(struct event_base *base, int once);
+int tor_libevent_run_event_loop(struct event_base *base, bool once);
 void tor_libevent_exit_loop_after_delay(struct event_base *base,
                                         const struct timeval *delay);
 void tor_libevent_exit_loop_after_callback(struct event_base *base);

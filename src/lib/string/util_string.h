@@ -14,15 +14,16 @@
 #include "orconfig.h"
 #include "lib/cc/compat_compiler.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 const void *tor_memmem(const void *haystack, size_t hlen, const void *needle,
                        size_t nlen);
 const void *tor_memstr(const void *haystack, size_t hlen,
                        const char *needle);
-int tor_mem_is_zero(const char *mem, size_t len);
-int tor_digest_is_zero(const char *digest);
-int tor_digest256_is_zero(const char *digest);
+bool tor_mem_is_zero(const char *mem, size_t len);
+bool tor_digest_is_zero(const char *digest);
+bool tor_digest256_is_zero(const char *digest);
 
 /** Allowable characters in a hexadecimal string. */
 #define HEX_CHARACTERS "0123456789ABCDEFabcdef"

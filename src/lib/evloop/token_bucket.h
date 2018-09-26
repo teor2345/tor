@@ -38,12 +38,12 @@ void token_bucket_raw_adjust(token_bucket_raw_t *bucket,
 void token_bucket_raw_reset(token_bucket_raw_t *bucket,
                             const token_bucket_cfg_t *cfg);
 
-int token_bucket_raw_dec(token_bucket_raw_t *bucket,
-                         ssize_t n);
+bool token_bucket_raw_dec(token_bucket_raw_t *bucket,
+                          ssize_t n);
 
-int token_bucket_raw_refill_steps(token_bucket_raw_t *bucket,
-                                  const token_bucket_cfg_t *cfg,
-                                  const uint32_t elapsed_steps);
+bool token_bucket_raw_refill_steps(token_bucket_raw_t *bucket,
+                                   const token_bucket_cfg_t *cfg,
+                                   const uint32_t elapsed_steps);
 
 static inline size_t token_bucket_raw_get(const token_bucket_raw_t *bucket);
 /** Return the current number of bytes set in a token bucket. */
@@ -80,10 +80,10 @@ void token_bucket_rw_reset(token_bucket_rw_t *bucket,
 int token_bucket_rw_refill(token_bucket_rw_t *bucket,
                            uint32_t now_ts);
 
-int token_bucket_rw_dec_read(token_bucket_rw_t *bucket,
-                             ssize_t n);
-int token_bucket_rw_dec_write(token_bucket_rw_t *bucket,
+bool token_bucket_rw_dec_read(token_bucket_rw_t *bucket,
                               ssize_t n);
+bool token_bucket_rw_dec_write(token_bucket_rw_t *bucket,
+                               ssize_t n);
 
 int token_bucket_rw_dec(token_bucket_rw_t *bucket,
                         ssize_t n_read, ssize_t n_written);

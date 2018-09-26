@@ -77,7 +77,7 @@ tor_sleep_msec(int msec)
 #define ONE_BILLION ((int64_t) (1000 * 1000 * 1000))
 
 /** True iff monotime_init has been called. */
-static int monotime_initialized = 0;
+static bool monotime_initialized = false;
 
 static monotime_t initialized_at;
 #ifdef MONOTIME_COARSE_FN_IS_DIFFERENT
@@ -88,7 +88,7 @@ static monotime_coarse_t initialized_at_coarse;
 /** True if we are running unit tests and overriding the current monotonic
  * time.  Note that mocked monotonic time might not be monotonic.
  */
-static int monotime_mocking_enabled = 0;
+static bool monotime_mocking_enabled = false;
 static monotime_t initialized_at_saved;
 
 static int64_t mock_time_nsec = 0;
@@ -100,7 +100,7 @@ static monotime_coarse_t initialized_at_coarse_saved;
 void
 monotime_enable_test_mocking(void)
 {
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
 
@@ -343,7 +343,7 @@ monotime_coarse_to_stamp(const monotime_coarse_t *t)
   return (uint32_t)(t->abstime_ >> monotime_shift);
 }
 
-int
+bool
 monotime_is_zero(const monotime_t *val)
 {
   return val->abstime_ == 0;
@@ -456,7 +456,7 @@ monotime_coarse_to_stamp(const monotime_coarse_t *t)
   return (sec * STAMP_TICKS_PER_SECOND) + (nsec >> 20);
 }
 
-int
+bool
 monotime_is_zero(const monotime_t *val)
 {
   return val->ts_.tv_sec == 0 && val->ts_.tv_nsec == 0;
@@ -528,7 +528,7 @@ monotime_init_internal(void)
 void
 monotime_get(monotime_t *out)
 {
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
 
@@ -578,7 +578,7 @@ int64_t
 monotime_diff_nsec(const monotime_t *start,
                    const monotime_t *end)
 {
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
   const int64_t diff_ticks = end->pcount_ - start->pcount_;
@@ -622,13 +622,13 @@ monotime_coarse_to_stamp(const monotime_coarse_t *t)
   return (uint32_t) t->tick_count_;
 }
 
-int
+bool
 monotime_is_zero(const monotime_t *val)
 {
   return val->pcount_ == 0;
 }
 
-int
+bool
 monotime_coarse_is_zero(const monotime_coarse_t *val)
 {
   return val->tick_count_ == 0;
@@ -665,7 +665,7 @@ monotime_init_internal(void)
 void
 monotime_get(monotime_t *out)
 {
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
 
@@ -705,7 +705,7 @@ monotime_coarse_to_stamp(const monotime_coarse_t *t)
   return (sec * STAMP_TICKS_PER_SECOND) | (nsec >> 10);
 }
 
-int
+bool
 monotime_is_zero(const monotime_t *val)
 {
   return val->tv_.tv_sec == 0 && val->tv_.tv_usec == 0;
@@ -738,7 +738,7 @@ monotime_init(void)
 {
   if (!monotime_initialized) {
     monotime_init_internal();
-    monotime_initialized = 1;
+    monotime_initialized = true;
     monotime_get(&initialized_at);
 #ifdef MONOTIME_COARSE_FN_IS_DIFFERENT
     monotime_coarse_get(&initialized_at_coarse);
@@ -779,7 +779,7 @@ uint64_t
 monotime_absolute_nsec(void)
 {
   monotime_t now;
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
 
@@ -803,7 +803,7 @@ monotime_absolute_msec(void)
 uint64_t
 monotime_coarse_absolute_nsec(void)
 {
-  if (BUG(monotime_initialized == 0)) {
+  if (BUG(monotime_initialized == false)) {
     monotime_init();
   }
 

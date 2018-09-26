@@ -11,6 +11,7 @@
 #ifndef TOR_UTIL_MALLOC_H
 #define TOR_UTIL_MALLOC_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include "lib/cc/compat_compiler.h"
@@ -86,7 +87,7 @@ void tor_free_(void *mem);
   } while (0)
 
 #ifdef UTIL_MALLOC_PRIVATE
-STATIC int size_mul_check(const size_t x, const size_t y);
+STATIC bool size_mul_check(const size_t x, const size_t y);
 #endif
 
 #endif /* !defined(TOR_UTIL_MALLOC_H) */

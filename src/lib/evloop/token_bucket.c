@@ -73,12 +73,12 @@ token_bucket_raw_adjust(token_bucket_raw_t *bucket,
  * units of time in <b>elapsed</b> must correspond to those used to set the
  * rate in <b>cfg</b>, or the result will be illogical.
  */
-int
+bool
 token_bucket_raw_refill_steps(token_bucket_raw_t *bucket,
                               const token_bucket_cfg_t *cfg,
                               const uint32_t elapsed)
 {
-  const int was_empty = (bucket->bucket <= 0);
+  const bool was_empty = (bucket->bucket <= 0);
   /* The casts here prevent an underflow.
    *
    * Note that even if the bucket value is negative, subtracting it from
@@ -100,13 +100,13 @@ token_bucket_raw_refill_steps(token_bucket_raw_t *bucket,
  * Decrement a provided bucket by <b>n</b> units.  Note that <b>n</b>
  * must be nonnegative.
  */
-int
+bool
 token_bucket_raw_dec(token_bucket_raw_t *bucket,
                      ssize_t n)
 {
   if (BUG(n < 0))
     return 0;
-  const int becomes_empty = bucket->bucket > 0 && n >= bucket->bucket;
+  const bool becomes_empty = bucket->bucket > 0 && n >= bucket->bucket;
   bucket->bucket -= n;
   return becomes_empty;
 }
@@ -220,7 +220,7 @@ token_bucket_rw_refill(token_bucket_rw_t *bucket,
  * Return true if the bucket was nonempty and became empty; return false
  * otherwise.
  */
-int
+bool
 token_bucket_rw_dec_read(token_bucket_rw_t *bucket,
                          ssize_t n)
 {
@@ -233,7 +233,7 @@ token_bucket_rw_dec_read(token_bucket_rw_t *bucket,
  * Return true if the bucket was nonempty and became empty; return false
  * otherwise.
  */
-int
+bool
 token_bucket_rw_dec_write(token_bucket_rw_t *bucket,
                           ssize_t n)
 {

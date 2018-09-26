@@ -217,7 +217,7 @@ dimap_search(const di_digest256_map_t *map, const uint8_t *key,
  * Return true iff the <b>sz</b> bytes at <b>mem</b> are all zero. Runs in
  * time independent of the contents of <b>mem</b>.
  */
-int
+bool
 safe_mem_is_zero(const void *mem, size_t sz)
 {
   uint32_t total = 0;
@@ -236,7 +236,7 @@ safe_mem_is_zero(const void *mem, size_t sz)
 #if SIZEOF_VOID_P == 8
 #define gt_i64_timei(a,b) ((a) > (b))
 #else
-static inline int
+static inline bool
 gt_i64_timei(uint64_t a, uint64_t b)
 {
   int64_t diff = (int64_t) (b - a);

@@ -83,7 +83,7 @@ tor_cond_uninit(tor_cond_t *cond)
 }
 
 static void
-tor_cond_signal_impl(tor_cond_t *cond, int broadcast)
+tor_cond_signal_impl(tor_cond_t *cond, bool broadcast)
 {
   EnterCriticalSection(&cond->lock);
   if (broadcast)

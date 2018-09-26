@@ -10,6 +10,7 @@
 #ifndef TOR_MEMAREA_H
 #define TOR_MEMAREA_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef struct memarea_t memarea_t;
@@ -22,7 +23,7 @@ void memarea_drop_all_(memarea_t *area);
     (area) = NULL;                              \
   } while (0)
 void memarea_clear(memarea_t *area);
-int memarea_owns_ptr(const memarea_t *area, const void *ptr);
+bool memarea_owns_ptr(const memarea_t *area, const void *ptr);
 void *memarea_alloc(memarea_t *area, size_t sz);
 void *memarea_alloc_zero(memarea_t *area, size_t sz);
 void *memarea_memdup(memarea_t *area, const void *s, size_t n);

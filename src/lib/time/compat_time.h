@@ -114,9 +114,9 @@ uint64_t monotime_absolute_msec(void);
  */
 void monotime_zero(monotime_t *out);
 /**
- * Return true iff <b>out</b> is zero
+ * Return true iff <b>val</b> is zero
  */
-int monotime_is_zero(const monotime_t *out);
+bool monotime_is_zero(const monotime_t *val);
 
 /**
  * Set <b>out</b> to N milliseconds after <b>val</b>.
@@ -165,7 +165,7 @@ int64_t monotime_coarse_diff_usec(const monotime_coarse_t *start,
 int64_t monotime_coarse_diff_msec(const monotime_coarse_t *start,
     const monotime_coarse_t *end);
 void monotime_coarse_zero(monotime_coarse_t *out);
-int monotime_coarse_is_zero(const monotime_coarse_t *val);
+bool monotime_coarse_is_zero(const monotime_coarse_t *val);
 void monotime_coarse_add_msec(monotime_coarse_t *out,
                               const monotime_coarse_t *val, uint32_t msec);
 #else /* !(defined(MONOTIME_COARSE_TYPE_IS_DIFFERENT)) */
