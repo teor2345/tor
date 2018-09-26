@@ -221,7 +221,7 @@ test_util_spawn_background_partial_read_impl(int exit_early)
   const char *expected_err = "ERR" EOL;
 
 #ifndef _WIN32
-  int eof = 0;
+  bool eof = false;
 #endif
   int expected_out_ctr;
 

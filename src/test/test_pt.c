@@ -319,7 +319,7 @@ tor_get_lines_from_handle_replacement(STDIN_HANDLE handle,
 /* NOP mock */
 static void
 tor_process_handle_destroy_replacement(process_handle_t *process_handle,
-                                       int also_terminate_process)
+                                       bool also_terminate_process)
 {
   (void) process_handle;
   (void) also_terminate_process;

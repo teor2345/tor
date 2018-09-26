@@ -80,7 +80,7 @@ struct process_handle_t {
 #define PROCESS_EXIT_EXITED 0
 #define PROCESS_EXIT_ERROR -1
 int tor_get_exit_code(process_handle_t *process_handle,
-                      int block, int *exit_code);
+                      bool block, int *exit_code);
 int tor_split_lines(struct smartlist_t *sl, char *buf, int len);
 #ifdef _WIN32
 ssize_t tor_read_all_handle(HANDLE h, char *buf, size_t count,
@@ -88,7 +88,7 @@ ssize_t tor_read_all_handle(HANDLE h, char *buf, size_t count,
 #else
 ssize_t tor_read_all_handle(int fd, char *buf, size_t count,
                             const process_handle_t *process,
-                            int *eof);
+                            bool *eof);
 #endif /* defined(_WIN32) */
 ssize_t tor_read_all_from_process_stdout(
     const process_handle_t *process_handle, char *buf, size_t count);
@@ -114,7 +114,7 @@ MOCK_DECL(struct smartlist_t *, tor_get_lines_from_handle,(int fd,
 int tor_terminate_process(process_handle_t *process_handle);
 
 MOCK_DECL(void, tor_process_handle_destroy,(process_handle_t *process_handle,
-                                            int also_terminate_process));
+                                            bool also_terminate_process));
 
 #ifdef SUBPROCESS_PRIVATE
 /* Prototypes for private functions only used by util.c (and unit tests) */

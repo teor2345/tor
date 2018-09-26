@@ -32,9 +32,9 @@
 
 /* Based on code contributed by christian grothoff */
 /** True iff we've called start_daemon(). */
-static int start_daemon_called = 0;
+static bool start_daemon_called = false;
 /** True iff we've called finish_daemon(). */
-static int finish_daemon_called = 0;
+static bool finish_daemon_called = false;
 /** Socketpair used to communicate between parent and child process while
  * daemonizing. */
 static int daemon_filedes[2];
@@ -45,7 +45,7 @@ static int daemon_filedes[2];
 bool
 start_daemon_has_been_called(void)
 {
-  return start_daemon_called != 0;
+  return start_daemon_called;
 }
 
 /** Start putting the process into daemon mode: fork and drop all resources
@@ -61,7 +61,7 @@ start_daemon(void)
 
   if (start_daemon_called)
     return 0;
-  start_daemon_called = 1;
+  start_daemon_called = true;
 
   if (pipe(daemon_filedes)) {
     /* LCOV_EXCL_START */
@@ -77,17 +77,17 @@ start_daemon(void)
     /* LCOV_EXCL_STOP */
   }
   if (pid) {  /* Parent */
-    int ok;
+    bool ok;
     char c;
 
     close(daemon_filedes[1]); /* we only read */
-    ok = -1;
+    ok = false;
     while (0 < read(daemon_filedes[0], &c, sizeof(char))) {
       if (c == '.')
-        ok = 1;
+        ok = true;
     }
     fflush(stdout);
-    if (ok == 1)
+    if (ok)
       exit(0); // exit ok: during daemonize, daemonizing.
     else
       exit(1); /* child reported error. exit ok: daemonize failed. */
@@ -126,7 +126,7 @@ finish_daemon(const char *desired_cwd)
     return 0;
   if (!start_daemon_called)
     start_daemon();
-  finish_daemon_called = 1;
+  finish_daemon_called = true;
 
   if (!desired_cwd)
     desired_cwd = "/";

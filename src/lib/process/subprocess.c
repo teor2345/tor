@@ -376,7 +376,7 @@ process_handle_waitpid_cb(int status, void *arg)
  * Boolean.  If true, then Tor may call execve or CreateProcess via
  * tor_spawn_background.
  **/
-static int may_spawn_background_process = 1;
+static bool may_spawn_background_process = true;
 /**
  * Turn off may_spawn_background_process, so that all future calls to
  * tor_spawn_background are guaranteed to fail.
@@ -384,7 +384,7 @@ static int may_spawn_background_process = 1;
 void
 tor_disable_spawning_background_processes(void)
 {
-  may_spawn_background_process = 0;
+  may_spawn_background_process = false;
 }
 /** Start a program in the background. If <b>filename</b> contains a '/', then
  * it will be treated as an absolute or relative path.  Otherwise, on
@@ -410,7 +410,7 @@ tor_spawn_background(const char *const filename, const char **argv,
                      process_environment_t *env,
                      process_handle_t **process_handle_out)
 {
-  if (BUG(may_spawn_background_process == 0)) {
+  if (BUG(may_spawn_background_process == false)) {
     /* We should never reach this point if we're forbidden to spawn
      * processes. Instead we should have caught the attempt earlier. */
     return PROCESS_STATUS_ERROR;
@@ -776,7 +776,7 @@ tor_spawn_background(const char *const filename, const char **argv,
  *  process of the process handle. */
 MOCK_IMPL(void,
 tor_process_handle_destroy,(process_handle_t *process_handle,
-                            int also_terminate_process))
+                            bool also_terminate_process))
 {
   if (!process_handle)
     return;
@@ -833,7 +833,7 @@ tor_process_handle_destroy,(process_handle_t *process_handle,
  * terminated child processes.*/
 int
 tor_get_exit_code(process_handle_t *process_handle,
-                  int block, int *exit_code)
+                  bool block, int *exit_code)
 {
 #ifdef _WIN32
   DWORD retval;
@@ -982,7 +982,7 @@ tor_read_all_handle(HANDLE h, char *buf, size_t count,
 ssize_t
 tor_read_all_handle(int fd, char *buf, size_t count,
                     const process_handle_t *process,
-                    int *eof)
+                    bool *eof)
 {
   size_t numread = 0;
   ssize_t result;

@@ -173,7 +173,7 @@ have_capability_support(void)
  * Return 0 on success, and -1 on failure.
  */
 static int
-drop_capabilities(int pre_setuid)
+drop_capabilities(bool pre_setuid)
 {
   /* We keep these three capabilities, and these only, as we setuid.
    * After we setuid, we drop all but the first. */
@@ -233,9 +233,9 @@ switch_id(const char *user, const unsigned flags)
   const struct passwd *pw = NULL;
   uid_t old_uid;
   gid_t old_gid;
-  static int have_already_switched_id = 0;
-  const int keep_bindlow = !!(flags & SWITCH_ID_KEEP_BINDLOW);
-  const int warn_if_no_caps = !!(flags & SWITCH_ID_WARN_IF_NO_CAPS);
+  static bool have_already_switched_id = false;
+  const bool keep_bindlow = !!(flags & SWITCH_ID_KEEP_BINDLOW);
+  const bool warn_if_no_caps = !!(flags & SWITCH_ID_WARN_IF_NO_CAPS);
 
   tor_assert(user);
 
@@ -362,7 +362,7 @@ switch_id(const char *user, const unsigned flags)
     return -1;
   }
 
-  have_already_switched_id = 1; /* mark success so we never try again */
+  have_already_switched_id = true; /* mark success so we never try again */
 
 #if defined(__linux__) && defined(HAVE_SYS_PRCTL_H) && \
   defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)

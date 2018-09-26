@@ -11,11 +11,13 @@
 #ifndef TOR_ENV_H
 #define TOR_ENV_H
 
+#include <stdbool.h>
+
 char **get_environment(void);
 
 struct smartlist_t;
 
-int environment_variable_names_equal(const char *s1, const char *s2);
+bool environment_variable_names_equal(const char *s1, const char *s2);
 
 /* DOCDOC process_environment_t */
 typedef struct process_environment_t {
@@ -37,5 +39,5 @@ struct smartlist_t *get_current_process_environment_variables(void);
 void set_environment_variable_in_smartlist(struct smartlist_t *env_vars,
                                            const char *new_var,
                                            void (*free_old)(void*),
-                                           int free_p);
+                                           bool free_p);
 #endif
