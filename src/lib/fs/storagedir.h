@@ -29,16 +29,16 @@ int storage_dir_register_with_sandbox(storage_dir_t *d,
 const struct smartlist_t *storage_dir_list(storage_dir_t *d);
 uint64_t storage_dir_get_usage(storage_dir_t *d);
 struct tor_mmap_t *storage_dir_map(storage_dir_t *d, const char *fname);
-uint8_t *storage_dir_read(storage_dir_t *d, const char *fname, int bin,
+uint8_t *storage_dir_read(storage_dir_t *d, const char *fname, bool bin,
                           size_t *sz_out);
 int storage_dir_save_bytes_to_file(storage_dir_t *d,
                                    const uint8_t *data,
                                    size_t length,
-                                   int binary,
+                                   bool binary,
                                    char **fname_out);
 int storage_dir_save_string_to_file(storage_dir_t *d,
                                     const char *data,
-                                    int binary,
+                                    bool binary,
                                     char **fname_out);
 int storage_dir_save_labeled_to_file(storage_dir_t *d,
                                       const struct config_line_t *labels,

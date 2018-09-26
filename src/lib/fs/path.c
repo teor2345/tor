@@ -37,8 +37,8 @@ get_unquoted_path(const char *path)
     return tor_strdup("");
   }
 
-  int has_start_quote = (path[0] == '\"');
-  int has_end_quote = (len > 0 && path[len-1] == '\"');
+  const bool has_start_quote = (path[0] == '\"');
+  const bool has_end_quote = (len > 0 && path[len-1] == '\"');
   if (has_start_quote != has_end_quote || (len == 1 && has_start_quote)) {
     return NULL;
   }
@@ -122,20 +122,20 @@ expand_filename(const char *filename)
 }
 
 /** Return true iff <b>filename</b> is a relative path. */
-int
+bool
 path_is_relative(const char *filename)
 {
   if (filename && filename[0] == '/')
-    return 0;
+    return false;
 #ifdef _WIN32
   else if (filename && filename[0] == '\\')
-    return 0;
+    return false;
   else if (filename && strlen(filename)>3 && TOR_ISALPHA(filename[0]) &&
            filename[1] == ':' && filename[2] == '\\')
-    return 0;
+    return false;
 #endif /* defined(_WIN32) */
   else
-    return 1;
+    return true;
 }
 
 /** Clean up <b>name</b> so that we can use it in a call to "stat".  On Unix,
@@ -176,7 +176,6 @@ int
 get_parent_directory(char *fname)
 {
   char *cp;
-  int at_end = 1;
   tor_assert(fname);
 #ifdef _WIN32
   /* If we start with, say, c:, then don't consider that the start of the path
@@ -192,9 +191,9 @@ get_parent_directory(char *fname)
    * on a unixy platform.
    */
   cp = fname + strlen(fname);
-  at_end = 1;
+  bool at_end = true;
   while (--cp >= fname) {
-    int is_sep = (*cp == '/'
+    bool is_sep = (*cp == '/'
 #ifdef _WIN32
                   || *cp == '\\'
 #endif

@@ -4911,7 +4911,7 @@ mock_write_str_to_file_reset(void)
 }
 
 static int
-mock_write_str_to_file(const char *path, const char *str, int bin)
+mock_write_str_to_file(const char *path, const char *str, bool bin)
 {
   size_t len;
   uint8_t hash[DIGEST256_LEN];

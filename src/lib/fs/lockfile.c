@@ -60,7 +60,7 @@ struct tor_lockfile_t {
  *  and <b>locked_out</b> is set to 1.)
  */
 tor_lockfile_t *
-tor_lockfile_lock(const char *filename, int blocking, int *locked_out)
+tor_lockfile_lock(const char *filename, bool blocking, bool *locked_out)
 {
   tor_lockfile_t *result;
   int fd;

@@ -227,7 +227,7 @@ storage_dir_map(storage_dir_t *d, const char *fname)
 /** Read a file within <b>d</b> into a newly allocated buffer.  Set
  * *<b>sz_out</b> to its size. */
 uint8_t *
-storage_dir_read(storage_dir_t *d, const char *fname, int bin, size_t *sz_out)
+storage_dir_read(storage_dir_t *d, const char *fname, bool bin, size_t *sz_out)
 {
   const int flags = bin ? RFTS_BIN : 0;
 
@@ -274,7 +274,7 @@ find_unused_fname(storage_dir_t *d)
 static int
 storage_dir_save_chunks_to_file(storage_dir_t *d,
                                 const smartlist_t *chunks,
-                                int binary,
+                                bool binary,
                                 char **fname_out)
 {
   uint64_t total_length = 0;
@@ -311,7 +311,7 @@ int
 storage_dir_save_bytes_to_file(storage_dir_t *d,
                                const uint8_t *data,
                                size_t length,
-                               int binary,
+                               bool binary,
                                char **fname_out)
 {
   smartlist_t *chunks = smartlist_new();
@@ -329,7 +329,7 @@ storage_dir_save_bytes_to_file(storage_dir_t *d,
 int
 storage_dir_save_string_to_file(storage_dir_t *d,
                                 const char *str,
-                                int binary,
+                                bool binary,
                                 char **fname_out)
 {
   return storage_dir_save_bytes_to_file(d,

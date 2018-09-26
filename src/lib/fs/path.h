@@ -12,6 +12,7 @@
 #ifndef TOR_PATH_H
 #define TOR_PATH_H
 
+#include <stdbool.h>
 #include "lib/cc/compat_compiler.h"
 
 #ifdef _WIN32
@@ -22,7 +23,7 @@
 
 char *get_unquoted_path(const char *path);
 char *expand_filename(const char *filename);
-int path_is_relative(const char *filename);
+bool path_is_relative(const char *filename);
 void clean_fname_for_stat(char *name);
 int get_parent_directory(char *fname);
 char *make_path_absolute(char *fname);

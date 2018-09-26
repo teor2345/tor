@@ -255,7 +255,7 @@ file_status(const char *fname)
  * with mode 0600.
  */
 MOCK_IMPL(int,
-write_str_to_file,(const char *fname, const char *str, int bin))
+write_str_to_file,(const char *fname, const char *str, bool bin))
 {
 #ifdef _WIN32
   if (!bin && strchr(str, '\r')) {
@@ -397,7 +397,7 @@ start_writing_to_stdio_file(const char *fname, int open_flags, int mode,
  * that file (if abort_write is true) or replaces the target file with
  * the temporary file (if abort_write is false). */
 static int
-finish_writing_to_file_impl(open_file_t *file_data, int abort_write)
+finish_writing_to_file_impl(open_file_t *file_data, bool abort_write)
 {
   int r = 0;
 
@@ -406,12 +406,14 @@ finish_writing_to_file_impl(open_file_t *file_data, int abort_write)
     if (fclose(file_data->stdio_file)) {
       log_warn(LD_FS, "Error closing \"%s\": %s", file_data->filename,
                strerror(errno));
-      abort_write = r = -1;
+      r = -1;
+      abort_write = true;
     }
   } else if (file_data->fd >= 0 && close(file_data->fd) < 0) {
     log_warn(LD_FS, "Error flushing \"%s\": %s", file_data->filename,
              strerror(errno));
-    abort_write = r = -1;
+    r = -1;
+    abort_write = true;
   }
 
   if (file_data->rename_on_close) {
@@ -421,7 +423,8 @@ finish_writing_to_file_impl(open_file_t *file_data, int abort_write)
       if (replace_file(file_data->tempname, file_data->filename)) {
         log_warn(LD_FS, "Error replacing \"%s\": %s", file_data->filename,
                  strerror(errno));
-        abort_write = r = -1;
+        r = -1;
+        abort_write = true;
       }
     }
     if (abort_write) {
@@ -495,8 +498,8 @@ write_chunks_to_file_impl(const char *fname, const smartlist_t *chunks,
  * If <b>no_tempfile</b> is 0 then the file will be written
  * atomically. */
 int
-write_chunks_to_file(const char *fname, const smartlist_t *chunks, int bin,
-                     int no_tempfile)
+write_chunks_to_file(const char *fname, const smartlist_t *chunks, bool bin,
+                     bool no_tempfile)
 {
   int flags = OPEN_FLAGS_REPLACE|(bin?O_BINARY:O_TEXT);
 
@@ -526,7 +529,7 @@ write_bytes_to_file_impl(const char *fname, const char *str, size_t len,
  * string. Instead, we write <b>len</b> bytes, starting at <b>str</b>. */
 MOCK_IMPL(int,
 write_bytes_to_file,(const char *fname, const char *str, size_t len,
-                     int bin))
+                     bool bin))
 {
   return write_bytes_to_file_impl(fname, str, len,
                                   OPEN_FLAGS_REPLACE|(bin?O_BINARY:O_TEXT));
@@ -536,7 +539,7 @@ write_bytes_to_file,(const char *fname, const char *str, size_t len,
  * to the end of the file instead of overwriting it. */
 int
 append_bytes_to_file(const char *fname, const char *str, size_t len,
-                     int bin)
+                     bool bin)
 {
   return write_bytes_to_file_impl(fname, str, len,
                                   OPEN_FLAGS_APPEND|(bin?O_BINARY:O_TEXT));
@@ -546,7 +549,7 @@ append_bytes_to_file(const char *fname, const char *str, size_t len,
     already residing in <b>fname</b>. */
 int
 write_bytes_to_new_file(const char *fname, const char *str, size_t len,
-                        int bin)
+                        bool bin)
 {
   return write_bytes_to_file_impl(fname, str, len,
                                   OPEN_FLAGS_DONT_REPLACE|
@@ -622,7 +625,7 @@ read_file_to_str, (const char *filename, int flags, struct stat *stat_out))
   struct stat statbuf;
   char *string;
   ssize_t r;
-  int bin = flags & RFTS_BIN;
+  bool bin = flags & RFTS_BIN;
 
   tor_assert(filename);
 

@@ -146,7 +146,7 @@ test_ext_or_write_command(void *arg)
 
 static int
 write_bytes_to_file_fail(const char *fname, const char *str, size_t len,
-                         int bin)
+                         bool bin)
 {
   (void) fname;
   (void) str;
