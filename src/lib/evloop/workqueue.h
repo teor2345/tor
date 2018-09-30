@@ -65,6 +65,9 @@ replyqueue_t *replyqueue_new(uint32_t alertsocks_flags);
 tor_socket_t replyqueue_get_socket(replyqueue_t *rq);
 void replyqueue_process(replyqueue_t *queue);
 
+void *threadpool_get_data(threadpool_t *tp);
+void threadpool_set_data(threadpool_t *tp, void *data);
+
 int threadpool_register_reply_event(threadpool_t *tp,
                                     void (*cb)(threadpool_t *tp));
 

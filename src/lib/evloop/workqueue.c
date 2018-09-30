@@ -72,9 +72,8 @@ struct threadpool_s {
   void (*free_update_arg_fn)(void *);
   /** Array of n_threads update arguments. */
   void **update_args;
-  /** Event to notice when another thread has sent a reply. */
-  struct event *reply_event;
-  void (*reply_cb)(threadpool_t *);
+  /** Data stored by callers. */
+  void *data;
 
   /** Number of elements in threads. */
   int n_threads;
@@ -620,6 +619,31 @@ replyqueue_get_socket(replyqueue_t *rq)
   return rq->alert.read_fd;
 }
 
+/**
+ * Return the associated data previously stored with threadpool_set_data().
+ */
+void *
+threadpool_get_data(threadpool_t *tp)
+{
+  return tp->data;
+}
+
+/**
+ * Store associated data in the threadpool that can be retrieved later with
+ * threadpool_get_data().
+ */
+void
+threadpool_set_data(threadpool_t *tp, void *data)
+{
+  tp->data = data;
+}
+
+struct ev_threadpool {
+  /** Event to notice when another thread has sent a reply. */
+  struct event *reply_event;
+  void (*reply_cb)(threadpool_t *);
+};
+
 /** Internal: Run from the libevent mainloop when there is work to handle in
  * the reply queue handler. */
 static void
@@ -629,8 +653,9 @@ reply_event_cb(evutil_socket_t sock, short events, void *arg)
   (void) sock;
   (void) events;
   replyqueue_process(threadpool_get_replyqueue(tp));
-  if (tp->reply_cb)
-    tp->reply_cb(tp);
+  struct ev_threadpool *data = threadpool_get_data(tp);
+  if (data && data->reply_cb)
+    data->reply_cb(tp);
 }
 
 /** Register the threadpool <b>tp</b>'s reply queue with Tor's global
@@ -644,18 +669,22 @@ threadpool_register_reply_event(threadpool_t *tp,
 {
   struct event_base *base = tor_libevent_get_base();
   replyqueue_t *rq = threadpool_get_replyqueue(tp);
+  struct ev_threadpool *data = threadpool_get_data(tp);
 
-  if (tp->reply_event) {
-    tor_event_free(tp->reply_event);
+  if (data) {
+    tor_event_free(data->reply_event);
+    tor_free(data);
   }
-  tp->reply_event = tor_event_new(base,
+  data = tor_malloc(sizeof(*data));
+  data->reply_event = tor_event_new(base,
                                   replyqueue_get_socket(rq),
                                   EV_READ|EV_PERSIST,
                                   reply_event_cb,
                                   tp);
-  tor_assert(tp->reply_event);
-  tp->reply_cb = cb;
-  return event_add(tp->reply_event, NULL);
+  tor_assert(data->reply_event);
+  data->reply_cb = cb;
+  threadpool_set_data(tp, data);
+  return event_add(data->reply_event, NULL);
 }
 
 /**
