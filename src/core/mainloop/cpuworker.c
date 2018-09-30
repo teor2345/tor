@@ -30,7 +30,7 @@
 #include "feature/relay/onion_queue.h"
 #include "feature/stats/rephist.h"
 #include "feature/relay/router.h"
-#include "lib/evloop/workqueue.h"
+#include "lib/evloop/ev-workqueue.h"
 #include "core/crypto/onion_crypto.h"
 
 #include "core/or/or_circuit_st.h"

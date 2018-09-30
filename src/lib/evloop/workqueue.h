@@ -68,7 +68,4 @@ void replyqueue_process(replyqueue_t *queue);
 void *threadpool_get_data(threadpool_t *tp);
 void threadpool_set_data(threadpool_t *tp, void *data);
 
-int threadpool_register_reply_event(threadpool_t *tp,
-                                    void (*cb)(threadpool_t *tp));
-
 #endif /* !defined(TOR_WORKQUEUE_H) */
