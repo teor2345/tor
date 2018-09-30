@@ -609,6 +609,17 @@ replyqueue_new(uint32_t alertsocks_flags)
   return rq;
 }
 
+/**
+ * Return the "read socket" for a given reply queue.  The main thread should
+ * listen for read events on this socket, and call replyqueue_process() every
+ * time it triggers.
+ */
+tor_socket_t
+replyqueue_get_socket(replyqueue_t *rq)
+{
+  return rq->alert.read_fd;
+}
+
 /** Internal: Run from the libevent mainloop when there is work to handle in
  * the reply queue handler. */
 static void
@@ -617,7 +628,7 @@ reply_event_cb(evutil_socket_t sock, short events, void *arg)
   threadpool_t *tp = arg;
   (void) sock;
   (void) events;
-  replyqueue_process(tp->reply_queue);
+  replyqueue_process(threadpool_get_replyqueue(tp));
   if (tp->reply_cb)
     tp->reply_cb(tp);
 }
@@ -632,12 +643,13 @@ threadpool_register_reply_event(threadpool_t *tp,
                                 void (*cb)(threadpool_t *tp))
 {
   struct event_base *base = tor_libevent_get_base();
+  replyqueue_t *rq = threadpool_get_replyqueue(tp);
 
   if (tp->reply_event) {
     tor_event_free(tp->reply_event);
   }
   tp->reply_event = tor_event_new(base,
-                                  tp->reply_queue->alert.read_fd,
+                                  replyqueue_get_socket(rq),
                                   EV_READ|EV_PERSIST,
                                   reply_event_cb,
                                   tp);

@@ -10,6 +10,7 @@
 #define TOR_WORKQUEUE_H
 
 #include "lib/cc/torint.h"
+#include "lib/net/nettypes.h"
 
 /** A replyqueue is used to tell the main thread about the outcome of
  * work that we queued for the workers. */
@@ -61,6 +62,7 @@ threadpool_t *threadpool_new(int n_threads,
 replyqueue_t *threadpool_get_replyqueue(threadpool_t *tp);
 
 replyqueue_t *replyqueue_new(uint32_t alertsocks_flags);
+tor_socket_t replyqueue_get_socket(replyqueue_t *rq);
 void replyqueue_process(replyqueue_t *queue);
 
 int threadpool_register_reply_event(threadpool_t *tp,
