@@ -577,13 +577,6 @@ threadpool_new(int n_threads,
   return pool;
 }
 
-/** Return the reply queue associated with a given thread pool. */
-replyqueue_t *
-threadpool_get_replyqueue(threadpool_t *tp)
-{
-  return tp->reply_queue;
-}
-
 /** Allocate a new reply queue.  Reply queues are used to pass results from
  * worker threads to the main thread.  Since the main thread is running an
  * IO-centric event loop, it needs to get woken up with means other than a
