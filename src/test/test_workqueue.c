@@ -265,8 +265,9 @@ add_n_work_items(threadpool_t *tp, int n)
 static int shutting_down = 0;
 
 static void
-replysock_readable_cb(threadpool_t *tp)
+replysock_readable_cb(void *arg)
 {
+  threadpool_t *tp = arg;
   if (n_received_previously == n_received)
     return;
 
@@ -414,8 +415,7 @@ main(int argc, char **argv)
   tor_libevent_initialize(&evcfg);
 
   {
-    int r = threadpool_register_reply_event(tp,
-                                            replysock_readable_cb);
+    int r = tor_event_register_replyqueue(rq, replysock_readable_cb, tp);
     tor_assert(r == 0);
   }
 

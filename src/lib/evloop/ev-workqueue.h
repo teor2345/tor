@@ -11,7 +11,7 @@
 
 #include "lib/evloop/workqueue.h"
 
-int threadpool_register_reply_event(threadpool_t *tp,
-                                    void (*cb)(threadpool_t *tp));
+int tor_event_register_replyqueue(replyqueue_t *rq,
+                                  void (*cb)(void *), void *arg);
 
 #endif /* !defined(TOR_EV_WORKQUEUE_H) */

@@ -13,10 +13,11 @@
 #include "lib/log/util_bug.h"
 #include <event2/event.h>
 
-struct ev_threadpool {
+struct evwq_event {
   /** Event to notice when another thread has sent a reply. */
   struct event *reply_event;
-  void (*reply_cb)(threadpool_t *);
+  void (*reply_cb)(void *);
+  void *arg;
 };
 
 /** Internal: Run from the libevent mainloop when there is work to handle in
@@ -24,27 +25,25 @@ struct ev_threadpool {
 static void
 reply_event_cb(evutil_socket_t sock, short events, void *arg)
 {
-  threadpool_t *tp = arg;
+  replyqueue_t *rq = arg;
   (void) sock;
   (void) events;
-  replyqueue_process(threadpool_get_replyqueue(tp));
-  struct ev_threadpool *data = threadpool_get_data(tp);
+  replyqueue_process(rq);
+  struct evwq_event *data = replyqueue_get_data(rq);
   if (data && data->reply_cb)
-    data->reply_cb(tp);
+    data->reply_cb(data->arg);
 }
 
-/** Register the threadpool <b>tp</b>'s reply queue with Tor's global
+/** Register the replyqueue <b>rq</b> with Tor's global
  * libevent mainloop. If <b>cb</b> is provided, it is run after
- * each time there is work to process from the reply queue. Return 0 on
- * success, -1 on failure.
+ * each time there is work to process from the reply queue with the
+ * argument <b>arg</b>. Return 0 on success, -1 on failure.
  */
 int
-threadpool_register_reply_event(threadpool_t *tp,
-                                void (*cb)(threadpool_t *tp))
+tor_event_register_replyqueue(replyqueue_t *rq, void (*cb)(void *), void *arg)
 {
   struct event_base *base = tor_libevent_get_base();
-  replyqueue_t *rq = threadpool_get_replyqueue(tp);
-  struct ev_threadpool *data = threadpool_get_data(tp);
+  struct evwq_event *data = replyqueue_get_data(rq);
 
   if (data) {
     tor_event_free(data->reply_event);
@@ -55,9 +54,10 @@ threadpool_register_reply_event(threadpool_t *tp,
                                     replyqueue_get_socket(rq),
                                     EV_READ|EV_PERSIST,
                                     reply_event_cb,
-                                    tp);
+                                    rq);
   tor_assert(data->reply_event);
   data->reply_cb = cb;
-  threadpool_set_data(tp, data);
+  data->arg = arg;
+  replyqueue_set_data(rq, data);
   return event_add(data->reply_event, NULL);
 }

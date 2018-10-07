@@ -70,8 +70,6 @@ struct threadpool_s {
   void (*free_update_arg_fn)(void *);
   /** Array of n_threads update arguments. */
   void **update_args;
-  /** Data stored by callers. */
-  void *data;
 
   /** Number of elements in threads. */
   int n_threads;
@@ -120,6 +118,9 @@ struct replyqueue_s {
 
   /** Mechanism to wake up the main thread when it is receiving answers. */
   alert_sockets_t alert;
+
+  /** Data stored by callers. */
+  void *data;
 };
 
 /** A worker thread represents a single thread in a thread pool. */
@@ -618,22 +619,22 @@ replyqueue_get_socket(replyqueue_t *rq)
 }
 
 /**
- * Return the associated data previously stored with threadpool_set_data().
+ * Return the associated data previously stored with replyqueue_set_data().
  */
 void *
-threadpool_get_data(threadpool_t *tp)
+replyqueue_get_data(replyqueue_t *rq)
 {
-  return tp->data;
+  return rq->data;
 }
 
 /**
  * Store associated data in the threadpool that can be retrieved later with
- * threadpool_get_data().
+ * replyqueue_get_data().
  */
 void
-threadpool_set_data(threadpool_t *tp, void *data)
+replyqueue_set_data(replyqueue_t *rq, void *data)
 {
-  tp->data = data;
+  rq->data = data;
 }
 
 /**

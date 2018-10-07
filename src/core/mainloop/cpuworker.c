@@ -102,7 +102,7 @@ cpu_init(void)
                                 worker_state_free_void,
                                 NULL);
 
-    int r = threadpool_register_reply_event(threadpool, NULL);
+    int r = tor_event_register_replyqueue(replyqueue, NULL, NULL);
 
     tor_assert(r == 0);
   }
