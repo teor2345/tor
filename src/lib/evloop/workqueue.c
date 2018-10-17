@@ -384,14 +384,13 @@ workerthread_new(int32_t lower_priority_chance,
  * be executed strictly in order.
  */
 workqueue_entry_t *
-threadpool_queue_work_priority(threadpool_t *pool,
-                               workqueue_priority_t prio,
+threadpool_queue_work_priority_(threadpool_t *pool,
+                               uint8_t prio,
                                workqueue_reply_t (*fn)(void *, void *),
                                void (*reply_fn)(void *),
                                void *arg)
 {
-  tor_assert(((int)prio) >= WORKQUEUE_PRIORITY_FIRST &&
-             ((int)prio) <= WORKQUEUE_PRIORITY_LAST);
+  tor_assert(((int)prio) <= WORKQUEUE_PRIORITY_LAST);
 
   workqueue_entry_t *ent = workqueue_entry_new(fn, reply_fn, arg);
   ent->on_pool = pool;
