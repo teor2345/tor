@@ -47,7 +47,7 @@ impl Smartlist<String> for Stringlist {
 
             let r_string = match c_string.to_str() {
                 Ok(n) => n,
-                Err(_) => return empty,
+                Err(_) => continue,
             };
 
             rust_list.push(String::from(r_string));

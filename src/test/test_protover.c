@@ -174,6 +174,14 @@ test_protover_vote(void *arg)
   tt_str_op(result, OP_EQ, "");
   tor_free(result);
 
+  /* Ignore bad votes but count the valid ones. */
+  smartlist_clear(lst);
+  smartlist_add(lst, (void*) "\x80 Foo=1-2");
+  smartlist_add(lst, (void*) "Bar=1");
+  result = protover_compute_vote(lst, 1);
+  tt_str_op(result, OP_EQ, "Bar=1");
+  tor_free(result);
+
   /* This fails, since "-0" is not valid. */
   smartlist_clear(lst);
   smartlist_add(lst, (void*) "Faux=-0");
