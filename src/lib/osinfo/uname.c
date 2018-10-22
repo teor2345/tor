@@ -50,18 +50,23 @@ get_uname,(void))
         static struct {
           unsigned major; unsigned minor; const char *version;
         } win_version_table[] = {
-          { 6, 2, "Windows 8" },
-          { 6, 1, "Windows 7" },
-          { 6, 0, "Windows Vista" },
-          { 5, 2, "Windows Server 2003" },
-          { 5, 1, "Windows XP" },
-          { 5, 0, "Windows 2000" },
-          /* { 4, 0, "Windows NT 4.0" }, */
-          { 4, 90, "Windows Me" },
-          { 4, 10, "Windows 98" },
-          /* { 4, 0, "Windows 95" } */
-          { 3, 51, "Windows NT 3.51" },
-          { 0, 0, NULL }
+          /* As of Windows 8.1, GetVersionEx returns Windows 8 (6.2) for
+           * applications without an app compatibility manifest. tor doesn't
+           * provide a manifest in its distribution. */
+          { 10,  0, "Windows 10 or later" },
+          {  6,  3, "Windows 8.1 or later" },
+          {  6,  2, "Windows 8 or later" },
+          {  6,  1, "Windows 7" },
+          {  6,  0, "Windows Vista" },
+          {  5,  2, "Windows Server 2003" },
+          {  5,  1, "Windows XP" },
+          {  5,  0, "Windows 2000" },
+          /* {  4,  0, "Windows NT 4.0" }, */
+          {  4, 90, "Windows Me" },
+          {  4, 10, "Windows 98" },
+          /* {  4,  0, "Windows 95" } */
+          {  3, 51, "Windows NT 3.51" },
+          {  0,  0, NULL }
         };
         memset(&info, 0, sizeof(info));
         info.dwOSVersionInfoSize = sizeof(info);
@@ -88,8 +93,8 @@ get_uname,(void))
         if (plat) {
           strlcpy(uname_result, plat, sizeof(uname_result));
         } else {
-          if (info.dwMajorVersion > 6 ||
-              (info.dwMajorVersion==6 && info.dwMinorVersion>2))
+          if (info.dwMajorVersion > 10 ||
+              (info.dwMajorVersion == 10 && info.dwMinorVersion > 0))
             tor_snprintf(uname_result, sizeof(uname_result),
                          "Very recent version of Windows [major=%d,minor=%d]",
                          (int)info.dwMajorVersion,(int)info.dwMinorVersion);
