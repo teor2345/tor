@@ -1,0 +1,6 @@
+  o Minor bugfixes (Windows):
+    - Correctly identify Windows 8.1 and Windows 10 (or later) when tor
+      is launched with a Windows application compatibility manifest for these
+      versions of Windows. When tor is not launched with a manifest
+      (the default), report "Windows 8 or later".
+      Fixes bug 28096; bugfix on 0.2.2.34; reported by Keifer Bly.
