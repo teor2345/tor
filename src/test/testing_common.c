@@ -297,6 +297,9 @@ main(int c, const char **v)
   init_protocol_warning_severity_level();
 
   options->command = CMD_RUN_UNITTESTS;
+
+  printf("Unit tests for %s\n", get_library_versions());
+
   if (crypto_global_init(accel_crypto, NULL, NULL)) {
     printf("Can't initialize crypto subsystem; exiting.\n");
     return 1;
