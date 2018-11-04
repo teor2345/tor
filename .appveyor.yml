@@ -58,6 +58,7 @@ test_script:
             $env:Path = $buildpath -join ';'
             Set-Location "${env:build}"
             Execute-Bash "VERBOSE=1 make -j2 check"
+            Execute-Bash "cat test-suite.log || true"
     }
 
 on_failure:
