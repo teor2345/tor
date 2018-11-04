@@ -47,6 +47,7 @@ get_uname,(void))
         OSVERSIONINFOEX info;
         int i;
         const char *plat = NULL;
+        /* This table must be sorted in descending order. */
         static struct {
           unsigned major; unsigned minor; const char *version;
         } win_version_table[] = {
@@ -93,8 +94,9 @@ get_uname,(void))
         if (plat) {
           strlcpy(uname_result, plat, sizeof(uname_result));
         } else {
-          if (info.dwMajorVersion > 10 ||
-              (info.dwMajorVersion == 10 && info.dwMinorVersion > 0))
+          if (info.dwMajorVersion > win_version_table[0].major ||
+              (info.dwMajorVersion == win_version_table[0].major &&
+               info.dwMinorVersion > win_version_table[0].minor))
             tor_snprintf(uname_result, sizeof(uname_result),
                          "Very recent version of Windows [major=%d,minor=%d]",
                          (int)info.dwMajorVersion,(int)info.dwMinorVersion);
