@@ -2317,8 +2317,17 @@ router_build_fresh_routerinfo(void)
     smartlist_uniq_strings(ri->declared_family);
   }
 
-  ri->purpose =
-    options->BridgeRelay ? ROUTER_PURPOSE_BRIDGE : ROUTER_PURPOSE_GENERAL;
+  if (options->BridgeRelay) {
+    ri->purpose = ROUTER_PURPOSE_BRIDGE;
+    /* Bridges shouldn't be able to send their descriptors unencrypted,
+     anyway, since they don't have a DirPort, and always connect to the
+     bridge authority anonymously.  But just in case they somehow think of
+     sending them on an unencrypted connection, don't allow them to try. */
+    ri->cache_info.send_unencrypted = 0;
+  } else {
+    ri->purpose = ROUTER_PURPOSE_GENERAL;
+    ri->cache_info.send_unencrypted = 1;
+  }
 
   goto done;
 
@@ -2339,6 +2348,7 @@ static extrainfo_t *
 router_build_fresh_extrainfo(const routerinfo_t *ri)
 {
   extrainfo_t *ei = NULL;
+  const or_options_t *options = get_options();
 
   if (BUG(!ri))
     return NULL;
@@ -2346,13 +2356,20 @@ router_build_fresh_extrainfo(const routerinfo_t *ri)
   /* Now generate the extrainfo. */
   ei = tor_malloc_zero(sizeof(extrainfo_t));
   ei->cache_info.is_extrainfo = 1;
-  strlcpy(ei->nickname, get_options()->Nickname, sizeof(ei->nickname));
+  strlcpy(ei->nickname, options->Nickname, sizeof(ei->nickname));
   ei->cache_info.published_on = ri->cache_info.published_on;
   ei->cache_info.signing_key_cert =
     tor_cert_dup(get_master_signing_key_cert());
 
   memcpy(ei->cache_info.identity_digest, ri->cache_info.identity_digest,
          DIGEST_LEN);
+
+  if (options->BridgeRelay) {
+    /* See note in router_build_fresh_routerinfo(). */
+    ei->cache_info.send_unencrypted = 0;
+  } else {
+    ei->cache_info.send_unencrypted = 1;
+  }
 
   return ei;
 }
@@ -2445,28 +2462,6 @@ router_update_routerinfo_descriptor_body(routerinfo_t *ri)
   return 0;
 }
 
-/** Set the cache_info.send_unencrypted fields in ri and ei.
- */
-static void
-router_update_info_send_unencrypted(routerinfo_t *ri, extrainfo_t *ei)
-{
-  const or_options_t *options = get_options();
-
-  if (options->BridgeRelay) {
-    /* Bridges shouldn't be able to send their descriptors unencrypted,
-       anyway, since they don't have a DirPort, and always connect to the
-       bridge authority anonymously.  But just in case they somehow think of
-       sending them on an unencrypted connection, don't allow them to try. */
-    ri->cache_info.send_unencrypted = 0;
-    if (ei)
-      ei->cache_info.send_unencrypted = 0;
-  } else {
-    ri->cache_info.send_unencrypted = 1;
-    if (ei)
-      ei->cache_info.send_unencrypted = 1;
-  }
-}
-
 /** Build a fresh routerinfo, signed server descriptor, and extra-info document
  * for this OR. Set r to the generated routerinfo, e to the generated
  * extra-info document. Return 0 on success, -1 on temporary error. Failure to
@@ -2508,10 +2503,6 @@ router_build_fresh_descriptor(routerinfo_t **r, extrainfo_t **e)
   result = router_update_routerinfo_descriptor_body(ri);
   if (result < 0)
     goto err;
-
-  /* TODO: fold into router_update_extrainfo_descriptor_body() and
-   * router_update_routerinfo_descriptor_body() ? */
-  router_update_info_send_unencrypted(ri, ei);
 
   if (ei) {
     tor_assert(!
