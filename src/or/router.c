@@ -2505,9 +2505,10 @@ router_build_fresh_descriptor(routerinfo_t **r, extrainfo_t **e)
     goto err;
 
   if (ei) {
-    tor_assert(!
-          routerinfo_incompatible_with_extrainfo(ri->identity_pkey, ei,
-                                                 &ri->cache_info, NULL));
+     if (BUG(routerinfo_incompatible_with_extrainfo(ri->identity_pkey, ei,
+                                                    &ri->cache_info, NULL))) {
+       goto err;
+     }
   }
 
   goto done;
