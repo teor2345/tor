@@ -2160,14 +2160,14 @@ router_check_descriptor_address_consistency(uint32_t ipv4h_desc_addr)
                                                    CONN_TYPE_DIR_LISTENER);
 }
 
-/** Allocate and return a fresh routerinfo for this OR, without any of the
- * fields that depend on the corresponding extrainfo.
+/** Allocate and return a fresh, unsigned routerinfo for this OR, without any
+ * of the fields that depend on the corresponding extra-info.
  *
  * Returns NULL on temporary error.
  * Caller is responsible for freeing the generated routerinfo.
  */
 static routerinfo_t *
-router_build_fresh_routerinfo(void)
+router_build_fresh_unsigned_routerinfo(void)
 {
   routerinfo_t *ri = NULL;
   uint32_t addr;
@@ -2339,13 +2339,14 @@ router_build_fresh_routerinfo(void)
   return ri;
 }
 
-/** Allocate and return an extrainfo for this OR, based on the routerinfo ri.
+/** Allocate and return a fresh, unsigned extra-info for this OR, based on the
+ * routerinfo ri.
  *
  * If ri is NULL, logs a BUG() warning and returns NULL.
- * Caller is responsible for freeing the generated extrainfo.
+ * Caller is responsible for freeing the generated extra-info.
  */
 static extrainfo_t *
-router_build_fresh_extrainfo(const routerinfo_t *ri)
+router_build_fresh_unsigned_extrainfo(const routerinfo_t *ri)
 {
   extrainfo_t *ei = NULL;
   const or_options_t *options = get_options();
@@ -2353,7 +2354,7 @@ router_build_fresh_extrainfo(const routerinfo_t *ri)
   if (BUG(!ri))
     return NULL;
 
-  /* Now generate the extrainfo. */
+  /* Now generate the extra-info. */
   ei = tor_malloc_zero(sizeof(extrainfo_t));
   ei->cache_info.is_extrainfo = 1;
   strlcpy(ei->nickname, options->Nickname, sizeof(ei->nickname));
@@ -2374,14 +2375,17 @@ router_build_fresh_extrainfo(const routerinfo_t *ri)
   return ei;
 }
 
-/** Create a signed descriptor for ei, and add it to ei->cache_info.
+/** Dump the extra-info descriptor body for ei, sign it, and add the body and
+ * signature to ei->cache_info. Note that the extra-info body is determined by
+ * ei, and some additional config and statistics state: see
+ * extrainfo_dump_to_string() for details.
  *
  * Return 0 on success, -1 on temporary error.
  * If ei is NULL, logs a BUG() warning and returns -1.
  * On error, ei->cache_info is not modified.
  */
 static int
-router_update_extrainfo_descriptor_body(extrainfo_t *ei)
+router_dump_and_sign_extrainfo_descriptor_body(extrainfo_t *ei)
 {
   if (BUG(!ei))
     return -1;
@@ -2407,14 +2411,14 @@ router_update_extrainfo_descriptor_body(extrainfo_t *ei)
   return 0;
 }
 
-/** Allocate and return a fresh, signed extrainfo for this OR, based on the
+/** Allocate and return a fresh, signed extra-info for this OR, based on the
  * routerinfo ri.
  *
  * If ri is NULL, logs a BUG() warning and returns NULL.
- * Caller is responsible for freeing the generated extrainfo.
+ * Caller is responsible for freeing the generated extra-info.
  */
 static extrainfo_t *
-router_build_signed_extrainfo(const routerinfo_t *ri)
+router_build_fresh_signed_extrainfo(const routerinfo_t *ri)
 {
   int result = -1;
   extrainfo_t *ei = NULL;
@@ -2422,12 +2426,12 @@ router_build_signed_extrainfo(const routerinfo_t *ri)
   if (BUG(!ri))
     return NULL;
 
-  ei = router_build_fresh_extrainfo(ri);
+  ei = router_build_fresh_unsigned_extrainfo(ri);
   /* router_build_fresh_extrainfo() should not fail. */
   if (BUG(!ei))
     goto err;
 
-  result = router_update_extrainfo_descriptor_body(ei);
+  result = router_dump_and_sign_extrainfo_descriptor_body(ei);
   if (result < 0)
     goto err;
 
@@ -2465,14 +2469,16 @@ router_update_routerinfo_from_extrainfo(routerinfo_t *ri,
          DIGEST256_LEN);
 }
 
-/** Create a signed descriptor for ri, and add it to ri->cache_info.
+/** Dump the descriptor body for ri, sign it, and add the body and signature to
+ * ri->cache_info. Note that the descriptor body is determined by ri, and some
+ * additional config and state: see router_dump_router_to_string() for details.
  *
  * Return 0 on success, return -1 on temporary error.
  * If ri is NULL, logs a BUG() warning and returns -1.
  * On error, ri->cache_info is not modified.
  */
 static int
-router_update_routerinfo_descriptor_body(routerinfo_t *ri)
+router_dump_and_sign_routerinfo_descriptor_body(routerinfo_t *ri)
 {
   if (BUG(!ri))
     return -1;
@@ -2496,12 +2502,14 @@ router_update_routerinfo_descriptor_body(routerinfo_t *ri)
   return 0;
 }
 
-/** Build a fresh routerinfo, signed server descriptor, and extra-info document
- * for this OR. Set r to the generated routerinfo, e to the generated
- * extra-info document. Return 0 on success, -1 on temporary error. Failure to
- * generate an extra-info document is not an error and is indicated by setting
- * e to NULL. Caller is responsible for freeing generated documents if 0 is
- * returned.
+/** Build a fresh routerinfo, signed server descriptor, and signed extra-info
+ * document for this OR.
+ *
+ * Set r to the generated routerinfo, e to the generated extra-info document.
+ * Failure to generate an extra-info document is not an error and is indicated
+ * by setting e to NULL.
+ * Return 0 on success, -1 on temporary error.
+ * Caller is responsible for freeing generated documents if 0 is returned.
  */
 int
 router_build_fresh_descriptor(routerinfo_t **r, extrainfo_t **e)
@@ -2510,18 +2518,18 @@ router_build_fresh_descriptor(routerinfo_t **r, extrainfo_t **e)
   routerinfo_t *ri = NULL;
   extrainfo_t *ei = NULL;
 
-  ri = router_build_fresh_routerinfo();
+  ri = router_build_fresh_unsigned_routerinfo();
   if (!ri)
     goto err;
 
-  ei = router_build_signed_extrainfo(ri);
+  ei = router_build_fresh_signed_extrainfo(ri);
 
   /* Failing to create an ei is not an error. */
   if (ei) {
     router_update_routerinfo_from_extrainfo(ri, ei);
   }
 
-  result = router_update_routerinfo_descriptor_body(ri);
+  result = router_dump_and_sign_routerinfo_descriptor_body(ri);
   if (result < 0)
     goto err;
 
@@ -2871,6 +2879,10 @@ get_platform_str(char *platform, size_t len)
 /** OR only: Given a routerinfo for this router, and an identity key to sign
  * with, encode the routerinfo as a signed server descriptor and return a new
  * string encoding the result, or NULL on failure.
+ *
+ * In addition to the fields in router, this function calls
+ * onion_key_lifetime(), get_options(), and we_are_hibernating(), and uses the
+ * results to populate some fields in the descriptor.
  */
 char *
 router_dump_router_to_string(routerinfo_t *router,
@@ -3349,9 +3361,9 @@ load_stats_file(const char *filename, const char *end_line, time_t now,
   return r;
 }
 
-/** Write the contents of <b>extrainfo</b> and aggregated statistics to
- * *<b>s_out</b>, signing them with <b>ident_key</b>. Return 0 on
- * success, negative on failure. */
+/** Write the contents of <b>extrainfo</b>, aggregated statistics, and related
+ * configuration data to * *<b>s_out</b>, signing them with <b>ident_key</b>.
+ * Return 0 on success, negative on failure. */
 int
 extrainfo_dump_to_string(char **s_out, extrainfo_t *extrainfo,
                          crypto_pk_t *ident_key,
