@@ -1259,7 +1259,12 @@ static bw_array_t *
 bw_array_new(void)
 {
   bw_array_t *b = bw_array_alloc();
-  bw_array_reset(b);
+#if 0
+  /* get_options() asserts rather than returning NULL.
+   * TODO: reset the array in options_act(). */
+  if (get_options())
+    bw_array_reset(b);
+#endif
   return b;
 }
 
