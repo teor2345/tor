@@ -71,7 +71,7 @@ round_to_power_of_2(uint64_t u64)
 int
 n_bits_set_u8(uint8_t v)
 {
-  static const int nybble_table[] = {
+  static const uint8_t nybble_table[] = {
     0, /* 0000 */
     1, /* 0001 */
     1, /* 0010 */

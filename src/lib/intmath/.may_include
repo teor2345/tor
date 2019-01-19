@@ -2,3 +2,4 @@ orconfig.h
 lib/cc/*.h
 lib/err/*.h
 lib/intmath/*.h
+lib/testsupport/*.h

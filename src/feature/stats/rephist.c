@@ -978,22 +978,31 @@ rep_hist_load_mtbf_data(time_t now)
  *  We keep the same rolling measure in a test network, so we don't have to
  *  dynamically allocate memory, or change loop iterations. */
 #define NUM_SECS_ROLLING_MEASURE 10
-/** How large are the intervals for which we track and report bandwidth use? */
+/** How large are the intervals for which we track and report bandwidth use?
+ *  In non-test networks. */
 #define NUM_SECS_BW_SUM_INTERVAL (24*60*60)
 /** How far in the past do we remember and publish bandwidth use?
-  * Only used to calculate NUM_TOTALS. */
+  * In non-Test networks. Only used to calculate NUM_TOTALS. */
 #define NUM_SECS_BW_SUM_IS_VALID (5*24*60*60)
 /** How many bandwidth usage intervals do we remember? (derived).
  *  We keep the same number of totals in a test network, so we don't have to
  *  dynamically allocate memory, or change loop iterations. */
 #define NUM_TOTALS (NUM_SECS_BW_SUM_IS_VALID/NUM_SECS_BW_SUM_INTERVAL)
+/** If the current interval is too long or too short by
+ * NUM_SECS_BW_SUM_INTERVAL[_TEST] / BW_SUM_INTERVAL_SKEW_TOLERANCE_FACTOR,
+ * reset all bandwidth statistics.
+ * Use a power of 2 for efficient division on platforms where division is
+ * expensive. */
+#define BW_SUM_INTERVAL_SKEW_TOLERANCE_FACTOR 2
 
 /** Define the TestingTorNetwork values:
  *  We choose the lowest possible interval, so that slower chutney networks
- *  will test the code that discards old values. */
+ *  will test the code that discards old values.
+ *  (Using 2*NUM_SECS_ROLLING_MEASURE would also test the aggregation code,
+ *   but 5*2*NUM_SECS_ROLLING_MEASURE is too slow for chutney.) */
 #define NUM_SECS_BW_SUM_INTERVAL_TEST NUM_SECS_ROLLING_MEASURE
 /** And derive the bandwidth sum validity period for test networks.
- * This macro is unused, but it is included for documentation. */
+ * This macro is unused, but it is included for documentation purposes. */
 #define NUM_SECS_BW_SUM_IS_VALID_TEST \
   (NUM_TOTALS*NUM_SECS_BW_SUM_INTERVAL_TEST)
 
@@ -1006,7 +1015,8 @@ struct bw_array_t {
   uint64_t obs[NUM_SECS_ROLLING_MEASURE];
   int cur_obs_idx; /**< Current position in obs. */
   /** Time represented in obs[cur_obs_idx]
-   *  0 if we don't have enough information to set the next_period. */
+   *  0 if we don't know if TestingTorNetwork is set, so we haven't set the
+   *  next_period. */
   time_t cur_obs_time;
   uint64_t total_obs; /**< Total for all members of obs except
                        * obs[cur_obs_idx] */
@@ -1016,7 +1026,8 @@ struct bw_array_t {
                              * period. */
 
   /** When does the next period begin?
-   *  0 if we don't have enough information to set the next_period. */
+   *  0 if we don't know if TestingTorNetwork is set, so we haven't set the
+   *  next_period. */
   time_t next_period;
   /** Where in 'maxima' should the maximum bandwidth usage for the current
    * period be stored? */
@@ -1032,6 +1043,8 @@ struct bw_array_t {
   uint64_t totals[NUM_TOTALS];
 };
 
+static void bw_array_reset(bw_array_t *b);
+
 /* Returns the bandwidth sum interval, based on
  * get_options()->TestingTorNetwork.
  *
@@ -1045,17 +1058,6 @@ get_num_secs_bw_sum_interval(void)
     return NUM_SECS_BW_SUM_INTERVAL;
 }
 
-/** Allocate and return a new bw_array. */
-static bw_array_t *
-bw_array_alloc(void)
-{
-  bw_array_t *b;
-  time_t start;
-  b = tor_malloc_zero(sizeof(bw_array_t));
-  rephist_total_alloc += sizeof(bw_array_t);
-  return b;
-}
-
 /** Return the initial value of next_period, for the start time <b>start</b>.
  */
 static time_t
@@ -1064,39 +1066,23 @@ bw_array_get_next_period(time_t start)
   return start + get_num_secs_bw_sum_interval();
 }
 
-
-/** Initialize a new or existing bw_array b. */
-static void
-bw_array_reset(bw_array_t *b)
-{
-  memset(b, 0, sizeof(bw_array_t));
-  start = time(NULL);
-  b->cur_obs_time = start;
-  b->next_period = bw_array_get_next_period(start);
-}
-
-/** Allocate, initialize, and return a new bw_array. */
-static bw_array_t *
-bw_array_new(void)
-{
-  bw_array_t *b = bw_array_alloc();
-  bw_array_reset(b);
-  return b;
-}
-
 static bool
 clock_jump_is_outside_tolerance(time_t seconds_elapsed)
 {
-  /* If we're out more than half an interval, we might as well reset. */
-  time_t tolerance = get_num_secs_bw_sum_interval()/2;
+  /* If we're out by a large part of an interval, we might as well reset,
+   * because our statistics are likely useless anyway. */
+  time_t tolerance = (get_num_secs_bw_sum_interval()/
+                      BW_SUM_INTERVAL_SKEW_TOLERANCE_FACTOR);
   return seconds_elapsed > tolerance || seconds_elapsed < -tolerance;
 }
 
 /** Our clock just jumped by at least <b>seconds_elapsed</b>. If
  *  seconds_elapsed is large enough, assume our bandwidth statistics are wrong.
- *  Log a warning to the user if outside_tolerance, otherwise, log a notice.
+ *  Log a warning to the user if a relay is outside_tolerance, otherwise, log a
+ *  notice.
  *
- *  circuit_note_clock_jumped() will deal with any circuits that have failed.
+ *  circuit_note_clock_jumped() will deal with any circuits that have failed,
+ *  and send a clock skew control event if needed.
  */
 static void
 rephist_note_clock_jumped(time_t seconds_elapsed, bool outside_tolerance)
@@ -1105,30 +1091,28 @@ rephist_note_clock_jumped(time_t seconds_elapsed, bool outside_tolerance)
   if (!outside_tolerance)
     severity = LOG_NOTICE;
 
-  tor_log(severity, LD_GENERAL,
-          "Your system clock just jumped at least %"PRId64" seconds %s; %s.",
-          seconds_elapsed >=0 ? seconds_elapsed : -seconds_elapsedå,
+  tor_log(severity, LD_HIST,
+          "Your system clock just jumped at least %" PRIu64 " seconds %s; %s.",
+          (uint64_t)(seconds_elapsed >=0 ? seconds_elapsed : -seconds_elapsed),
           seconds_elapsed >=0 ? "forward" : "backward",
           outside_tolerance ?
-            "assuming existing bandwidth statistics are incorrect" :
-            "keeping existing bandwidth statistics");
+          "assuming existing bandwidth statistics are incorrect" :
+          "keeping existing bandwidth statistics");
 }
 
-/** Check and reset b->next_period if needed. Must be called from every
- *  entry point (non-static function) before it uses each bwarray_t.
- *  For convenience, we call this function at the start of the first generic
- *  bwarray_t function called from each entry point, which saves us looping
- *  through the 4 different bandwidth arrays.
+/** Check if b needs to be reset.
  *
  *  Checks b->next_period:
- *   - If it is is unset, reset b.
- *   - If it is unreasonably large, log a clock jump warning, and reset b.
- *   - If it is unreasonably small, log a clock jump warning, and reset b.
- * TODO: reset the array when TestingTorNetwork changes, or we'll log these
- *       warnings when relay operators toggle TestingTorNetwork. */
-static void
-bw_array_reset_if_needed(bw_array_t *b)
+ *   - If it is is unset, return true.
+ *   - If it is unreasonably large, log a clock jump warning, and return true.
+ *   - If it is unreasonably small, log a clock jump warning, and return true.
+ */
+static bool
+bw_array_needs_reset(const bw_array_t *b)
 {
+  if (BUG(!b))
+    return 0;
+
   time_t now = time(NULL);
   time_t max_next_period = bw_array_get_next_period(now);
   /* How much did the clock jump by?
@@ -1137,24 +1121,41 @@ bw_array_reset_if_needed(bw_array_t *b)
   time_t min_jump = 0;
   bool reset = 0;
 
-  if (!b->next_period) {
-    /* next_period has not been set yet */
+  if (!b->next_period || !b->cur_obs_time) {
+    /* next_period has not been set yet. */
     reset = 1;
   } else if (b->next_period > max_next_period) {
     /* next_period is larger than it could possibly be, if we reset it right
-     * now. So the clock has jumped backwards. */
+     * now. So the clock has jumped backwards by at least this much. */
     min_jump = max_next_period - b->next_period;
     reset = clock_jump_is_outside_tolerance(min_jump);
     rephist_note_clock_jumped(min_jump, reset);
   } else if (b->next_period < now) {
     /* next_period is less than the current time. So the clock has jumped
-     * forwards. */
+     * forwards by at least this much. */
     min_jump = now - b->next_period;
     reset = clock_jump_is_outside_tolerance(min_jump);
     rephist_note_clock_jumped(min_jump, reset);
   }
 
-  if (reset)
+  return reset;
+}
+
+/** Check and reset b if needed. Must be called from every
+ *  entry point (non-static function) before it uses each bwarray_t.
+ *  For convenience, we call this function at the start of the first generic
+ *  bwarray_t function called from each entry point, which saves us looping
+ *  through the 4 different bandwidth arrays.
+ *
+ * TODO: reset the array when TestingTorNetwork changes, or we'll log these
+ *       warnings when relay operators toggle TestingTorNetwork. */
+static void
+bw_array_reset_if_needed(bw_array_t *b)
+{
+  if (BUG(!b))
+    return;
+
+  if (bw_array_needs_reset(b))
     bw_array_reset(b);
 }
 
@@ -1186,7 +1187,8 @@ advance_obs(bw_array_t *b)
   uint64_t total;
 
   /* Calculate the total bandwidth for the last NUM_SECS_ROLLING_MEASURE
-   * seconds; adjust max_total as needed.*/
+   * seconds; adjust max_total as needed.
+   * This sum won't overflow until bandwidths exceed 1 EBps. */
   total = b->total_obs + b->obs[b->cur_obs_idx];
   if (total > b->max_total)
     b->max_total = total;
@@ -1223,8 +1225,42 @@ add_obs(bw_array_t *b, time_t when, uint64_t n)
     advance_obs(b);
   }
 
+  /* This sum won't overflow until bandwidths exceed 16 EBps. */
   b->obs[b->cur_obs_idx] += n;
+  /* This sum won't overflow until bandwidths exceed 64 TBps. */
   b->total_in_period += n;
+}
+
+/** Allocate and return a new bw_array. */
+static bw_array_t *
+bw_array_alloc(void)
+{
+  bw_array_t *b;
+  b = tor_malloc_zero(sizeof(bw_array_t));
+  rephist_total_alloc += sizeof(bw_array_t);
+  return b;
+}
+
+/** Initialize a new or existing bw_array b. */
+static void
+bw_array_reset(bw_array_t *b)
+{
+  if (BUG(!b))
+    return;
+
+  memset(b, 0, sizeof(bw_array_t));
+  time_t start = time(NULL);
+  b->cur_obs_time = start;
+  b->next_period = bw_array_get_next_period(start);
+}
+
+/** Allocate, initialize, and return a new bw_array. */
+static bw_array_t *
+bw_array_new(void)
+{
+  bw_array_t *b = bw_array_alloc();
+  bw_array_reset(b);
+  return b;
 }
 
 #define bw_array_free(val) \
@@ -1364,7 +1400,19 @@ rep_hist_bandwidth_assess,(void))
 static size_t
 rep_hist_fill_bandwidth_history(char *buf, size_t len, const bw_array_t *b)
 {
-  bw_array_reset_if_needed(b);
+  if (BUG(!buf) || BUG(!len) || BUG(!b)) {
+    return 0;
+  }
+
+  /* We should have reset b when the option was set, and every time bandwidth
+   * was updated. But maybe the clock just jumped? */
+  if (bw_array_needs_reset(b)) {
+    log_notice(LD_HIST,
+               "Bandwidth statistics are out of date, skipping in extra-info. "
+               "We will reset bandwidth next time it is updated. "
+               "Did your clock jump?");
+    return 0;
+  }
 
   char *cp = buf;
   int i, n;
@@ -1383,21 +1431,26 @@ rep_hist_fill_bandwidth_history(char *buf, size_t len, const bw_array_t *b)
   if (options->RelayBandwidthRate) {
     /* We don't want to report that we used more bandwidth than the max we're
      * willing to relay; otherwise everybody will know how much traffic
-     * we used ourself. */
-    cutoff = options->RelayBandwidthRate * get_num_secs_bw_sum_interval();
+     * we used ourself.
+     * This sum won't overflow unless the configured RelayBandwidthRate exceeds
+     * 64 TBps. The checks in options_validate() should stop this happening,
+     * but use the safe mul function anyway. */
+    cutoff = tor_mul_u64_nowrap(options->RelayBandwidthRate,
+                                get_num_secs_bw_sum_interval());
   } else {
     cutoff = UINT64_MAX;
   }
 
   for (n=0; n<b->num_maxes_set; ++n,++i) {
-    uint64_t total;
+    uint64_t total = b->totals[i];
     if (i >= NUM_TOTALS)
       i -= NUM_TOTALS;
     tor_assert(i < NUM_TOTALS);
-    /* Round the bandwidth used down to the nearest 1k. */
-    total = b->totals[i] & ~0x3ff;
     if (total > cutoff)
       total = cutoff;
+    /* Round the bandwidth used down to the nearest 1k, *after* clamping it,
+     * to avoid leaking if we are over or under our cutoff. */
+    total = total & ~0x3ff;
 
     if (n==(b->num_maxes_set-1))
       tor_snprintf(cp, len-(cp-buf), "%"PRIu64, (total));
@@ -1477,7 +1530,23 @@ rep_hist_update_bwhist_state_section(or_state_t *state,
                                      time_t *s_begins,
                                      int *s_interval)
 {
-  bw_array_reset_if_needed(b);
+  if (BUG(!state) || BUG(!b)) {
+    return;
+  }
+
+  if (BUG(!s_values) || BUG(!s_maxima) || BUG(!s_begins) || BUG(!s_interval)) {
+    return;
+  }
+
+  /* We should have reset b when the option was set, and every time bandwidth
+   * was updated. But maybe the clock just jumped? */
+  if (bw_array_needs_reset(b)) {
+    log_notice(LD_HIST,
+               "Bandwidth statistics are out of date, skipping in state file. "
+               "We will reset bandwidth next time it is updated. "
+               "Did your clock jump?");
+    return;
+  }
 
   int i,j;
   uint64_t maxval;
@@ -1493,15 +1562,13 @@ rep_hist_update_bwhist_state_section(or_state_t *state,
   if (! server_mode(get_options())) {
     /* Clients don't need to store bandwidth history persistently;
      * force these values to the defaults. */
-    /* FFFF we should pull the default out of config.c's state table,
-     * so we don't have two defaults. */
-    if (*s_begins != 0 || *s_interval != 900) {
+    if (*s_begins != 0 || *s_interval != get_num_secs_bw_sum_interval()) {
       time_t now = time(NULL);
       time_t save_at = get_options()->AvoidDiskWrites ? now+3600 : now+600;
       or_state_mark_dirty(state, save_at);
     }
     *s_begins = 0;
-    *s_interval = 900;
+    *s_interval = get_num_secs_bw_sum_interval();
     *s_values = smartlist_new();
     *s_maxima = smartlist_new();
     return;
@@ -1548,7 +1615,15 @@ rep_hist_update_state(or_state_t *state)
   UPDATE(dir_read_array, DirRead);
 
   if (server_mode(get_options())) {
-    or_state_mark_dirty(state, time(NULL)+(2*3600));
+    /* Match the state period to the heartbeat or extra-info descriptor period.
+     * Otherwise, we leak more info in our state file than other files.
+     * Also store state whenever there could possibly be a new bandwidth sum.
+     */
+    time_t min_interval = (get_num_secs_bw_sum_interval()/
+                           BW_SUM_INTERVAL_SKEW_TOLERANCE_FACTOR);
+    time_t interval = MIN(min_interval,
+                          get_options()->HeartbeatPeriod);
+    or_state_mark_dirty(state, time(NULL)+interval);
   }
 #undef UPDATE
 }
@@ -1618,7 +1693,9 @@ rep_hist_load_bwhist_state_section(bw_array_t *b,
           }
           b->max_total = mv;
           /* This will result in some fairly choppy history if s_interval
-           * is not the same as get_num_secs_bw_sum_interval(). XXXX */
+           * is not the same as get_num_secs_bw_sum_interval().
+           * In #29129, we'll remove bandwidth statistics in favour of
+           * PrivCount, and this issue will go away. */
           start += actual_interval_len;
         }
     } SMARTLIST_FOREACH_END(cp);
