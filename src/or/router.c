@@ -2342,6 +2342,9 @@ router_build_fresh_unsigned_routerinfo(void)
 /** Allocate and return a fresh, unsigned extra-info for this OR, based on the
  * routerinfo ri.
  *
+ * Uses options->Nickname to set the nickname, and options->BridgeRelay to set
+ * ei->cache_info.send_unencrypted.
+ *
  * If ri is NULL, logs a BUG() warning and returns NULL.
  * Caller is responsible for freeing the generated extra-info.
  */
@@ -2427,7 +2430,7 @@ router_build_fresh_signed_extrainfo(const routerinfo_t *ri)
     return NULL;
 
   ei = router_build_fresh_unsigned_extrainfo(ri);
-  /* router_build_fresh_extrainfo() should not fail. */
+  /* router_build_fresh_unsigned_extrainfo() should not fail. */
   if (BUG(!ei))
     goto err;
 
@@ -2454,7 +2457,7 @@ router_update_routerinfo_from_extrainfo(routerinfo_t *ri,
                                         const extrainfo_t *ei)
 {
   if (BUG(!ei)) {
-    /* Just to be safe, zero ri->cache_info.extra_info_digest* here. */
+    /* Just to be safe, zero ri->cache_info.extra_info_digest here. */
     memset(ri->cache_info.extra_info_digest, 0, DIGEST_LEN);
     memset(ri->cache_info.extra_info_digest256, 0, DIGEST256_LEN);
     return;
@@ -3361,8 +3364,13 @@ load_stats_file(const char *filename, const char *end_line, time_t now,
   return r;
 }
 
-/** Write the contents of <b>extrainfo</b>, aggregated statistics, and related
- * configuration data to * *<b>s_out</b>, signing them with <b>ident_key</b>.
+/** Write the contents of <b>extrainfo</b>, to * *<b>s_out</b>, signing them
+ * with <b>ident_key</b>.
+ *
+ * If ExtraInfoStatistics is 1, also write aggregated statistics and related
+ * configuration data before signing. Most statistics also have an option that
+ * enables or disables that particular statistic.
+ *
  * Return 0 on success, negative on failure. */
 int
 extrainfo_dump_to_string(char **s_out, extrainfo_t *extrainfo,
