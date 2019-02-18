@@ -161,6 +161,9 @@ smartlist_t *router_get_all_orports(const routerinfo_t *ri);
 STATIC void get_platform_str(char *platform, size_t len);
 STATIC int router_write_fingerprint(int hashed);
 
+MOCK_DECL(STATIC const curve25519_keypair_t *, get_current_curve25519_keypair,
+                                                                      (void));
+
 MOCK_DECL(STATIC routerinfo_t *, router_build_fresh_unsigned_routerinfo,
                                                                       (void));
 STATIC extrainfo_t *router_build_fresh_signed_extrainfo(
