@@ -14,10 +14,10 @@
 
 #include "testsupport.h"
 
-crypto_pk_t *get_onion_key(void);
+MOCK_DECL(crypto_pk_t *,get_onion_key,(void));
 time_t get_onion_key_set_at(void);
 void set_server_identity_key(crypto_pk_t *k);
-crypto_pk_t *get_server_identity_key(void);
+MOCK_DECL(crypto_pk_t *,get_server_identity_key,(void));
 int server_identity_key_is_set(void);
 void set_client_identity_key(crypto_pk_t *k);
 crypto_pk_t *get_tlsclient_identity_key(void);
@@ -160,6 +160,14 @@ smartlist_t *router_get_all_orports(const routerinfo_t *ri);
 /* Used only by router.c and the unit tests */
 STATIC void get_platform_str(char *platform, size_t len);
 STATIC int router_write_fingerprint(int hashed);
+
+MOCK_DECL(STATIC routerinfo_t *, router_build_fresh_unsigned_routerinfo,
+                                                                      (void));
+STATIC extrainfo_t *router_build_fresh_signed_extrainfo(
+                                                      const routerinfo_t *ri);
+STATIC void router_update_routerinfo_from_extrainfo(routerinfo_t *ri,
+                                                    const extrainfo_t *ei);
+STATIC int router_dump_and_sign_routerinfo_descriptor_body(routerinfo_t *ri);
 #endif
 
 #endif /* !defined(TOR_ROUTER_H) */
