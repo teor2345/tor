@@ -169,13 +169,17 @@ test_dir_nicknames(void *arg)
  *  - random RSA identity and onion keys,
  *  - the platform field using get_platform_str(), and
  *  - supports_tunnelled_dir_requests to 1.
+ *
+ * If rsa_onion_keypair_out is not NULL, it is set to the onion keypair.
+ * The caller must free this keypair.
  */
 static routerinfo_t *
 basic_routerinfo_new(const char *nickname, uint32_t ipv4_addr,
                      uint16_t or_port, uint16_t dir_port,
                      uint32_t bandwidthrate, uint32_t bandwidthburst,
                      uint32_t bandwidthcapacity,
-                     time_t published_on)
+                     time_t published_on,
+                     crypto_pk_t **rsa_onion_keypair_out)
 {
   char platform[256];
 
@@ -209,6 +213,12 @@ basic_routerinfo_new(const char *nickname, uint32_t ipv4_addr,
   r1->bandwidthcapacity = bandwidthcapacity;
 
   r1->cache_info.published_on = published_on;
+
+  if (rsa_onion_keypair_out) {
+    *rsa_onion_keypair_out = pk1;
+  } else {
+    crypto_pk_free(pk1);
+  }
 
   return r1;
 }
@@ -545,11 +555,15 @@ cleanup_mocks_for_fresh_descriptor(void)
 /* Mock the data structures and functions needed for generating a fresh
  * descriptor.
  *
- * Sets options->Nickname, and mocks get_server_identity_key() and
- * get_onion_key() with the contents of r1.
+ * Sets options->Nickname from r1->nickname.
+ * Mocks get_server_identity_key() with r1->identity_pkey.
+ *
+ * If rsa_onion_keypair is not NULL, it is used to mock get_onion_key().
+ * Otherwise, the public key in r1->onion_pkey is used to mock get_onion_key().
  */
 static void
-setup_mocks_for_fresh_descriptor(const routerinfo_t *r1)
+setup_mocks_for_fresh_descriptor(const routerinfo_t *r1,
+                                 crypto_pk_t *rsa_onion_keypair)
 {
   cleanup_mocks_for_fresh_descriptor();
 
@@ -567,8 +581,12 @@ setup_mocks_for_fresh_descriptor(const routerinfo_t *r1)
   /* router_dump_and_sign_routerinfo_descriptor_body() requires
    * get_onion_key(). Use the same one as r1.
    */
-  mocked_onionkey = router_get_rsa_onion_pkey(r1->onion_pkey,
-                                              r1->onion_pkey_len);
+  if (rsa_onion_keypair) {
+    mocked_onionkey = rsa_onion_keypair;
+  } else {
+    mocked_onionkey = router_get_rsa_onion_pkey(r1->onion_pkey,
+                                                r1->onion_pkey_len);
+  }
   MOCK(get_onion_key, mock_get_onion_key);
 }
 
@@ -678,7 +696,8 @@ test_dir_formats_rsa(void *arg)
   r1 = basic_routerinfo_new("Magri", 0xc0a80001u /* 192.168.0.1 */,
                             9000, 9003,
                             1000, 5000, 10000,
-                            0);
+                            0,
+                            NULL);
 
   /* Fake just enough of an ntor key to get by */
   curve25519_keypair_t r1_onion_keypair;
@@ -769,7 +788,7 @@ test_dir_formats_rsa(void *arg)
    */
 
   /* Set up standard mocks and data */
-  setup_mocks_for_fresh_descriptor(r1);
+  setup_mocks_for_fresh_descriptor(r1, NULL);
 
   /* router_build_fresh_signed_extrainfo() passes the result of
    * get_master_signing_key_cert() directly to tor_cert_dup(), which fails on
@@ -907,7 +926,8 @@ test_dir_formats_rsa_ed25519(void *arg)
   r2 = basic_routerinfo_new("Fred", 0x0a030201u /* 10.3.2.1 */,
                             9005, 0,
                             3000, 3000, 3000,
-                            5);
+                            5,
+                            &r2_onion_pkey);
 
   /* Fake just enough of an ntor key to get by */
   curve25519_keypair_t r2_onion_keypair;
@@ -950,8 +970,6 @@ test_dir_formats_rsa_ed25519(void *arg)
   /* Fake just enough of an ORPort to get by */
   setup_mock_configured_ports(r2->or_port, 0);
 
-  r2_onion_pkey = router_get_rsa_onion_pkey(r2->onion_pkey,
-                                            r2->onion_pkey_len);
   buf = router_dump_router_to_string(r2,
                                      r2->identity_pkey, r2_onion_pkey,
                                      &r2_onion_keypair, &kp2);
@@ -1073,7 +1091,7 @@ test_dir_formats_rsa_ed25519(void *arg)
   /* Test extrainfo creation. */
 
   /* Set up standard mocks and data */
-  setup_mocks_for_fresh_descriptor(r2);
+  setup_mocks_for_fresh_descriptor(r2, r2_onion_pkey);
 
   /* router_build_fresh_descriptor() requires
    * router_build_fresh_unsigned_routerinfo(), but the implementation is
