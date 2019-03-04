@@ -88,6 +88,7 @@
 #include "feature/stats/rephist.h"
 #include "lib/container/order.h"
 #include "lib/crypt_ops/crypto_rand.h"
+#include "lib/intmath/addsub.h"
 #include "lib/math/laplace.h"
 
 #include "feature/nodelist/networkstatus_st.h"
@@ -1239,6 +1240,25 @@ rep_hist_get_oldest_bandwidth_history_index(const bw_array_t *b)
   }
 }
 
+/* Return the newest bandwidth history index in b's circular array.
+ * If no history has been written to b, returns zero.
+ * Callers must check that num_maxes_set is greater than zero. */
+static int
+rep_hist_get_newest_bandwidth_history_index(const bw_array_t *b)
+{
+  if (b->num_maxes_set == 0) {
+    /* No indexes are set. */
+    return 0;
+  } else if (b->next_max_idx == 0) {
+    /* We are going to write to the start of the array next, so the last total
+     * is at the end. */
+    return NUM_TOTALS - 1;
+  } else {
+    /* The index just before the next index to be written is the newest. */
+    return b->next_max_idx - 1;
+  }
+}
+
 /* Return the bandwidth history amount for b at index i.
  * To avoid disclosing sensitive information, limit the bandwidth based on
  * RelayBandwidthRate, and round the bandwidth to the nearest kilobyte.
@@ -1276,6 +1296,30 @@ rep_hist_get_bandwidth_history_for_index(const bw_array_t *b, int i)
     total = cutoff;
 
   return total;
+}
+
+/* Return the newest bandwidth history amount in b's circular array.
+ * If no history has been written to b, returns zero. */
+static uint64_t
+rep_hist_get_newest_bandwidth_history_amount(const bw_array_t *b)
+{
+  if (b->num_maxes_set == 0)
+    return 0;
+
+  int i = rep_hist_get_newest_bandwidth_history_index(b);
+  return rep_hist_get_bandwidth_history_for_index(b, i);
+}
+
+/* Return the sum of the newest bandwidth history read and write amounts.
+ * If no bandwidth totals have been written to the history, returns zero.
+ * If the sum would overflow, returns UINT64_MAX. */
+static uint64_t
+rep_hist_get_newest_bandwidth_history_rw_amount(void)
+{
+  uint64_t w = rep_hist_get_newest_bandwidth_history_amount(write_array);
+  uint64_t r = rep_hist_get_newest_bandwidth_history_amount(read_array);
+
+  return tor_add_u64_nowrap(w, r);
 }
 
 /** Print the bandwidth history of b (either [dir-]read_array or
