@@ -1411,6 +1411,52 @@ rep_hist_get_bandwidth_lines(void)
   return buf;
 }
 
+/** Allocate and return lines for representing this server's privcount
+ * statistics. We publish these lines in our extra-info descriptor for
+ * debugging and testing.
+ *
+ * Sensitive statistics MUST NOT be published in extra-info descriptors.
+ * TODO: work out how to publish sensitive lines in test networks (#29007).
+ */
+char *
+rep_hist_get_privcount_lines(void)
+{
+  char *result = NULL;
+  uint64_t rw_bytes = rep_hist_get_newest_bandwidth_history_rw_amount();
+
+  /* When we add noise, some results can be negative, so we use PRId64.*/
+  tor_asprintf(&result,
+               /* PrivCount check counters:
+                * always zero
+                * always 1: data collector count
+                * some sampled noise: almost always not zero */
+               "pc-zero 0\n"
+               "pc-dc-count 1\n"
+               "pc-noise-sample TODO\n"
+               /* PrivCount consumed bandwidth counters by flag:
+                * read+write bytes for guard-only, exit-only, guard+exit, and
+                * middle flags */
+               /* We need separate totals, because summing the parts adds too
+                * much noise. We add read and write bytes together, because
+                * adding more counters adds significantly more noise to the set
+                * of counters.
+                *
+                * Alternately, we could add special aggregation logic to Tally
+                * Reporters, so that they aggregate pc-rw-bytes by relay flag.
+                */
+               "pc-rw-bytes %" PRIu64 "\n" /* TODO: add noise and PRId64 */
+               "pc-g-rw-bytes TODO\n"
+               "pc-e-rw-bytes TODO\n"
+               "pc-ge-rw-bytes TODO\n"
+               "pc-m-rw-bytes TODO\n"
+               /* TODO: write stats to file, add a timestamp? */
+               "pc-stats-end\n",
+               rw_bytes
+               );
+
+  return result;
+}
+
 /** Write a single bw_array_t into the Values, Ends, Interval, and Maximum
  * entries of an or_state_t. Done before writing out a new state file. */
 static void
