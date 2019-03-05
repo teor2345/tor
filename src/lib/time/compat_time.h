@@ -31,10 +31,19 @@
  * A: Monotonic times are strictly non-decreasing. The difference between any
  * previous monotonic time, and the current monotonic time, is always greater
  * than *or equal to* zero.
- * Zero deltas happen more often:
- *  - on Windows (due to an OS bug),
- *  - when using monotime_coarse, or on systems with low-resolution timers,
- *  - on platforms where we emulate monotonic time using wall-clock time, and
+ *
+ * Zero time differences can happen on some machines, even after a large
+ * amount of time has elapsed. Our ratchet corrects non-monotonic times and
+ * returns a zero time difference:
+ *  - on Windows (due to an OS bug that yields non-monotonic times from the
+ *    monotonic time API),
+ *  - on platforms where we emulate monotonic time using wall-clock time
+ *    (after wall clock time is set to an earlier time).
+ *
+ * Zero time differences can also happen on successive function calls due to
+ * timer or result resolution:
+ *  - on systems with low-resolution timers,
+ *  - when using monotime_coarse,
  *  - when using time units that are larger than nanoseconds (due to
  *    truncation on division).
  *
