@@ -605,6 +605,8 @@ test_sr_setup_srv(int also_current)
          "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ",
          sizeof(srv->value));
 
+ /* sr_state_set_previous_srv() does not free() the old previous srv. */
+ state_del_previous_srv();
  sr_state_set_previous_srv(srv);
 
  if (also_current) {
@@ -614,6 +616,8 @@ test_sr_setup_srv(int also_current)
           "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
           sizeof(srv->value));
 
+   /* sr_state_set_previous_srv() does not free() the old current srv. */
+   state_del_current_srv();
    sr_state_set_current_srv(srv);
  }
 }
@@ -1074,7 +1078,7 @@ test_utils(void *arg)
 {
   (void) arg;
 
-  /* Testing srv_dup(). */
+  /* Testing sr_srv_dup(). */
   {
     sr_srv_t *srv = NULL, *dup_srv = NULL;
     const char *srv_value =
@@ -1082,7 +1086,7 @@ test_utils(void *arg)
     srv = tor_malloc_zero(sizeof(*srv));
     srv->num_reveals = 42;
     memcpy(srv->value, srv_value, sizeof(srv->value));
-    dup_srv = srv_dup(srv);
+    dup_srv = sr_srv_dup(srv);
     tt_assert(dup_srv);
     tt_u64_op(dup_srv->num_reveals, OP_EQ, srv->num_reveals);
     tt_mem_op(dup_srv->value, OP_EQ, srv->value, sizeof(srv->value));
@@ -1155,6 +1159,7 @@ test_state_transition(void *arg)
 {
   sr_state_t *state = NULL;
   time_t now = time(NULL);
+  sr_srv_t *cur = NULL;
 
   (void) arg;
 
@@ -1193,44 +1198,47 @@ test_state_transition(void *arg)
 
   /* Test SRV rotation in our state. */
   {
-    const sr_srv_t *cur, *prev;
     test_sr_setup_srv(1);
-    cur = sr_state_get_current_srv();
+    tt_assert(sr_state_get_current_srv());
+    /* Take a copy of the data, because the state owns the pointer */
+    cur = sr_srv_dup(sr_state_get_current_srv());
     tt_assert(cur);
-    /* After, current srv should be the previous and then set to NULL. */
+    /* After, the previous SRV should be the same as the old current SRV, and
+     * the current SRV should be set to NULL */
     state_rotate_srv();
-    prev = sr_state_get_previous_srv();
-    tt_assert(prev == cur);
+    tt_mem_op(sr_state_get_previous_srv(), OP_EQ, cur, sizeof(sr_srv_t));
     tt_ptr_op(sr_state_get_current_srv(), OP_EQ, NULL);
     sr_state_clean_srvs();
+    tor_free(cur);
   }
 
   /* New protocol run. */
   {
-    const sr_srv_t *cur;
     /* Setup some new SRVs so we can confirm that a new protocol run
      * actually makes them rotate and compute new ones. */
     test_sr_setup_srv(1);
-    cur = sr_state_get_current_srv();
-    tt_assert(cur);
+    tt_assert(sr_state_get_current_srv());
+    /* Take a copy of the data, because the state owns the pointer */
+    cur = sr_srv_dup(sr_state_get_current_srv());
     set_sr_phase(SR_PHASE_REVEAL);
     MOCK(get_my_v3_authority_cert, get_my_v3_authority_cert_m);
     new_protocol_run(now);
     UNMOCK(get_my_v3_authority_cert);
     /* Rotation happened. */
-    tt_assert(sr_state_get_previous_srv() == cur);
+    tt_mem_op(sr_state_get_previous_srv(), OP_EQ, cur, sizeof(sr_srv_t));
     /* We are going into COMMIT phase so we had to rotate our SRVs. Usually
      * our current SRV would be NULL but a new protocol run should make us
      * compute a new SRV. */
     tt_assert(sr_state_get_current_srv());
     /* Also, make sure we did change the current. */
-    tt_assert(sr_state_get_current_srv() != cur);
+    tt_mem_op(sr_state_get_current_srv(), OP_NE, cur, sizeof(sr_srv_t));
     /* We should have our commitment alone. */
     tt_int_op(digestmap_size(state->commits), OP_EQ, 1);
     tt_int_op(state->n_reveal_rounds, OP_EQ, 0);
     tt_int_op(state->n_commit_rounds, OP_EQ, 0);
     /* 46 here since we were at 45 just before. */
     tt_u64_op(state->n_protocol_runs, OP_EQ, 46);
+    tor_free(cur);
   }
 
   /* Cleanup of SRVs. */
@@ -1241,6 +1249,7 @@ test_state_transition(void *arg)
   }
 
  done:
+  tor_free(cur);
   sr_state_free_all();
 }
 
