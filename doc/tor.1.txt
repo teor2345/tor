@@ -1056,8 +1056,8 @@ The following options are useful only for clients (that is, if
 [[StrictNodes]] **StrictNodes** **0**|**1**::
     If StrictNodes is set to 1, Tor will treat solely the ExcludeNodes option
     as a requirement to follow for all the circuits you generate, even if
-    doing so will break functionality for you (StrictNodes applies to neither
-    ExcludeExitNodes nor to ExitNodes, nor to MiddleNodes).  If StrictNodes
+    doing so will break functionality for you (StrictNodes does not apply to
+    ExcludeExitNodes, ExitNodes, MiddleNodes, or MapAddress).  If StrictNodes
     is set to 0, Tor will still try to avoid nodes in the ExcludeNodes list,
     but it will err on the side of avoiding unexpected errors.
     Specifically, StrictNodes 0 tells Tor that it is okay to use an excluded
@@ -1153,7 +1153,9 @@ The following options are useful only for clients (that is, if
     "MapAddress \*.example.com \*.example.com.torserver.exit". (Note the
     leading "*." in each part of the directive.) You can also redirect all
     subdomains of a domain to a single address. For example, "MapAddress
-    *.example.com www.example.com". +
+    *.example.com www.example.com". Tor will try to use exit nodes that you
+    specify using MapAddress, but it will err on the side of avoiding
+    unexpected errors.+
  +
     NOTES:
 

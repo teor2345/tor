@@ -1,0 +1,5 @@
+  o Minor bugfixes (documentation):
+    - Document the fallback behaviour for the MapAddress .exit syntax: Tor
+      will try to use the chosen exit, but if that exit doesn't work, Tor
+      will fall back to a random exit to avoid connection errors.
+      Fixes bug 30109; bugfix on 0.1.0.1-rc.
