@@ -1742,6 +1742,10 @@ tor_addr_port_parse(int severity, const char *addrport,
   tor_assert(address_out);
   tor_assert(port_out);
 
+  /* Avoid returning uninitialised data */
+  memset(address_out, 0, sizeof(tor_addr_t));
+  *port_out = 0;
+
   r = tor_addr_port_split(severity, addrport, &addr_tmp, port_out);
   if (r < 0)
     goto done;
@@ -1828,8 +1832,7 @@ tor_addr_port_split(int severity, const char *addrport,
     tor_free(address_);
   }
 
-  if (port_out)
-    *port_out = ok ? ((uint16_t) port_) : 0;
+  *port_out = ok ? ((uint16_t) port_) : 0;
 
   return ok ? 0 : -1;
 }
