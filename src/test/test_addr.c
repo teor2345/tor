@@ -742,13 +742,16 @@ test_addr_ip6_helpers(void *arg)
     tt_str_op(buf, OP_EQ, expect_str); \
   STMT_END
 
-/* Test that addr_str fails to parse. */
+/* Test that addr_str fails to parse, and:
+ *  - the returned address is null.
+ */
 #define TEST_ADDR_PARSE_XFAIL(addr_str) \
   STMT_BEGIN \
     int r; \
     tor_addr_t addr; \
     r = tor_addr_parse(&addr, addr_str); \
     tt_int_op(r, OP_EQ, -1); \
+    tt_assert(tor_addr_is_null(&addr)); \
   STMT_END
 
 /* Test that addr_port_str and default_port successfully parse, and:
@@ -774,7 +777,10 @@ test_addr_ip6_helpers(void *arg)
     tt_int_op(port, OP_EQ, expect_port); \
   STMT_END
 
-/* Test that addr_port_str and default_port fail to parse. */
+/* Test that addr_port_str and default_port fail to parse, and:
+ *  - the returned address is null,
+ *  - the returned port is 0.
+ */
 #define TEST_ADDR_PORT_PARSE_XFAIL(addr_port_str, default_port) \
   STMT_BEGIN \
     int r; \
@@ -783,6 +789,8 @@ test_addr_ip6_helpers(void *arg)
     r = tor_addr_port_parse(LOG_DEBUG, addr_port_str, &addr, &port, \
                             default_port); \
     tt_int_op(r, OP_EQ, -1); \
+    tt_assert(tor_addr_is_null(&addr)); \
+    tt_int_op(port, OP_EQ, 0); \
   STMT_END
 
 /* Test that addr_str successfully parses as an IPv4 address using
