@@ -807,16 +807,19 @@ test_addr_ip6_helpers(void *arg)
   STMT_END
 
 /* Test that bad_str fails to parse using tor_lookup_hostname(), with a
- * permanent failure. */
+ * permanent failure, and:
+ *  - the returned address is 0.
+ */
 #define TEST_ADDR_V4_LOOKUP_XFAIL(bad_str) \
   STMT_BEGIN \
     int r; \
     uint32_t addr32h; \
     r = tor_lookup_hostname(bad_str, &addr32h); \
     tt_int_op(r, OP_EQ, -1); \
+    tt_int_op(addr32h, OP_EQ, 0); \
   STMT_END
 
-/* Test host_str using tor_lookup_hostname():
+/* Test host_str using tor_lookup_hostname() does something sensible:
  *  - the result is -1, 0, or 1.
  *  - if the result is a failure, the returned address is 0.
  * We can't rely on the result of this function, because it depends on the
