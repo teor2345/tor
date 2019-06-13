@@ -733,7 +733,7 @@ test_addr_ip6_helpers(void *arg)
   STMT_BEGIN \
     int r; \
     tor_addr_t addr; \
-    char buf[TOR_ADDR_BUF_LEN];  \
+    char buf[TOR_ADDR_BUF_LEN]; \
     const char *sv; \
     r = tor_addr_parse(&addr, addr_str); \
     tt_int_op(r, OP_EQ, expect_family); \
@@ -762,7 +762,7 @@ test_addr_ip6_helpers(void *arg)
     int r; \
     tor_addr_t addr; \
     uint16_t port; \
-    char buf[TOR_ADDR_BUF_LEN];  \
+    char buf[TOR_ADDR_BUF_LEN]; \
     const char *sv; \
     r = tor_addr_port_parse(LOG_DEBUG, addr_port_str, &addr, &port, \
                             default_port); \
