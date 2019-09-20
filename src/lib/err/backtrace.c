@@ -251,6 +251,12 @@ remove_bt_handler(void)
      * It's not a fatal error, so we just ignore it. */
     (void)sigaction(trap_signals[i], &sa, NULL);
   }
+
+  /* Destroying a locked mutex is undefined behaviour. This mutex may be
+   * locked, because multiple threads can access it. But we need to destroy
+   * it, otherwise re-initialisation will trigger undefined behaviour.
+   * See #31735 for details. */
+  pthread_mutex_destroy(&cb_buf_mutex);
 }
 #endif /* defined(USE_BACKTRACE) */
 
