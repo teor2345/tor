@@ -131,7 +131,15 @@ atomic_counter_init(atomic_counter_t *counter)
 {
   atomic_init(&counter->val, 0);
 }
-/** Clean up all resources held by an atomic counter. */
+/** Clean up all resources held by an atomic counter.
+ *
+ * This usage note applies to the compat_threads implementation of
+ * atomic_counter_destroy():
+ * Destroying a locked mutex is undefined behaviour. Global mutexes may be
+ * locked when they are passed to this function, because multiple threads can
+ * still access them. But we need to destroy global mutexes, otherwise
+ * re-initialisation will trigger undefined behaviour. See #31735 for details.
+ */
 static inline void
 atomic_counter_destroy(atomic_counter_t *counter)
 {

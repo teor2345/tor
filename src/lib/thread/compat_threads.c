@@ -67,7 +67,13 @@ atomic_counter_init(atomic_counter_t *counter)
   memset(counter, 0, sizeof(*counter));
   tor_mutex_init_nonrecursive(&counter->mutex);
 }
-/** Clean up all resources held by an atomic counter. */
+/** Clean up all resources held by an atomic counter.
+ *
+ * Destroying a locked mutex is undefined behaviour. Global mutexes may be
+ * locked when they are passed to this function, because multiple threads can
+ * still access them. But we need to destroy global mutexes, otherwise
+ * re-initialisation will trigger undefined behaviour. See #31735 for details.
+ */
 void
 atomic_counter_destroy(atomic_counter_t *counter)
 {

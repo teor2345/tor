@@ -88,12 +88,24 @@ tor_mutex_release(tor_mutex_t *m)
 }
 /** Clean up the mutex <b>m</b> so that it no longer uses any system
  * resources.  Does not free <b>m</b>.  This function must only be called on
- * mutexes from tor_mutex_init(). */
+ * mutexes from tor_mutex_init().
+ *
+ * Destroying a locked mutex is undefined behaviour. Global mutexes may be
+ * locked when they are passed to this function, because multiple threads can
+ * still access them. But we need to destroy global mutexes, otherwise
+ * re-initialisation will trigger undefined behaviour. See #31735 for details.
+ */
 void
 tor_mutex_uninit(tor_mutex_t *m)
 {
   int err;
   raw_assert(m);
+  /* If the mutex is already locked, wait until after it is unlocked to destroy
+   * it. Locking and releasing the mutex makes undefined behaviour less likely,
+   * but does not prevent it. Another thread can lock the mutex between release
+   * and destroy. */
+  tor_mutex_acquire(m);
+  tor_mutex_release(m);
   err = pthread_mutex_destroy(&m->mutex);
   if (PREDICT_UNLIKELY(err)) {
     // LCOV_EXCL_START
