@@ -757,7 +757,6 @@ static download_status_t descbr_digest_2_dl;
 static const char *descbr_expected_list =
     "616408544C7345822696074A1A3DFA16AB381CBD\n"
     "06E8067246967265DBCB6641631B530EFEC12DC3\n";
-
 /*
  * Flag to make all descbr queries fail, to simulate not being
  * configured such that such queries make sense.
@@ -1879,6 +1878,7 @@ test_current_time(void *arg)
  done:
   UNMOCK(tor_gettimeofday);
   tor_free(answer);
+
   return;
 }
 
@@ -1988,4 +1988,3 @@ struct testcase_t controller_tests[] = {
   { "getinfo_md_all", test_getinfo_md_all, 0, NULL, NULL },
   END_OF_TESTCASES
 };
-

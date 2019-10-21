@@ -398,7 +398,6 @@ getinfo_helper_dir(control_connection_t *control_conn,
       if (body)
         *answer = tor_strndup(body, ri->cache_info.signed_descriptor_len);
     } else if (! we_fetch_router_descriptors(get_options())) {
-
       /* Descriptors won't be available, provide proper error */
       *errmsg = "We fetch microdescriptors, not router "
                 "descriptors. You'll need to use md/name/* "
@@ -624,8 +623,8 @@ getinfo_helper_dir(control_connection_t *control_conn,
     int consensus_result = getinfo_helper_current_consensus(FLAV_MICRODESC,
                                                             answer, errmsg);
     if (consensus_result == -1) {
-        return -1;
-      }
+      return -1;
+    }
   } else if (!strcmp(question, "network-status")) { /* v1 */
     static int network_status_warned = 0;
     if (!network_status_warned) {

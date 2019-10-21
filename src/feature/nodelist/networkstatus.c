@@ -216,12 +216,10 @@ networkstatus_reset_download_failures(void)
 }
 
 /** Return the filename used to cache the consensus of a given flavor */
-
 MOCK_IMPL(char *,
-          networkstatus_get_cache_fname,
-          (int flav,
-          const char *flavorname,
-          int unverified_consensus))
+networkstatus_get_cache_fname,(int flav,
+                               const char *flavorname,
+                               int unverified_consensus))
 {
   char buf[128];
   const char *prefix;
