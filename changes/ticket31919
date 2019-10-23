@@ -1,0 +1,12 @@
+  o Minor features (developer tools, git scripts, continuous integration):
+    - Add a script to "scripts/coccinelle" that checks that new code
+      is parseable by Coccinelle. Add an exceptions file for unparseable
+      files. Call the script from a 'check-cocci' Makefile target, the
+      git commit and push hooks, and Travis CI. This change ensures that
+      our coccinelle parsing quality will not degrade over time.
+      Closes ticket 31919.
+  o Minor features (continuous integration):
+    - Use Ubuntu Bionic images for our Travis CI builds, so we can get
+      a recent version of coccinelle. But leave chutney on Ubuntu Trusty,
+      until we can fix some Bionic permissions issues (see ticket 32240).
+      Related to ticket 31919.
