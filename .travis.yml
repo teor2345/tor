@@ -88,8 +88,8 @@ matrix:
     ## test-stem sometimes hangs on Travis
     - env: TEST_STEM="yes" SKIP_MAKE_CHECK="yes"
 
-## (Linux only) Use the latest Linux image (Ubuntu Trusty)
-dist: trusty
+## (Linux only) Use a recent Linux image (Ubuntu Bionic)
+dist: bionic
 
 ## Download our dependencies
 addons:
