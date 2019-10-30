@@ -16,6 +16,8 @@
 #include "lib/encoding/confline.h"
 #include "lib/confmgt/confmgt.h"
 
+#include "lib/sandbox/sandbox.h"
+
 /* Required for dirinfo_type_t in or_options_t */
 #include "core/or/or.h"
 #include "app/config/config.h"
@@ -60,6 +62,43 @@ options_warn_about_relative_paths_dirauth(const or_options_t *options)
                                        options->GuardfractionFile);
 
   return n != 0;
+}
+
+/** Check if any relay options have changed between old and new_val, but
+ * aren't allowed to.
+ *
+ * Returns 0 on success. Returns -1 and sets msg to a newly allocated string
+ * on failure. */
+int
+options_check_transition_dirauth(const or_options_t *old,
+                                 const or_options_t *new_val,
+                                 char **msg)
+{
+  if (BUG(!old))
+    return 0;
+
+  if (BUG(!new_val))
+    return 0;
+
+#define BAD_CHANGE_TO(opt, how) do {                                    \
+    *msg = tor_strdup("While Tor is running"how", changing " #opt       \
+                      " is not allowed");                               \
+    return -1;                                                          \
+  } while (0)
+
+  if (sandbox_is_active()) {
+#define SB_NOCHANGE_STR(opt)                      \
+    if (! CFG_EQ_STRING(old, new_val, opt))       \
+      BAD_CHANGE_TO(opt," with Sandbox active")
+
+    SB_NOCHANGE_STR(V3BandwidthsFile);
+    SB_NOCHANGE_STR(GuardfractionFile);
+  }
+
+#undef SB_NOCHANGE_STR
+#undef BAD_CHANGE_TO
+
+  return 0;
 }
 
 /**

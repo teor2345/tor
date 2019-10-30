@@ -4040,6 +4040,9 @@ options_check_transition_cb(const void *old_,
   if (options_check_transition_relay(old, new_val, msg) < 0)
     return -1;
 
+  if (options_check_transition_dirauth(old, new_val, msg) < 0)
+    return -1;
+
 #define BAD_CHANGE_TO(opt, how) do {                                    \
     *msg = tor_strdup("While Tor is running"how", changing " #opt       \
                       " is not allowed");                               \
@@ -4091,6 +4094,14 @@ options_check_transition_cb(const void *old_,
     SB_NOCHANGE_STR(CookieAuthFile);
     SB_NOCHANGE_LINELIST(Logs);
     SB_NOCHANGE_INT(ConnLimit);
+    SB_NOCHANGE_STR(ControlPortWriteToFile);
+    SB_NOCHANGE_STR(GeoIPFile);
+    SB_NOCHANGE_STR(GeoIPv6File);
+    SB_NOCHANGE_STR(DebugLogFile);
+    SB_NOCHANGE_STR(ClientOnionAuthDir);
+
+    /* You also can't add or modify any HiddenServiceDir, but that's a bit
+     * more complicated to detect. */
   }
 
 #undef SB_NOCHANGE_LINELIST
