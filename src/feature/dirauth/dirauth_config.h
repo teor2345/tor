@@ -22,6 +22,8 @@ int options_validate_dirauth_mode(const or_options_t *old_options,
                                   or_options_t *options,
                                   char **msg);
 
+int options_warn_about_relative_paths_dirauth(const or_options_t *options);
+
 int options_validate_dirauth_bandwidth(const or_options_t *old_options,
                                        or_options_t *options,
                                        char **msg);
@@ -64,6 +66,9 @@ options_validate_dirauth_mode(const or_options_t *old_options,
 
   return 0;
 }
+
+#define options_warn_about_relative_paths_dirauth(options) \
+  (((void)(options)),0)
 
 #define options_validate_dirauth_bandwidth(old_options, options, msg) \
   (((void)(old_options)),((void)(options)),((void)(msg)),0)

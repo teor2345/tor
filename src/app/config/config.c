@@ -2970,7 +2970,7 @@ options_validate(const or_options_t *old_options, or_options_t *options,
  *
  * Return 1 if there were relative paths; 0 otherwise.
  */
-static int
+int
 warn_if_option_path_is_relative(const char *option,
                                 const char *filepath)
 {
@@ -2985,7 +2985,7 @@ warn_if_option_path_is_relative(const char *option,
 }
 
 /** Scan <b>options</b> for occurrences of relative file/directory
- * path and log a warning whenever it is found.
+ * paths and log a warning whenever one is found.
  *
  * Return 1 if there were relative paths; 0 otherwise.
  */
@@ -2995,14 +2995,11 @@ warn_about_relative_paths(const or_options_t *options)
   tor_assert(options);
   int n = 0;
 
+  n += options_warn_about_relative_paths_relay(options);
+  n += options_warn_about_relative_paths_dirauth(options);
+
   n += warn_if_option_path_is_relative("CookieAuthFile",
                                        options->CookieAuthFile);
-  n += warn_if_option_path_is_relative("ExtORPortCookieAuthFile",
-                                       options->ExtORPortCookieAuthFile);
-  n += warn_if_option_path_is_relative("DirPortFrontPage",
-                                       options->DirPortFrontPage);
-  n += warn_if_option_path_is_relative("V3BandwidthsFile",
-                                       options->V3BandwidthsFile);
   n += warn_if_option_path_is_relative("ControlPortWriteToFile",
                                        options->ControlPortWriteToFile);
   n += warn_if_option_path_is_relative("GeoIPFile",options->GeoIPFile);
@@ -3177,7 +3174,6 @@ options_validate_cb(const void *old_options_, void *options_, char **msg)
 
   /* need to check for relative paths after we populate
    * options->DataDirectory (just above). */
-  /* 31851: some paths are unused in client mode */
   if (warn_about_relative_paths(options) && options->RunAsDaemon) {
     REJECT("You have specified at least one relative path (see above) "
            "with the RunAsDaemon option. RunAsDaemon is not compatible "

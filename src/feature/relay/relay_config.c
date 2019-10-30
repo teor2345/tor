@@ -337,6 +337,25 @@ options_validate_relay_os(const or_options_t *old_options,
   return 0;
 }
 
+/** Scan <b>options</b> for occurrences of relative relay file/directory
+ * paths and log a warning whenever one is found.
+ *
+ * Return 1 if there were relative paths; 0 otherwise.
+ */
+int
+options_warn_about_relative_paths_relay(const or_options_t *options)
+{
+  tor_assert(options);
+  int n = 0;
+
+  n += warn_if_option_path_is_relative("ExtORPortCookieAuthFile",
+                                       options->ExtORPortCookieAuthFile);
+  n += warn_if_option_path_is_relative("DirPortFrontPage",
+                                       options->DirPortFrontPage);
+
+  return n != 0;
+}
+
 /**
  * Legacy validation/normalization function for the relay info options.
  * Uses old_options as the previous options.

@@ -275,6 +275,9 @@ int parse_transport_line(const or_options_t *options,
                          int server);
 int ensure_bandwidth_cap(uint64_t *value, const char *desc, char **msg);
 
+int warn_if_option_path_is_relative(const char *option,
+                                    const char *filepath);
+
 #ifdef CONFIG_PRIVATE
 
 MOCK_DECL(STATIC int, options_act,(const or_options_t *old_options));
