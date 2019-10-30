@@ -257,7 +257,7 @@ alloc_getcwd(void)
 /** Expand possibly relative path <b>fname</b> to an absolute path.
  * Return a newly allocated string, possibly equal to <b>fname</b>. */
 char *
-make_path_absolute(char *fname)
+make_path_absolute(const char *fname)
 {
 #ifdef _WIN32
   char *absfname_malloced = _fullpath(NULL, fname, 1);
