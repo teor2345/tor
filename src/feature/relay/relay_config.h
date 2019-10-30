@@ -39,6 +39,9 @@ int options_validate_relay_os(const or_options_t *old_options,
                               char **msg);
 
 int options_warn_about_relative_paths_relay(const or_options_t *options);
+int options_check_transition_relay(const or_options_t *old,
+                                   const or_options_t *new_val,
+                                   char **msg);
 
 int options_validate_relay_info(const or_options_t *old_options,
                                 or_options_t *options,

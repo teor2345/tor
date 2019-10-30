@@ -4019,7 +4019,7 @@ opt_streq(const char *s1, const char *s2)
   return 0 == strcmp_opt(s1, s2);
 }
 
-/** Check if any of the previous options have changed but aren't allowed to. */
+/** Check if any config options have changed but aren't allowed to. */
 static int
 options_check_transition_cb(const void *old_,
                             const void *new_val_,
@@ -4034,6 +4034,12 @@ options_check_transition_cb(const void *old_,
   if (BUG(!old))
     return 0;
 
+  if (BUG(!new_val))
+    return 0;
+
+  if (options_check_transition_relay(old, new_val, msg) < 0)
+    return -1;
+
 #define BAD_CHANGE_TO(opt, how) do {                                    \
     *msg = tor_strdup("While Tor is running"how", changing " #opt       \
                       " is not allowed");                               \
@@ -4047,7 +4053,6 @@ options_check_transition_cb(const void *old_,
 #define NO_CHANGE_STRING(opt) \
   if (! CFG_EQ_STRING(old, new_val, opt)) BAD_CHANGE_TO(opt,"")
 
-  /* 31851: some of these options are relay or dirauth-only */
   NO_CHANGE_STRING(PidFile);
   NO_CHANGE_BOOL(RunAsDaemon);
   NO_CHANGE_BOOL(Sandbox);
@@ -4083,18 +4088,9 @@ options_check_transition_cb(const void *old_,
       BAD_CHANGE_TO(opt," with Sandbox active")
 
     SB_NOCHANGE_STR(Address);
-    SB_NOCHANGE_STR(ServerDNSResolvConfFile);
-    SB_NOCHANGE_STR(DirPortFrontPage);
     SB_NOCHANGE_STR(CookieAuthFile);
-    SB_NOCHANGE_STR(ExtORPortCookieAuthFile);
     SB_NOCHANGE_LINELIST(Logs);
     SB_NOCHANGE_INT(ConnLimit);
-
-    if (server_mode(old) != server_mode(new_val)) {
-      *msg = tor_strdup("Can't start/stop being a server while "
-                        "Sandbox is active");
-      return -1;
-    }
   }
 
 #undef SB_NOCHANGE_LINELIST
