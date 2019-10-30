@@ -3007,6 +3007,9 @@ warn_about_relative_paths(const or_options_t *options)
   n += warn_if_option_path_is_relative("Log",options->DebugLogFile);
   n += warn_if_option_path_is_relative("AccelDir",options->AccelDir);
   n += warn_if_option_path_is_relative("DataDirectory",options->DataDirectory);
+  n += warn_if_option_path_is_relative("CacheDirectory",
+                                       options->CacheDirectory);
+  n += warn_if_option_path_is_relative("KeyDirectory",options->KeyDirectory);
   n += warn_if_option_path_is_relative("PidFile",options->PidFile);
   n += warn_if_option_path_is_relative("ClientOnionAuthDir",
                                         options->ClientOnionAuthDir);

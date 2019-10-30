@@ -56,6 +56,8 @@ options_warn_about_relative_paths_dirauth(const or_options_t *options)
 
   n += warn_if_option_path_is_relative("V3BandwidthsFile",
                                        options->V3BandwidthsFile);
+  n += warn_if_option_path_is_relative("GuardfractionFile",
+                                       options->GuardfractionFile);
 
   return n != 0;
 }

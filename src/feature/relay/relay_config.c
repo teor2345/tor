@@ -352,6 +352,8 @@ options_warn_about_relative_paths_relay(const or_options_t *options)
                                        options->ExtORPortCookieAuthFile);
   n += warn_if_option_path_is_relative("DirPortFrontPage",
                                        options->DirPortFrontPage);
+  n += warn_if_option_path_is_relative("ServerDNSResolvConfFile",
+                                       options->ServerDNSResolvConfFile);
 
   return n != 0;
 }
