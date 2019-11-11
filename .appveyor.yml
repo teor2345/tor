@@ -6,10 +6,10 @@ clone_depth: 50
 # But we compile using MinGW, not Visual Studio.
 # We use these images because they have different Windows versions.
 image:
-  # Windows Server 2019
-  - Visual Studio 2019
   # Windows Server 2012 R2
   - Visual Studio 2015
+  # Windows Server 2019
+  - Visual Studio 2019
 
 environment:
   compiler: mingw
