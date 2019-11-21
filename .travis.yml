@@ -47,6 +47,8 @@ matrix:
       compiler: clang
     ## We run chutney on Linux, because it's faster than chutney on macOS
     - env: CHUTNEY="yes" CHUTNEY_ALLOW_FAILURES="2" SKIP_MAKE_CHECK="yes"
+      ## Use clang to detect more runtime memory errors
+      compiler: clang
       ## (Linux only) Use an older Linux image (Ubuntu Trusty)
       ## The Xenial and Bionic images cause permissions issues for chutney,
       ## this is a workaround, until we fix #32240.
