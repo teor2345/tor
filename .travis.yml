@@ -38,6 +38,8 @@ env:
 matrix:
   ## include creates builds with gcc, linux, unless we override those defaults
   include:
+    ## Run a trusty build to test skipping old coccinelle
+    - dist: trusty
     ## We run basic tests on macOS
     - compiler: clang
       os: osx
@@ -55,32 +57,7 @@ matrix:
       ## The Xenial and Bionic images cause permissions issues for chutney,
       ## this is a workaround, until we fix #32240.
       dist: trusty
-    ## We check asciidoc with distcheck, to make sure we remove doc products
-    ## We use Linux clang, because there are no other Linux clang jobs
-    - env: DISTCHECK="yes" ASCIIDOC_OPTIONS="" SKIP_MAKE_CHECK="yes"
-      compiler: clang
-    ## We include a single coverage build with the best options for coverage
-    - env: COVERAGE_OPTIONS="--enable-coverage" HARDENING_OPTIONS="" TOR_TEST_RNG_SEED="636f766572616765"
-    ## We run rust on Linux, because it's faster than rust on macOS
-    ## We check rust offline
-    - env: RUST_OPTIONS="--enable-rust" TOR_RUST_DEPENDENCIES=true
-    ## We check asciidoc with distcheck, to make sure we remove doc products
-    - env: DISTCHECK="yes" ASCIIDOC_OPTIONS="" SKIP_MAKE_CHECK="yes"
-    ## We check disable module relay
-    - env: MODULES_OPTIONS="--disable-module-relay"
-    ## We check disable module dirauth
-    - env: MODULES_OPTIONS="--disable-module-dirauth"
-    ## We run rust on macOS, because we have seen macOS rust failures before
-    # Disabled due to slow Travis macOS builds, see #32177
-    #- env: RUST_VERSION="nightly" RUST_OPTIONS="--enable-rust --enable-cargo-online-mode"
-    #  compiler: clang
-    #  os: osx
-    ## We run chutney on macOS, because macOS Travis has IPv6
-    # Disabled due to slow Travis macOS builds, see #32177
-    #- env: CHUTNEY="yes" CHUTNEY_ALLOW_FAILURES="2" SKIP_MAKE_CHECK="yes"
-    #  os: osx
-    ## We clone our stem repo and run `make test-stem`
-    - env: TEST_STEM="yes" SKIP_MAKE_CHECK="yes"
+    ## Remove other jobs, to increase build speed
 
   ## Allow the build to report success (with non-required sub-builds
   ## continuing to run) if all required sub-builds have succeeded.
