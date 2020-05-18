@@ -1563,7 +1563,23 @@ choose_good_exit_server_general(router_crn_flags_t flags)
   const node_t *selected_node=NULL;
   const int need_uptime = (flags & CRN_NEED_UPTIME) != 0;
   const int need_capacity = (flags & CRN_NEED_CAPACITY) != 0;
-  const int direct_conn = (flags & CRN_DIRECT_CONN) != 0;
+
+  /* We should not require guard flags on exits. */
+  IF_BUG_ONCE(flags & CRN_NEED_GUARD)
+    return NULL;
+
+  /* We reject single-hop exits for all node positions. */
+  IF_BUG_ONCE(flags & CRN_DIRECT_CONN)
+    return NULL;
+
+  /* This isn't the function for picking rendezvous nodes. */
+  IF_BUG_ONCE(flags & CRN_RENDEZVOUS_V3)
+    return NULL;
+
+  /* We only want exits to extend if we cannibalize the circuit.
+   * But we don't require IPv6 extends yet. */
+  IF_BUG_ONCE(flags & CRN_INITIATE_IPV6_EXTEND)
+    return NULL;
 
   connections = get_connection_array();
 
@@ -1596,18 +1612,13 @@ choose_good_exit_server_general(router_crn_flags_t flags)
        */
       continue;
     }
-    if (!node_has_preferred_descriptor(node, direct_conn)) {
+    if (!router_can_choose_node(node, flags)) {
       n_supported[i] = -1;
       continue;
     }
-    if (!node->is_running || node->is_bad_exit) {
+    if (node->is_bad_exit) {
       n_supported[i] = -1;
       continue; /* skip routers that are known to be down or bad exits */
-    }
-    if (node_get_purpose(node) != ROUTER_PURPOSE_GENERAL) {
-      /* never pick a non-general node as a random exit. */
-      n_supported[i] = -1;
-      continue;
     }
     if (routerset_contains_node(options->ExcludeExitNodesUnion_, node)) {
       n_supported[i] = -1;
@@ -1617,27 +1628,6 @@ choose_good_exit_server_general(router_crn_flags_t flags)
         !routerset_contains_node(options->ExitNodes, node)) {
       n_supported[i] = -1;
       continue; /* not one of our chosen exit nodes */
-    }
-
-    if (node_is_unreliable(node, need_uptime, need_capacity, 0)) {
-      n_supported[i] = -1;
-      continue; /* skip routers that are not suitable.  Don't worry if
-                 * this makes us reject all the possible routers: if so,
-                 * we'll retry later in this function with need_update and
-                 * need_capacity set to 0. */
-    }
-    if (!(node->is_valid)) {
-      /* if it's invalid and we don't want it */
-      n_supported[i] = -1;
-//      log_fn(LOG_DEBUG,"Skipping node %s (index %d) -- invalid router.",
-//             router->nickname, i);
-      continue; /* skip invalid routers */
-    }
-    /* We do not allow relays that allow single hop exits by default. Option
-     * was deprecated in 0.2.9.2-alpha and removed in 0.3.1.0-alpha. */
-    if (node_allows_single_hop_exits(node)) {
-      n_supported[i] = -1;
-      continue;
     }
     if (node_exit_policy_rejects_all(node)) {
       n_supported[i] = -1;
@@ -1795,14 +1785,7 @@ pick_restricted_middle_node(router_crn_flags_t flags,
   tor_assert(pick_from);
 
   /* Add all running nodes to all_live_nodes */
-  router_add_running_nodes_to_smartlist(all_live_nodes,
-                                    (flags & CRN_NEED_UPTIME) != 0,
-                                    (flags & CRN_NEED_CAPACITY) != 0,
-                                    (flags & CRN_NEED_GUARD) != 0,
-                                    (flags & CRN_NEED_DESC) != 0,
-                                    (flags & CRN_PREF_ADDR) != 0,
-                                    (flags & CRN_DIRECT_CONN) != 0,
-                                    (flags & CRN_INITIATE_IPV6_EXTEND) != 0);
+  router_add_running_nodes_to_smartlist(all_live_nodes, flags);
 
   /* Filter all_live_nodes to only add live *and* whitelisted middles
    * to the list whitelisted_live_middles. */
@@ -2120,32 +2103,27 @@ circuit_extend_to_new_exit(origin_circuit_t *circ, extend_info_t *exit_ei)
   return 0;
 }
 
-/** Return the number of routers in <b>routers</b> that are currently up
- * and available for building circuits through.
+/** Return the number of routers in <b>nodes</b> that are currently up and
+ * available for building circuits through.
  *
- * (Note that this function may overcount or undercount, if we have
- * descriptors that are not the type we would prefer to use for some
- * particular router. See bug #25885.)
+ * If <b>direct</b> is true, only count nodes that are suitable for direct
+ * connections. Counts nodes regardless of whether their addresses are
+ * preferred.
  */
 MOCK_IMPL(STATIC int,
 count_acceptable_nodes, (const smartlist_t *nodes, int direct))
 {
   int num=0;
+  int flags = CRN_NEED_DESC;
+
+  if (direct)
+    flags |= CRN_DIRECT_CONN;
 
   SMARTLIST_FOREACH_BEGIN(nodes, const node_t *, node) {
     //    log_debug(LD_CIRC,
-//              "Contemplating whether router %d (%s) is a new option.",
-//              i, r->nickname);
-    if (! node->is_running)
-//      log_debug(LD_CIRC,"Nope, the directory says %d is not running.",i);
-      continue;
-    if (! node->is_valid)
-//      log_debug(LD_CIRC,"Nope, the directory says %d is not valid.",i);
-      continue;
-    if (! node_has_preferred_descriptor(node, direct))
-      continue;
-    /* The node has a descriptor, so we can just check the ntor key directly */
-    if (!node_has_curve25519_onion_key(node))
+    //              "Contemplating whether router %d (%s) is a new option.",
+    //              i, r->nickname);
+    if (!router_can_choose_node(node, flags))
       continue;
     ++num;
   } SMARTLIST_FOREACH_END(node);
